@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperCompress — Local Playground</title>
+  <meta property="og:url" content="https://supercompress.dev/playground" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="description" content="Test SuperCompress compression on your own text in-browser. Paste context, ask a question, see exactly what gets kept and removed. Free, no signup needed." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress — Interactive Compression Playground" />
+  <meta name="twitter:description" content="Test SuperCompress compression on your own text. Paste context, ask a question, see exactly what gets kept and removed." />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="prompt compression playground, LLM token test, compression demo free, AI context tester, SuperCompress try online, token savings calculator" />
+  <link rel="canonical" href="https://supercompress.dev/playground" />
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --panel: #fff;
+      --border: #e5e5e0;
+      --text: #141412;
+      --muted: #6b7280;
+      --accent: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --ok: #047857;
+      --err: #b91c1c;
+      --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5; }
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--panel);
+    }
+    header h1 { font-size: 1.05rem; font-weight: 600; }
+    header h1 em { font-style: normal; color: var(--accent); }
+    header nav { display: flex; gap: 16px; font-size: 0.875rem; }
+    header nav a { color: var(--muted); text-decoration: none; }
+    header nav a:hover { color: var(--accent); }
+    main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 40px; display: grid; gap: 16px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      background: var(--bg);
+      color: var(--text);
+    }
+    textarea { font-family: var(--mono); font-size: 0.82rem; line-height: 1.55; resize: vertical; }
+    textarea.context { min-height: 220px; }
+    textarea.output { min-height: 220px; background: #f4f4f0; }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .row { display: grid; gap: 16px; }
+    .row-2 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) { .row-2 { grid-template-columns: 1fr; } }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .presets button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .presets button:hover { border-color: var(--accent); color: var(--accent); }
+    .presets button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 14px;
+    }
+    .field { flex: 1; min-width: 180px; }
+    .field-narrow { max-width: 200px; }
+    .mode-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 4px; }
+    .mode-row label.mode-opt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0;
+      cursor: pointer;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 24px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary:hover { opacity: 0.92; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .pill strong { color: var(--ok); font-variant-numeric: tabular-nums; }
+    .pill--hero {
+      font-size: 1rem;
+      padding: 10px 16px;
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .pill--hero strong { color: #047857; font-size: 1.15rem; }
+    .note { font-size: 0.85rem; color: var(--muted); }
+    .status { font-size: 0.875rem; min-height: 1.25em; }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    .key-row { display: flex; gap: 8px; align-items: center; }
+    .key-row input { flex: 1; }
+    .key-row button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+  </style>
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<!-- Preconnect hints for faster external resource loading -->
+  <link rel="preconnect" href="https://github.com" />
+  <link rel="dns-prefetch" href="https://github.com" />
+  <link rel="preconnect" href="https://news.ycombinator.com" />
+  <link rel="dns-prefetch" href="https://news.ycombinator.com" />
+  <link rel="preconnect" href="https://twitter.com" />
+  <link rel="dns-prefetch" href="https://twitter.com" />
+  <!-- Vercel Web Analytics -->
+  <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Test SuperCompress compression on your own text. Open-source learned prompt compression that cuts LLM token costs by ~65% with a ~5K-param CPU policy.",
+    "url": "https://supercompress.dev/playground",
+    "sameAs": "https://github.com/Supercompress/Supercompress",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Super<em>Compress</em> playground</h1>
+    <nav>
+      <a href="/">Landing page</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel">
+      <label for="api-key">API key (optional — uses hosted API when set)</label>
+      <div class="key-row">
+        <input type="password" id="api-key" placeholder="sc_live_…" autocomplete="off" />
+        <button type="button" id="save-key">Save key</button>
+        <button type="button" id="clear-key">Clear</button>
+      </div>
+      <p class="note" style="margin-top:8px">Key stays in this browser only (sessionStorage). Without a key, compression runs locally with the real trained policy.</p>
+
+      <div class="mode-row" style="margin-top:12px">
+        <label class="mode-opt"><input type="radio" name="mode" value="compiler" checked /> Compiler local (max savings)</label>
+        <label class="mode-opt"><input type="radio" name="mode" value="api" /> Hosted API (your key)</label>
+        <label class="mode-opt"><input type="radio" name="mode" value="python" /> Local server</label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <label for="query">Your question — defines what SuperCompress keeps</label>
+      <input type="text" id="query" value="Summarize this context." placeholder="What should the model answer from this context?" />
+    </section>
+
+    <section class="panel">
+      <label>Load preset context</label>
+      <div class="presets" id="presets"></div>
+      <div class="controls">
+        <button type="button" class="btn-primary" id="compress">Compress</button>
+      </div>
+    </section>
+
+    <section class="row row-2">
+      <div class="panel">
+        <label for="context">Context / long prompt</label>
+        <textarea id="context" class="context" placeholder="Paste agent logs, docs, code, RAG chunks…"></textarea>
+      </div>
+      <div class="panel">
+        <label for="output">Compressed output</label>
+        <textarea id="output" class="output" readonly placeholder="Compressed text appears here…"></textarea>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="stats" id="stats" hidden>
+        <span class="pill pill--hero"><strong id="stat-removed">—</strong> tokens removed</span>
+        <span class="pill"><strong id="stat-in">—</strong> → <strong id="stat-out">—</strong> tokens kept</span>
+        <span class="pill"><strong id="stat-saved">—</strong>% saved</span>
+        <span class="pill"><strong id="stat-lines">—</strong> lines evicted</span>
+        <span class="pill">policy: <strong id="stat-policy">—</strong></span>
+        <span class="pill">mode: <strong id="stat-mode">—</strong></span>
+        <span class="pill">quality: <strong id="stat-quality">—</strong></span>
+        <span class="pill">important kept: <strong id="stat-important">—</strong></span>
+        <span class="pill">risk: <strong id="stat-risk">—</strong></span>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="assets/js/impact-presets.js?v=3"></script>
+  <script src="assets/js/compress-engine.js?v=4"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      const KEY = "sc_playground_api_key";
+      const $ = (id) => document.getElementById(id);
+
+      let modelPromise = null;
+      function engine() {
+        const E = window.SuperCompressEngine;
+        if (!E) throw new Error("Engine not loaded");
+        return E;
+      }
+      function loadModel() {
+        if (!modelPromise) modelPromise = engine().loadModel("assets/data/model.json");
+        return modelPromise;
+      }
+
+      function mode() {
+        return document.querySelector('input[name="mode"]:checked')?.value || "compiler";
+      }
+
+      function setStatus(msg, type) {
+        const el = $("status");
+        el.textContent = msg || "";
+        el.className = "status" + (type ? " " + type : "");
+      }
+
+      function fmt(n, d = 0) {
+        return Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+      }
+
+      function showStats(data, context) {
+        const removed = Math.max(0, (data.original_tokens || 0) - (data.kept_tokens || 0));
+        $("stats").hidden = false;
+        $("stat-removed").textContent = fmt(removed);
+        $("stat-in").textContent = fmt(data.original_tokens);
+        $("stat-out").textContent = fmt(data.kept_tokens);
+        $("stat-saved").textContent = fmt(data.kv_savings_pct, 1);
+        const linesIn = (context || "").split("\n").length;
+        const linesOut = (data.compressed_text || "").split("\n").length;
+        $("stat-lines").textContent = fmt(Math.max(0, linesIn - linesOut));
+        $("stat-policy").textContent = data.policy_name || "—";
+        $("stat-mode").textContent = data.mode || "—";
+        $("stat-quality").textContent =
+          data.answer_quality != null ? fmt(data.answer_quality * 100, 0) + "%" : "—";
+        $("stat-important").textContent =
+          data.important_kept_pct != null ? fmt(data.important_kept_pct * 100, 0) + "%" : "—";
+        $("stat-risk").textContent = data.compression_risk || "—";
+      }
+
+      // Presets
+      const presetRoot = $("presets");
+      const presets = window.ImpactPresets || {};
+      Object.entries(presets).forEach(([key, p]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = p.label;
+        btn.dataset.preset = key;
+        btn.addEventListener("click", () => {
+          $("context").value = p.context;
+          $("query").value = p.query;
+          presetRoot.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          $("output").value = "";
+          $("stats").hidden = true;
+          setStatus(`Loaded “${p.label}”. Press Compress.`, null);
+        });
+        presetRoot.appendChild(btn);
+      });
+
+      // API key
+      const keyInput = $("api-key");
+      const saved = sessionStorage.getItem(KEY);
+      if (saved) keyInput.value = saved;
+      $("save-key").addEventListener("click", () => {
+        sessionStorage.setItem(KEY, keyInput.value.trim());
+        setStatus("API key saved for this session.", "ok");
+      });
+      $("clear-key").addEventListener("click", () => {
+        keyInput.value = "";
+        sessionStorage.removeItem(KEY);
+        setStatus("API key cleared.", null);
+      });
+
+      async function compressCompiler(context, query) {
+        const model = await loadModel();
+        const E = engine();
+        const r = E.compressAdaptive(context, query, model);
+        return {
+          compressed_text: r.compressed_text,
+          original_tokens: r.original_tokens,
+          kept_tokens: r.kept_tokens,
+          tokens_removed: r.tokens_removed,
+          kv_savings_pct: r.kv_savings_pct,
+          policy_name: r.policy_name,
+          answer_quality: r.answer_quality,
+          important_kept_pct: r.important_kept_pct,
+          compression_risk: r.compression_risk,
+          mode: "compiler-local",
+        };
+      }
+
+      async function compressServer(context, query, useApiKey) {
+        const headers = { "Content-Type": "application/json" };
+        const apiKey = keyInput.value.trim() || sessionStorage.getItem(KEY) || "";
+        if (useApiKey && apiKey) headers["X-API-Key"] = apiKey;
+        const body = {
+          context,
+          query,
+          force_local: !useApiKey,
+        };
+        const res = await fetch("/api/compress", { method: "POST", headers, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.detail || "Request failed");
+        return data;
+      }
+
+      async function run() {
+        const context = $("context").value.trim();
+        const query = $("query").value.trim() || "Summarize this context.";
+        const btn = $("compress");
+
+        if (!context) {
+          setStatus("Paste context or load a preset first.", "err");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Compressing…";
+        $("output").value = "";
+        $("stats").hidden = true;
+        setStatus("Running real compression…", null);
+
+        try {
+          const m = mode();
+          let data;
+          if (m === "compiler") {
+            data = await compressCompiler(context, query);
+          } else if (m === "api") {
+            const apiKey = keyInput.value.trim() || sessionStorage.getItem(KEY) || "";
+            if (!apiKey) throw new Error("Enter and save your API key for Hosted API mode.");
+            data = await compressServer(context, query, true);
+          } else {
+            data = await compressServer(context, query, false);
+          }
+
+          $("output").value = data.compressed_text || "";
+          showStats(data, context);
+          const removed = Math.max(0, data.original_tokens - data.kept_tokens);
+          const same = data.compressed_text === context;
+          setStatus(
+            same
+              ? `Done — output unchanged (${fmt(data.original_tokens)} tokens). Try a longer preset.`
+              : `Removed ${fmt(removed)} tokens (${fmt(data.kv_savings_pct, 1)}% saved) via ${data.mode}.`,
+            "ok"
+          );
+        } catch (e) {
+          setStatus(e.message || String(e), "err");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Compress";
+        }
+      }
+
+      $("compress").addEventListener("click", run);
+      $("query").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); run(); }
+      });
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+      });
+
+      // Default preset
+      const first = presetRoot.querySelector("button");
+      if (first) first.click();
+    })();
+  </script>
+  <!-- GitHub Stars CTA -->
+  <div style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100;">
+    <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+              background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(12px);
+              border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
+              color: #fff; font-family: system-ui, sans-serif; font-size: 14px;
+              text-decoration: none; font-weight: 500;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+              transition: all 0.2s ease;">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Star on GitHub
+      <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; font-size: 12px;">★</span>
+    </a>
+  </div>
+  <!-- Social Share -->
+  <div style="display: flex; justify-content: center; gap: 12px; margin: 40px 0;">
+    <a href="https://twitter.com/intent/tweet?text=SuperCompress%20-%2065%25%20fewer%20tokens%2C%20100%25%20oracle%20recall.&url=https://supercompress.dev/playground"
+       target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1d9bf0; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      Share on X
+    </a>
+    <a href="https://news.ycombinator.com/submitlink?u=https://supercompress.dev/playground&t=SuperCompress%20-%20Live%20API%20Demo"
+       target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f0652f; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Share on HN
+    </a>
+  </div>
+</body>
+</html>

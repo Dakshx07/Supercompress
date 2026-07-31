@@ -1,0 +1,1042 @@
+/**
+ * Detector — auto-discovers coding agent installation directories and
+ * configuration files, and wires them to point at the SuperCompress proxy.
+ *
+ * Detected agents:
+ *   - Cursor          ~/.cursor/config.json or ~/Library/Application Support/Cursor/User/settings.json
+ *   - Windsurf        ~/.windsurf/config.json
+ *   - Continue        ~/.continue/config.json
+ *   - Cline           ~/.cline/config.json
+ *   - Claude Code     ~/.claude/settings.json
+ *   - Codex           ~/.codex/config.toml and `codex` in PATH
+ *   - Aider           ~/.aider.conf.yml or ~/.config/aider/conf.yml
+ */
+
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { execFileSync } = require("child_process");
+
+const HOME = os.homedir();
+const PROXY_BASE = "http://localhost:8080/v1";
+const MCP_SERVER_PATH = path.join(__dirname, "mcp.js");
+const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".supercompress");
+const BACKUP_PATH = path.join(CONFIG_DIR, "agent-config-backups.json");
+
+function loadBackups() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(BACKUP_PATH, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveBackups(backups) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(BACKUP_PATH, JSON.stringify(backups, null, 2) + "\n");
+}
+
+/** Preserve the exact pre-setup contents so uninstall never loses user config. */
+function backupFile(filePath) {
+  const backups = loadBackups();
+  if (Object.prototype.hasOwnProperty.call(backups, filePath)) return;
+  backups[filePath] = fs.existsSync(filePath)
+    ? { exists: true, content: fs.readFileSync(filePath, "utf8") }
+    : { exists: false, content: "" };
+  saveBackups(backups);
+}
+
+function restoreBackups() {
+  const backups = loadBackups();
+  const restored = new Set();
+  for (const [filePath, snapshot] of Object.entries(backups)) {
+    try {
+      if (snapshot.exists) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, snapshot.content);
+      } else if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      restored.add(filePath);
+    } catch (err) {
+      console.error(`  ✗ Failed to restore ${filePath}: ${err.message}`);
+    }
+  }
+  try { fs.unlinkSync(BACKUP_PATH); } catch {}
+  return restored;
+}
+
+function writeMcpJson(filePath) {
+  let data = {};
+  if (fs.existsSync(filePath)) {
+    data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  }
+  data.mcpServers = data.mcpServers || {};
+  // Subscription/login-safe plugin registration:
+  // - no provider base-URL rewrite
+  // - no broken "${SUPERCOMPRESS_API_KEY}" placeholder (Cursor does not expand it)
+  // - MCP reads the linked account key from ~/.supercompress/config.json
+  data.mcpServers.supercompress = {
+    command: process.execPath,
+    args: [MCP_SERVER_PATH],
+    env: {
+      SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR,
+    },
+  };
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+}
+
+function parseJsonc(text) {
+  // Enough for OpenCode config: strip // and /* */ comments outside strings.
+  let out = "";
+  let i = 0;
+  let inString = false;
+  let quote = "";
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (inString) {
+      out += ch;
+      if (ch === "\\" && i + 1 < text.length) {
+        out += text[i + 1];
+        i += 2;
+        continue;
+      }
+      if (ch === quote) inString = false;
+      i += 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      while (i < text.length && text[i] !== "\n") i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      i += 2;
+      while (i + 1 < text.length && !(text[i] === "*" && text[i + 1] === "/")) i += 1;
+      i += 2;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return JSON.parse(out);
+}
+
+function resolveMcpLaunchCommand() {
+  // Prefer the published bin on PATH so upgrades don't leave a stale absolute path.
+  if (commandExists("supercompress-mcp")) {
+    return ["supercompress-mcp"];
+  }
+  return [process.execPath, MCP_SERVER_PATH];
+}
+
+function writeOpenCodeMcp(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  let data = {};
+  let hadExisting = false;
+  if (fs.existsSync(filePath)) {
+    hadExisting = true;
+    try {
+      data = parseJsonc(fs.readFileSync(filePath, "utf8"));
+    } catch (err) {
+      // Never wipe a user's OpenCode config if parse fails.
+      throw new Error(`OpenCode config is not valid JSON/JSONC (${filePath}): ${err.message}`);
+    }
+  }
+  if (hadExisting && (!data || typeof data !== "object" || Array.isArray(data))) {
+    throw new Error(`OpenCode config must be a JSON object (${filePath})`);
+  }
+  data.mcp = data.mcp || {};
+  // OpenCode schema: type "local", command array, enabled, timeout (default 5s is too tight).
+  data.mcp.supercompress = {
+    type: "local",
+    command: resolveMcpLaunchCommand(),
+    enabled: true,
+    timeout: 60000,
+    environment: {
+      SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR,
+    },
+  };
+  // Prefer a longer global MCP timeout when the field is absent (OpenCode quirks).
+  data.experimental = data.experimental && typeof data.experimental === "object"
+    ? data.experimental
+    : {};
+  if (data.experimental.mcp_timeout == null) {
+    data.experimental.mcp_timeout = 120000;
+  }
+  // Preserve .jsonc extension but write valid JSON (OpenCode accepts it).
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+}
+
+function configureMcp() {
+  const configured = [];
+  for (const [name, filePath] of [
+    ["Cursor", path.join(HOME, ".cursor", "mcp.json")],
+    ["Gemini CLI", path.join(HOME, ".gemini", "settings.json")],
+    ["Claude Code", path.join(HOME, ".claude.json")],
+    // FreeBuff / Codebuff global MCP (https://codebuff.com/docs/tips/mcp-servers)
+    ["FreeBuff", path.join(HOME, ".agents", "mcp.json")],
+  ]) {
+    const claudeInstalled = name === "Claude Code" &&
+      (fs.existsSync(path.join(HOME, ".claude")) || commandExists("claude"));
+    const freebuffInstalled = name === "FreeBuff" && (
+      commandExists("freebuff") ||
+      commandExists("codebuff") ||
+      fs.existsSync(path.join(HOME, ".config", "manicode")) ||
+      fs.existsSync(path.join(HOME, ".agents"))
+    );
+    const agentDirectoryExists = path.dirname(filePath) !== HOME && fs.existsSync(path.dirname(filePath));
+    if (!fs.existsSync(filePath) && !claudeInstalled && !freebuffInstalled && !agentDirectoryExists) continue;
+    try { writeMcpJson(filePath); configured.push(name); } catch (err) {
+      console.error(`  ✗ Failed to configure ${name} MCP: ${err.message}`);
+    }
+  }
+
+  // OpenCode uses opencode.jsonc `mcp` block (not mcpServers).
+  const openCodePaths = [
+    path.join(HOME, ".config", "opencode", "opencode.jsonc"),
+    path.join(HOME, ".config", "opencode", "opencode.json"),
+  ];
+  const openCodeInstalled =
+    commandExists("opencode") ||
+    fs.existsSync(path.join(HOME, ".opencode")) ||
+    fs.existsSync(path.join(HOME, ".config", "opencode"));
+  if (openCodeInstalled) {
+    const target = openCodePaths.find((p) => fs.existsSync(p)) || openCodePaths[0];
+    try {
+      writeOpenCodeMcp(target);
+      configured.push("OpenCode");
+    } catch (err) {
+      console.error(`  ✗ Failed to configure OpenCode MCP: ${err.message}`);
+    }
+  }
+
+  const codexPath = path.join(HOME, ".codex", "config.toml");
+  if (fs.existsSync(codexPath) || commandExists("codex")) {
+    try {
+      fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+      let raw = fs.existsSync(codexPath) ? fs.readFileSync(codexPath, "utf8") : "";
+      const block =
+        `[mcp_servers.supercompress]\n` +
+        `command = ${JSON.stringify(process.execPath)}\n` +
+        `args = [${JSON.stringify(MCP_SERVER_PATH)}]\n` +
+        `[mcp_servers.supercompress.env]\n` +
+        `SUPERCOMPRESS_CONFIG_DIR = ${JSON.stringify(CONFIG_DIR)}\n`;
+      if (/^\[mcp_servers\.supercompress\]/m.test(raw)) {
+        // Always refresh command/args/env so upgrades don't leave a stale MCP path.
+        raw = raw
+          .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
+          .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+        raw = `${raw.trimEnd()}\n\n${block}`;
+      } else {
+        raw = `${raw.trimEnd()}\n\n${block}`;
+      }
+      fs.writeFileSync(codexPath, raw.startsWith("\n") ? raw.slice(1) : raw);
+      configured.push("Codex MCP");
+    } catch (err) { console.error(`  ✗ Failed to configure Codex MCP: ${err.message}`); }
+  }
+  return configured;
+}
+
+function removeMcpJson(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (!data.mcpServers || !data.mcpServers.supercompress) return false;
+  delete data.mcpServers.supercompress;
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+  return true;
+}
+
+function removeMcp() {
+  const removed = [];
+  for (const [name, filePath] of [
+    ["Cursor", path.join(HOME, ".cursor", "mcp.json")],
+    ["Gemini CLI", path.join(HOME, ".gemini", "settings.json")],
+    ["Claude Code", path.join(HOME, ".claude.json")],
+    ["FreeBuff", path.join(HOME, ".agents", "mcp.json")],
+  ]) {
+    try {
+      if (removeMcpJson(filePath)) removed.push(name);
+    } catch (err) {
+      console.error(`  ✗ Failed to remove ${name} MCP registration: ${err.message}`);
+    }
+  }
+
+  for (const filePath of [
+    path.join(HOME, ".config", "opencode", "opencode.jsonc"),
+    path.join(HOME, ".config", "opencode", "opencode.json"),
+  ]) {
+    try {
+      if (!fs.existsSync(filePath)) continue;
+      const data = parseJsonc(fs.readFileSync(filePath, "utf8"));
+      if (!data.mcp || !data.mcp.supercompress) continue;
+      delete data.mcp.supercompress;
+      if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
+      removed.push("OpenCode");
+    } catch (err) {
+      console.error(`  ✗ Failed to remove OpenCode MCP registration: ${err.message}`);
+    }
+  }
+
+  const codexPath = path.join(HOME, ".codex", "config.toml");
+  try {
+    if (fs.existsSync(codexPath)) {
+      const raw = fs.readFileSync(codexPath, "utf8");
+      const cleaned = raw
+        .replace(/\n?\[mcp_servers\.supercompress\.env\][\s\S]*?(?=\n\[|$)/, "\n")
+        .replace(/\n?\[mcp_servers\.supercompress\][\s\S]*?(?=\n\[|$)/, "\n");
+      if (cleaned !== raw) {
+        fs.writeFileSync(codexPath, cleaned.trimEnd() + "\n");
+        removed.push("Codex MCP");
+      }
+    }
+  } catch (err) {
+    console.error(`  ✗ Failed to remove Codex MCP registration: ${err.message}`);
+  }
+  return removed;
+}
+
+function commandExists(command) {
+  try {
+    execFileSync("which", [command], { stdio: "ignore" });
+    return true;
+  } catch {
+    const candidates = [
+      path.join(HOME, ".opencode", "bin", command),
+      path.join(HOME, ".local", "bin", command),
+      path.join("/opt/homebrew/bin", command),
+      path.join("/usr/local/bin", command),
+    ];
+    return candidates.some((candidate) => {
+      try {
+        return fs.existsSync(candidate) && fs.statSync(candidate).isFile();
+      } catch {
+        return false;
+      }
+    });
+  }
+}
+
+function appExists(appName) {
+  return [
+    path.join("/Applications", `${appName}.app`),
+    path.join(HOME, "Applications", `${appName}.app`),
+  ].some((candidate) => fs.existsSync(candidate));
+}
+
+// ── Agent definitions ──
+
+const AGENTS = [
+  {
+    name: "Cursor",
+    detect: () => {
+      // Cursor stores config in ~/Library/Application Support/Cursor/User/settings.json (macOS)
+      // or ~/.cursor/config.json
+      const paths = [
+        path.join(HOME, "Library", "Application Support", "Cursor", "User", "settings.json"),
+        path.join(HOME, ".cursor", "config.json"),
+        path.join(HOME, "AppData", "Roaming", "Cursor", "User", "settings.json"), // Windows
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => {
+      try {
+        return JSON.parse(fs.readFileSync(filePath, "utf8"));
+      } catch { return {}; }
+    },
+    write: (filePath, config) => {
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
+    },
+    configure: (config, revert) => {
+      if (revert) {
+        delete config["openAiBaseUrl"];
+        delete config["openAIBaseUrl"];
+      } else {
+        config["openAiBaseUrl"] = PROXY_BASE;
+      }
+      return config;
+    },
+    description: "Change Cursor → Settings → Models → Override OpenAI Base URL to http://localhost:8080/v1",
+  },
+  {
+    name: "Windsurf",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".windsurf", "config.json"),
+        path.join(HOME, ".config", "windsurf", "config.json"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => {
+      try {
+        return JSON.parse(fs.readFileSync(filePath, "utf8"));
+      } catch { return {}; }
+    },
+    write: (filePath, config) => {
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
+    },
+    configure: (config, revert) => {
+      if (revert) {
+        delete config["apiBaseUrl"];
+        delete config["api_base_url"];
+      } else {
+        config["apiBaseUrl"] = PROXY_BASE;
+      }
+      return config;
+    },
+    description: "Change Windsurf → Settings → API Endpoint → http://localhost:8080/v1",
+  },
+  {
+    name: "Continue",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".continue", "config.json"),
+        path.join(HOME, ".continue", "config.yaml"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => {
+      try {
+        const content = fs.readFileSync(filePath, "utf8");
+        if (filePath.endsWith(".json")) {
+          return { type: "json", data: JSON.parse(content), raw: content };
+        }
+        return { type: "yaml", data: null, raw: content };
+      } catch { return { type: "unknown", data: null, raw: "" }; }
+    },
+    write: (filePath, config) => {
+      if (config.type === "json") {
+        fs.writeFileSync(filePath, JSON.stringify(config.data, null, 2));
+      }
+      // YAML files are not auto-modified — we'll show instructions
+    },
+    configure: (config, revert) => {
+      if (config.type !== "json") return config;
+      const models = config.data.models || [];
+      if (revert) {
+        config.data.models = models.filter((m) => m.apiBase !== PROXY_BASE);
+      } else {
+        // Add a proxy model if not already present
+        const hasProxy = models.some((m) => m.apiBase === PROXY_BASE);
+        if (!hasProxy) {
+          models.push({
+            title: "SuperCompress Proxy",
+            provider: "openai",
+            model: "gpt-4o",
+            apiBase: PROXY_BASE,
+            apiKey: "sk-supercompress",
+          });
+          config.data.models = models;
+        }
+      }
+      return config;
+    },
+    description: "Edit ~/.continue/config.json to add a model with apiBase: http://localhost:8080/v1",
+  },
+  {
+    name: "Cline",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".cline", "config.json"),
+        path.join(HOME, ".config", "cline", "config.json"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => {
+      try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return {}; }
+    },
+    write: (filePath, config) => {
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
+    },
+    configure: (config, revert) => {
+      if (revert) {
+        delete config["openAiBaseUrl"];
+        delete config["apiBaseUrl"];
+        delete config["api_base_url"];
+      } else {
+        config["openAiBaseUrl"] = PROXY_BASE;
+        config["apiProvider"] = "openai-compatible";
+      }
+      return config;
+    },
+    description: "In Cline settings, set API Provider → 'OpenAI Compatible' and Base URL → http://localhost:8080/v1",
+  },
+  {
+    name: "Claude Code",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".claude", "settings.json"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => {
+      try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return {}; }
+    },
+    write: (filePath, config) => {
+      fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
+    },
+    configure: (config, revert) => {
+      if (revert) {
+        // Remove the anthropic base URL override
+        const env = config.env || {};
+        delete env["ANTHROPIC_BASE_URL"];
+        config.env = env;
+      } else {
+        config.env = config.env || {};
+        config.env["ANTHROPIC_BASE_URL"] = PROXY_BASE.replace(/\/v1$/, "");
+      }
+      return config;
+    },
+    description: "Claude Code uses ANTHROPIC_BASE_URL env var. Configure your shell profile or run: export ANTHROPIC_BASE_URL=http://localhost:8080",
+  },
+  {
+    name: "Codex",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".codex", "config.toml"),
+        path.join(HOME, ".codex", "config.json"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: (filePath) => ({
+      type: filePath.endsWith(".json") ? "json" : "toml",
+      raw: fs.readFileSync(filePath, "utf8"),
+    }),
+    write: (filePath, config) => {
+      fs.writeFileSync(filePath, config.raw);
+    },
+    configure: (config, revert) => {
+      if (config.type === "json") {
+        const data = JSON.parse(config.raw || "{}");
+        if (revert) delete data.openai_base_url;
+        else data.openai_base_url = PROXY_BASE;
+        return { ...config, raw: JSON.stringify(data, null, 2) + "\n" };
+      }
+
+      const marker = "# SuperCompress Proxy";
+      const line = `openai_base_url = \"${PROXY_BASE}\"`;
+      let raw = config.raw || "";
+      if (revert) {
+        raw = raw.replace(new RegExp(`\\n?${marker}\\n${line}\\n?`, "g"), "");
+      } else if (/^openai_base_url\s*=/m.test(raw)) {
+        raw = raw.replace(/^openai_base_url\s*=.*$/m, line);
+      } else {
+        raw = `${raw.trimEnd()}\n\n${marker}\n${line}\n`;
+      }
+      return { ...config, raw };
+    },
+    description: "Codex API mode detected. Configure ~/.codex/config.toml to use http://localhost:8080/v1, then restart Codex. ChatGPT-login/subscription mode does not expose an API key for this proxy.",
+  },
+  {
+    name: "Aider",
+    detect: () => {
+      const paths = [
+        path.join(HOME, ".aider.conf.yml"),
+        path.join(HOME, ".config", "aider", "conf.yml"),
+      ];
+      return paths.find((p) => fs.existsSync(p));
+    },
+    read: () => ({ type: "yaml", data: null, raw: "" }),
+    write: () => {},
+    configure: () => null,
+    description: "Run aider with: aider --openai-api-base http://localhost:8080/v1\nOr set OPENAI_API_BASE=http://localhost:8080/v1 in your shell profile.",
+  },
+];
+
+// Broad detection catalog. These integrations are detected by an installed
+// executable or a known local directory; only agents with a stable, tested
+// config schema are auto-edited above. Every catalogued agent can still use
+// the proxy through its OpenAI/Anthropic-compatible base URL or MCP support.
+const EXTRA_AGENTS = [
+  ["Gemini CLI", ["gemini"], [".gemini"]],
+  ["GitHub Copilot CLI", ["github-copilot", "copilot"], [".copilot"]],
+  ["Amazon Q Developer", ["q"], [".aws", ".amazonq"]],
+  ["Roo Code", ["roo"], [".roo"]],
+  ["Kilo Code", ["kilo"], [".kilo"]],
+  ["OpenHands", ["openhands"], [".openhands"]],
+  ["Goose", ["goose"], [".config/goose"]],
+  ["OpenCode", ["opencode"], [".config/opencode", ".opencode"]],
+  ["FreeBuff", ["freebuff", "codebuff"], [".config/manicode", ".agents"]],
+  ["Pi", ["pi"], [".pi"]],
+  ["Amp", ["amp"], [".amp"]],
+  ["Plandex", ["plandex"], [".plandex"]],
+  ["gptme", ["gptme"], [".gptme"]],
+  ["Mentat", ["mentat"], [".mentat"]],
+  ["Sweep", ["sweep"], [".sweep"]],
+  ["Tabby", ["tabby"], [".tabby"]],
+  ["Zed AI", ["zed"], [".config/zed"]],
+  ["Void", ["void"], [".void"]],
+  ["PearAI", ["pearai"], [".pearai"]],
+  ["Supermaven", ["supermaven"], [".supermaven"]],
+  ["Sourcegraph Cody", ["cody"], [".cody"]],
+  ["Qodo", ["qodo"], [".qodo"]],
+  ["Warp AI", ["warp"], [".warp"]],
+  ["Crush", ["crush"], [".config/crush"]],
+  ["Replit Agent", ["replit"], [".config/replit"]],
+  ["Devin", ["devin"], [".devin"]],
+  ["CodeGPT", ["codegpt"], [".codegpt"]],
+  ["Blackbox AI", ["blackbox"], [".blackbox"]],
+  ["Tabnine", ["tabnine"], [".tabnine"]],
+  ["Codeium", ["codeium"], [".codeium"]],
+  ["AskCodi", ["askcodi"], [".askcodi"]],
+  ["MutableAI", ["mutable"], [".mutable"]],
+  ["Refact", ["refact"], [".refact"]],
+  ["Twinny", ["twinny"], [".twinny"]],
+  ["Mistral Vibe", ["vibe"], [".vibe"]],
+  ["Claude Desktop", ["claude-desktop"], ["Library/Application Support/Claude"]],
+  ["Gemini Code Assist", ["gemini-code-assist"], [".gemini"]],
+  ["Google Jules", ["jules"], [".jules"]],
+  ["JetBrains AI", ["idea", "pycharm", "webstorm"], ["Library/Application Support/JetBrains"]],
+  ["Composio", ["composio"], [".composio"]],
+  ["Pythagora", ["pythagora"], [".pythagora"]],
+  ["Marvin", ["marvin"], [".marvin"]],
+].map(([name, commands, directories]) => ({
+  name,
+  commands,
+  directories,
+  description: `${name} detected; configure its OpenAI/Anthropic-compatible base URL or MCP settings manually`,
+}));
+
+const AGENT_CATALOG = [...AGENTS, ...EXTRA_AGENTS];
+
+const INSTALL_CHECKS = {
+  Cursor: () => commandExists("cursor") || appExists("Cursor"),
+  Windsurf: () => commandExists("windsurf") || appExists("Windsurf"),
+  Continue: () => commandExists("code") && fs.existsSync(path.join(HOME, ".continue")),
+  Cline: () => fs.existsSync(path.join(HOME, ".vscode", "extensions")) && fs.readdirSync(path.join(HOME, ".vscode", "extensions")).some((name) => name.startsWith("saoudrizwan.claude-dev-")),
+  "Claude Code": () => commandExists("claude"),
+  Aider: () => commandExists("aider"),
+  Codex: () => commandExists("codex"),
+};
+
+// ── Shell profile helpers ──
+
+function getShellProfile() {
+  const shell = process.env.SHELL || "";
+  if (shell.includes("zsh")) return path.join(HOME, ".zshrc");
+  if (shell.includes("bash")) return path.join(HOME, ".bashrc");
+  if (shell.includes("fish")) return path.join(HOME, ".config", "fish", "config.fish");
+  return path.join(HOME, ".profile");
+}
+
+function addToShellProfile(varName, varValue) {
+  const profilePath = getShellProfile();
+  const line = `export ${varName}=${varValue}`;
+
+  try {
+    let content = "";
+    if (fs.existsSync(profilePath)) {
+      content = fs.readFileSync(profilePath, "utf8");
+    }
+
+    // Check if already present
+    if (content.includes(`export ${varName}=`)) {
+      // Replace existing
+      content = content.replace(
+        new RegExp(`export ${varName}=.*`, "g"),
+        line
+      );
+    } else {
+      content += `\n# SuperCompress Proxy\n${line}\n`;
+    }
+
+    fs.writeFileSync(profilePath, content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeFromShellProfile(varName) {
+  const profilePath = getShellProfile();
+  try {
+    if (!fs.existsSync(profilePath)) return false;
+    let content = fs.readFileSync(profilePath, "utf8");
+    content = content.replace(
+      new RegExp(`\\n?# SuperCompress Proxy\\n?`, "g"),
+      ""
+    );
+    content = content.replace(
+      new RegExp(`export ${varName}=.*\\n?`, "g"),
+      ""
+    );
+    fs.writeFileSync(profilePath, content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Public API ──
+
+/**
+ * Scan the machine for installed coding agents.
+ * Returns an array of found agent objects.
+ */
+function detectAll() {
+  const found = [];
+  for (const agent of AGENTS) {
+    const filePath = agent.detect();
+    const installed = Boolean(filePath) || Boolean(INSTALL_CHECKS[agent.name]?.());
+    if (installed) {
+      found.push({
+        name: agent.name,
+        configPath: filePath,
+        installed,
+        autoConfigurable: Boolean(filePath),
+        description: agent.description,
+      });
+    }
+  }
+  for (const agent of EXTRA_AGENTS) {
+    const directory = agent.directories
+      .map((relative) => path.join(HOME, relative))
+      .find((candidate) => fs.existsSync(candidate));
+    const command = agent.commands.find((candidate) => commandExists(candidate));
+    if (directory || command) {
+      found.push({
+        name: agent.name,
+        configPath: directory || null,
+        installed: true,
+        autoConfigurable: false,
+        description: agent.description,
+      });
+    }
+  }
+  return found;
+}
+
+/**
+ * Configure all found agents to use the proxy.
+ * Returns an array of agent names that were configured.
+ */
+function configureAll() {
+  const configured = [];
+
+  for (const agent of AGENTS) {
+    const filePath = agent.detect();
+    if (filePath) {
+      try {
+        const config = agent.read(filePath);
+        const updated = agent.configure(config, false);
+        if (updated) {
+          backupFile(filePath);
+          agent.write(filePath, updated);
+          configured.push(agent.name);
+        }
+      } catch (err) {
+        console.error(`  ✗ Failed to configure ${agent.name}: ${err.message}`);
+      }
+    }
+  }
+
+  // Claude Code reads this variable from its environment rather than a stable
+  // JSON config. Only write it when the real CLI is installed.
+  const claudeCode = AGENTS.find((a) => a.name === "Claude Code");
+  if (claudeCode.detect() || INSTALL_CHECKS["Claude Code"]()) {
+    backupFile(getShellProfile());
+    addToShellProfile("ANTHROPIC_BASE_URL", PROXY_BASE.replace(/\/v1$/, ""));
+    if (!configured.includes("Claude Code")) configured.push("Claude Code");
+  }
+
+  return configured;
+}
+
+/**
+ * Revert all agent configs back to original state.
+ * Returns an array of agent names that were reverted.
+ */
+function revertAll() {
+  const reverted = [];
+  const restored = restoreBackups();
+
+  for (const agent of AGENTS) {
+    const filePath = agent.detect();
+    if (filePath && restored.has(filePath)) {
+      reverted.push(agent.name);
+      continue;
+    }
+    if (filePath) {
+      try {
+        const config = agent.read(filePath);
+        const updated = agent.configure(config, true);
+        if (updated) {
+          agent.write(filePath, updated);
+          reverted.push(agent.name);
+        }
+      } catch {}
+    }
+  }
+
+  const shellProfile = getShellProfile();
+  if (!restored.has(shellProfile)) {
+    removeFromShellProfile("ANTHROPIC_BASE_URL");
+    removeFromShellProfile("OPENAI_API_BASE");
+  }
+
+  return reverted;
+}
+
+/**
+ * Remove provider base-URL overrides that force API-key proxy mode.
+ * Leaves MCP plugin registrations intact.
+ */
+function clearProxyOverrides() {
+  const cleared = [];
+  for (const agent of AGENTS) {
+    const filePath = agent.detect();
+    if (!filePath) continue;
+    try {
+      const config = agent.read(filePath);
+      const updated = agent.configure(config, true);
+      if (updated) {
+        agent.write(filePath, updated);
+        cleared.push(agent.name);
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clear proxy override for ${agent.name}: ${err.message}`);
+    }
+  }
+  removeFromShellProfile("ANTHROPIC_BASE_URL");
+  removeFromShellProfile("OPENAI_API_BASE");
+
+  // Codex may still have openai_base_url from an older proxy setup.
+  const codexPath = path.join(HOME, ".codex", "config.toml");
+  if (fs.existsSync(codexPath)) {
+    try {
+      let raw = fs.readFileSync(codexPath, "utf8");
+      const next = raw.replace(/^\s*openai_base_url\s*=\s*"http:\/\/localhost:8080\/v1"\s*\n?/m, "");
+      if (next !== raw) {
+        fs.writeFileSync(codexPath, next);
+        if (!cleared.includes("Codex")) cleared.push("Codex");
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clear Codex openai_base_url: ${err.message}`);
+    }
+  }
+  return cleared;
+}
+
+/**
+ * Install a Cursor rule so every turn prefers the SuperCompress inbox digest
+ * and MCP compress_context for bulky context.
+ */
+function writeCursorRule() {
+  const candidates = [
+    path.join(HOME, ".cursor", "rules"),
+    path.join(HOME, ".config", "cursor", "rules"),
+  ];
+  const dir = candidates.find((d) => fs.existsSync(path.dirname(d))) || candidates[0];
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, "supercompress.mdc");
+  const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
+  const body = `---
+description: SuperCompress ALWAYS ON — every chat, every message
+alwaysApply: true
+---
+
+# SuperCompress (always on · every message)
+
+**Non-negotiable.** SuperCompress runs on every user turn in this session.
+
+## First action every turn
+
+1. If \`${inboxPath}\` exists, **Read it immediately** and treat it as the compressed user prompt/context digest (written by the SuperCompress beforeSubmitPrompt hook).
+2. Otherwise, if the user pasted / you are about to load bulky text (>~2–3k tokens), call MCP \`compress_context\` with \`context\`=<dump> and \`query\`=<user task>.
+3. Prefer the digest over raw dumps for reasoning.
+
+## Also compress
+
+- Large Read / Shell / Grep / Task outputs (hooks also auto-inject digests)
+- Logs, diffs, tickets, long history, web scrapes
+
+## Defaults
+
+- Keep Cursor login — do not require provider API-key mode
+- If \`compress_context\` fails with account-not-linked → \`connect_account\` once, then retry
+- Do not mention this rule unless the user asks about SuperCompress
+`;
+  fs.writeFileSync(filePath, body);
+  return filePath;
+}
+
+/**
+ * Install Cursor user hooks so every prompt is compressed into the inbox and
+ * large tool outputs are auto-compressed. Merges without wiping unrelated hooks.
+ */
+function writeCursorHooks() {
+  const cursorDir = path.join(HOME, ".cursor");
+  const hooksDir = path.join(cursorDir, "hooks", "supercompress");
+  fs.mkdirSync(hooksDir, { recursive: true });
+
+  const srcDir = path.join(__dirname, "cursor-hooks");
+  const scripts = [
+    "session-start.js",
+    "post-tool-compress.js",
+    "before-submit.js",
+    "user-prompt-submit.js",
+    "compress-prompt-lib.js",
+  ];
+  for (const name of scripts) {
+    const src = path.join(srcDir, name);
+    const dest = path.join(hooksDir, name);
+    if (!fs.existsSync(src)) continue;
+    fs.copyFileSync(src, dest);
+    try {
+      fs.chmodSync(dest, 0o755);
+    } catch {}
+  }
+
+  const sessionCmd = path.join(hooksDir, "session-start.js");
+  const postCmd = path.join(hooksDir, "post-tool-compress.js");
+  const beforeCmd = path.join(hooksDir, "before-submit.js");
+  const hooksPath = path.join(cursorDir, "hooks.json");
+
+  let existing = { version: 1, hooks: {} };
+  if (fs.existsSync(hooksPath)) {
+    try {
+      let raw = fs.readFileSync(hooksPath, "utf8");
+      raw = raw.replace(/\\n\s*$/, "").trim();
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") existing = parsed;
+    } catch (err) {
+      try {
+        fs.copyFileSync(hooksPath, `${hooksPath}.bak-${Date.now()}`);
+      } catch {}
+      console.error(`  ⚠ Could not parse existing hooks.json (${err.message}); merging onto empty base after backup.`);
+      existing = { version: 1, hooks: {} };
+    }
+  }
+  if (!existing.hooks || typeof existing.hooks !== "object") existing.hooks = {};
+  if (!existing.version) existing.version = 1;
+
+  const isOurs = (entry) => {
+    const cmd = String((entry && entry.command) || "");
+    return cmd.includes("hooks/supercompress/") || cmd.includes("/supercompress/");
+  };
+
+  const ensureHook = (event, entry) => {
+    const list = Array.isArray(existing.hooks[event])
+      ? existing.hooks[event].filter((e) => !isOurs(e))
+      : [];
+    list.push(entry);
+    existing.hooks[event] = list;
+  };
+
+  ensureHook("sessionStart", { command: sessionCmd, timeout: 10 });
+  ensureHook("beforeSubmitPrompt", {
+    command: beforeCmd,
+    matcher: "UserPromptSubmit",
+    timeout: 20,
+  });
+  ensureHook("postToolUse", {
+    command: postCmd,
+    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*",
+    timeout: 20,
+  });
+
+  fs.writeFileSync(hooksPath, `${JSON.stringify(existing, null, 2)}\n`);
+  return { hooksPath, hooksDir };
+}
+
+/**
+ * Install Claude Code + Codex UserPromptSubmit hooks for every-message inject.
+ */
+function writeAgentPromptHooks() {
+  const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
+  fs.mkdirSync(hooksDir, { recursive: true });
+  const src = path.join(__dirname, "cursor-hooks", "user-prompt-submit.js");
+  const dest = path.join(hooksDir, "user-prompt-submit.js");
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, dest);
+    try {
+      fs.chmodSync(dest, 0o755);
+    } catch {}
+  }
+  const cmd = dest;
+  const installed = [];
+
+  // Claude Code ~/.claude/settings.json
+  const claudePath = path.join(HOME, ".claude", "settings.json");
+  try {
+    let data = {};
+    if (fs.existsSync(claudePath)) {
+      data = JSON.parse(fs.readFileSync(claudePath, "utf8"));
+    }
+    data.hooks = data.hooks || {};
+    const groups = Array.isArray(data.hooks.UserPromptSubmit)
+      ? data.hooks.UserPromptSubmit
+      : [];
+    const filtered = groups.filter((g) => {
+      const hooks = (g && g.hooks) || [];
+      return !hooks.some((h) => String(h.command || "").includes("supercompress"));
+    });
+    filtered.push({
+      hooks: [{ type: "command", command: cmd, timeout: 20 }],
+    });
+    data.hooks.UserPromptSubmit = filtered;
+    fs.mkdirSync(path.dirname(claudePath), { recursive: true });
+    fs.writeFileSync(claudePath, `${JSON.stringify(data, null, 2)}\n`);
+    installed.push("Claude Code");
+  } catch (err) {
+    console.error(`  ⚠ Claude Code hooks: ${err.message}`);
+  }
+
+  // Codex ~/.codex/hooks.json
+  const codexPath = path.join(HOME, ".codex", "hooks.json");
+  try {
+    let data = { hooks: {} };
+    if (fs.existsSync(codexPath)) {
+      data = JSON.parse(fs.readFileSync(codexPath, "utf8"));
+    }
+    data.hooks = data.hooks || {};
+    const groups = Array.isArray(data.hooks.UserPromptSubmit)
+      ? data.hooks.UserPromptSubmit
+      : [];
+    const filtered = groups.filter((g) => {
+      const hooks = (g && g.hooks) || [];
+      return !hooks.some((h) => String(h.command || "").includes("supercompress"));
+    });
+    filtered.push({
+      hooks: [
+        {
+          type: "command",
+          command: `SUPERCOMPRESS_AGENT_NAME=Codex ${cmd}`,
+          timeout: 20,
+        },
+      ],
+    });
+    data.hooks.UserPromptSubmit = filtered;
+    fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+    fs.writeFileSync(codexPath, `${JSON.stringify(data, null, 2)}\n`);
+    installed.push("Codex");
+  } catch (err) {
+    console.error(`  ⚠ Codex hooks: ${err.message}`);
+  }
+
+  return { cmd, installed };
+}
+
+module.exports = {
+  detectAll,
+  configureAll,
+  configureMcp,
+  removeMcp,
+  revertAll,
+  clearProxyOverrides,
+  AGENTS,
+  AGENT_CATALOG,
+  writeCursorRule,
+  writeCursorHooks,
+  writeAgentPromptHooks,
+};

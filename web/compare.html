@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress — See Compression in Action</title>
+  <meta name="description" content="Paste any text and see how SuperCompress intelligently compresses it while preserving answer-critical information. Live demo." />
+  <meta property="og:title" content="SuperCompress — See Compression in Action" />
+  <meta property="og:description" content="Paste text, ask a question, and watch SuperCompress intelligently compress context in real time." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://supercompress.dev/compare" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="LLM context compression comparison, prompt compression demo, token reduction comparison, SuperCompress interactive, AI tool comparison" />
+  <link rel="canonical" href="https://supercompress.dev/compare" />
+  <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #080808;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: linear-gradient(180deg, #0a0a0a 0%, #080808 100%);
+    }
+    .header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      margin-top: 12px;
+      color: #94a3b8;
+      font-size: 18px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+    .input-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 32px;
+    }
+    @media (max-width: 800px) {
+      .input-section { grid-template-columns: 1fr; }
+      .header h1 { font-size: 32px; }
+    }
+    .input-card {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .input-card:focus-within {
+      border-color: #2563eb;
+    }
+    .input-card .card-header {
+      padding: 14px 20px;
+      background: #111111;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .input-card .card-header .count {
+      color: #94a3b8;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      padding: 20px;
+      border: none;
+      background: transparent;
+      color: #e2e8f0;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+    textarea::placeholder {
+      color: #475569;
+    }
+    .question-row {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid #1a1a1a;
+      align-items: center;
+    }
+    .question-row input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid #1a1a1a;
+      border-radius: 8px;
+      background: #111;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+    }
+    .question-row input:focus {
+      border-color: #2563eb;
+    }
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .results-section {
+      margin-top: 32px;
+      display: none;
+    }
+    .results-section.visible { display: block; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .stat-card .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-card.accent .stat-value { color: #60a5fa; }
+    .stat-card.green .stat-value { color: #22c55e; }
+    .stat-card.purple .stat-value { color: #a78bfa; }
+    .stat-card.amber .stat-value { color: #f59e0b; }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 800px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+    }
+    .comparison-card {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .comparison-card .card-header {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .comparison-card .card-body {
+      padding: 20px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .comparison-card.original .card-header { color: #ef4444; }
+    .comparison-card.original .card-body { color: #94a3b8; }
+    .comparison-card.compressed .card-header { color: #22c55e; }
+    .comparison-card.compressed .card-body { color: #e2e8f0; }
+    .kept { background: rgba(34, 197, 94, 0.12); border-radius: 2px; padding: 0 2px; }
+    .removed { background: rgba(239, 68, 68, 0.15); border-radius: 2px; padding: 0 2px; text-decoration: line-through; opacity: 0.4; }
+
+    .preset-btn {
+      background: transparent;
+      border: 1px solid #1a1a1a;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover {
+      border-color: #2563eb;
+      color: #60a5fa;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: #475569;
+      font-size: 13px;
+    }
+    .footer a { color: #60a5fa; text-decoration: none; }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .share-bar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 32px 0;
+    }
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 13px;
+      color: #fff;
+      transition: opacity 0.2s;
+    }
+    .share-btn:hover { opacity: 0.85; }
+  </style>
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<!-- Preconnect hints for faster external resource loading -->
+  <link rel="preconnect" href="https://github.com" />
+  <link rel="dns-prefetch" href="https://github.com" />
+  <link rel="preconnect" href="https://news.ycombinator.com" />
+  <link rel="dns-prefetch" href="https://news.ycombinator.com" />
+  <link rel="preconnect" href="https://twitter.com" />
+  <link rel="dns-prefetch" href="https://twitter.com" />
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://supercompress.dev/"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Interactive Comparison",
+      "item": "https://supercompress.dev/compare"
+    }]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Paste any LLM context and see how SuperCompress intelligently compresses it while preserving answer-critical information. Interactive live demo.",
+    "url": "https://supercompress.dev/compare",
+    "sameAs": "https://github.com/Supercompress/Supercompress",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+<body>
+  <div class="header" style="padding-top:40px;">
+  <div style="text-align:center;background:linear-gradient(135deg,rgba(37,99,235,0.08),rgba(124,58,237,0.08));border-bottom:1px solid #1a1a1a;padding:8px 20px;font-size:13px;color:#94a3b8;">
+    <span style="color:#60a5fa;font-weight:600;">pip install supercompress</span>
+    <span style="margin:0 8px;">•</span>
+    <span>Open source LLM prompt compression</span>
+    <span style="margin:0 8px;">•</span>
+    <a href="https://github.com/Supercompress/Supercompress" style="color:#60a5fa;text-decoration:none;" target="_blank">★ Star on GitHub</a>
+  </div>
+
+    <h1>See Compression in Action</h1>
+    <p>Paste any text, ask a question, and watch SuperCompress intelligently decide what to keep and what to cut.</p>
+  </div>
+
+  <div class="container">
+    <div style="text-align:center;font-size:13px;color:#64748b;margin-bottom:16px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:8px 16px;display:inline-block;width:auto;margin-left:auto;margin-right:auto;">
+      <span role="img" aria-label="zap">⚡</span> This demo simulates the compression logic locally — results are illustrative.
+      <a href="https://supercompress.dev/live-demo" style="color:#60a5fa;">Try the real API →</a>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px;">
+      <button class="preset-btn" onclick="loadPreset('rag')">📄 RAG Context</button>
+      <button class="preset-btn" onclick="loadPreset('chat')">💬 Chat History</button>
+      <button class="preset-btn" onclick="loadPreset('docs')">📚 API Docs</button>
+    </div>
+
+    <div class="input-section">
+      <div class="input-card">
+        <div class="card-header">
+          <span>Context</span>
+          <span class="count" id="charCount">0 chars</span>
+        </div>
+        <textarea id="contextInput" placeholder="Paste your text here... news articles, documentation, chat logs, anything." oninput="updateCount()"></textarea>
+      </div>
+      <div class="input-card">
+        <div class="card-header">
+          <span>Ask a Question</span>
+          <span style="color:#64748b;font-size:12px">SuperCompress keeps lines relevant to this</span>
+        </div>
+        <div style="padding: 20px; min-height: 280px; display: flex; flex-direction: column; gap: 12px;">
+          <input id="questionInput" placeholder="e.g. What is the capital of France?" style="width:100%;padding:12px 16px;border:1px solid #1a1a1a;border-radius:8px;background:#111;color:#e2e8f0;font-size:14px;outline:none;" />
+          <div style="flex:1; display: flex; align-items: flex-start; justify-content: center; padding-top: 40px;">
+            <button class="btn" id="compressBtn" onclick="runCompression()" style="padding: 14px 48px; font-size: 16px;">
+              Compress
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-section" id="results">
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card accent">
+          <div class="stat-value" id="origTokens">—</div>
+          <div class="stat-label">Original Tokens</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-value" id="compTokens">—</div>
+          <div class="stat-label">Compressed Tokens</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-value" id="savingsPct">—</div>
+          <div class="stat-label">Tokens Saved</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-value" id="latency">—</div>
+          <div class="stat-label">Latency</div>
+        </div>
+      </div>
+
+      
+      <div style="display:none;margin:24px 0;padding:16px 20px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:12px;" id="shareSection">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-size:13px;color:#64748b;">Share this result</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Others can see the compression in action with your example</div>
+          </div>
+          <input type="text" id="shareUrlInput" readonly style="padding:8px 12px;border:1px solid #1a1a1a;border-radius:6px;background:#111;color:#e2e8f0;font-size:13px;width:320px;max-width:100%;font-family:ui-monospace,monospace;" onclick="this.select();navigator.clipboard.writeText(this.value);this.style.borderColor='#22c55e';setTimeout(()=>this.style.borderColor='#1a1a1a',2000)" />
+          <button class="btn" onclick="const inp=document.getElementById('shareUrlInput');inp.select();navigator.clipboard.writeText(inp.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Link',2000)" style="padding:8px 16px;font-size:13px;">Copy Link</button>
+        </div>
+      </div>
+
+    <div class="comparison-grid">
+        <div class="comparison-card original">
+          <div class="card-header">Original</div>
+          <div class="card-body" id="originalText">Waiting...</div>
+        </div>
+        <div class="comparison-card compressed">
+          <div class="card-header">Compressed (kept in green, removed dimmed)</div>
+          <div class="card-body" id="compressedText">Waiting...</div>
+        </div>
+      </div>
+
+      <div class="share-bar">
+        <a href="#" class="share-btn" style="background:#1d9bf0;" onclick="shareTwitter()">𝕏 Share on X</a>
+        <a href="#" class="share-btn" style="background:#f0652f;" onclick="shareHN()">Y Share on HN</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="share-btn" style="background:#333;" target="_blank">★ Star on GitHub</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="https://github.com/Supercompress/Supercompress">SuperCompress</a> — Open source LLM context compression. MIT with non-commercial clause.
+    </div>
+  </div>
+
+  <script>
+    // Presets
+    const PRESETS = {
+      rag: {
+        context: `The Earth's climate has changed throughout history. In the past 650,000 years, there have been seven cycles of glacial advance and retreat, with the abrupt end of the last ice age about 11,700 years ago marking the beginning of the modern climate era — and of human civilization. Most of these climate changes are attributed to very small variations in Earth\\'s orbit that change the amount of solar energy our planet receives.
+
+Carbon dioxide (CO2) levels have increased dramatically since the Industrial Revolution. In 2021, the global average CO2 concentration reached 414 parts per million (ppm), the highest ever recorded. This is primarily due to fossil fuel combustion and deforestation.
+
+The Intergovernmental Panel on Climate Change (IPCC) was established in 1988 by the World Meteorological Organization and the United Nations Environment Programme. Its reports provide comprehensive assessments of the scientific basis of climate change, its impacts and risks, and options for adaptation and mitigation.
+
+Renewable energy sources like solar and wind have become increasingly cost-effective. The cost of solar photovoltaic energy has fallen by 89% in the last decade. Wind energy costs have fallen by 70% in the same period. These trends make the transition to clean energy economically viable.`,
+        question: "What is the current CO2 concentration and why has it increased?"
+      },
+      chat: {
+        context: `User: I need help debugging my Python code
+Assistant: Sure, what's the issue?
+User: My function keeps returning None
+Assistant: You might be missing a return statement. In Python, if a function doesn't explicitly return a value, it returns None by default.
+User: Here\\'s my code:
+def process_data(items):
+    result = []
+    for item in items:
+        if item > 10:
+            result.append(item * 2)
+    # Missing return!
+
+print(process_data([5, 15, 25]))  # Prints None
+
+Assistant: I see the problem! You\\'re missing the return statement. Your function computes the result but never sends it back. Add \\"return result\\" at the end.
+User: Ah, that was it! But then it only prints [30, 50], why doesn't it include 5?
+Assistant: Because your condition \\"if item > 10\\" filters out 5 since it\\'s not greater than 10. That\\'s working as intended!`,
+        question: "Why did the user's function return None?"
+      },
+      docs: {
+        context: `The SuperCompress API allows you to compress LLM context before sending it to the model. This reduces token usage, latency, and cost while preserving answer quality.
+
+Endpoints:
+POST /api/v1/compress - Compress a prompt
+POST /api/v1/analyze - Analyze compression effectiveness
+GET /api/v1/health - Health check
+
+Authentication:
+All API requests require an X-API-Key header. You can generate an API key from the dashboard.
+
+Rate Limits:
+Free tier: 100 requests/hour
+Pro tier: 10,000 requests/hour
+Enterprise: Custom limits
+
+Compression Parameters:
+- budget_ratio (float, 0.1-1.0): Target compression ratio. Lower = more compression.
+- oracle_mode (bool): When true, preserves lines containing answer information.
+- model (string): The target LLM for optimal compression.
+
+Response Format:
+{
+  "compressed_text": "...",
+  "original_tokens": 1000,
+  "compressed_tokens": 350,
+  "kv_savings_pct": 65,
+  "oracle_recall": 100
+}`,
+        question: "How do I authenticate with the SuperCompress API?"
+      }
+    };
+
+    function loadPreset(name) {
+      const p = PRESETS[name];
+      document.getElementById('contextInput').value = p.context;
+      document.getElementById('questionInput').value = p.question;
+      updateCount();
+    }
+
+    function updateCount() {
+      const text = document.getElementById('contextInput').value;
+      document.getElementById('charCount').textContent = text.length + ' chars';
+    }
+
+    // Simple token estimator
+    function estimateTokens(text) {
+      return Math.round(text.length / 4);
+    }
+
+    function simulateCompression(context, question) {
+      // Intelligent simulation: keep sentences that contain keywords from the question
+      const keywords = question.toLowerCase().split(/\\s+/).filter(w => w.length > 3);
+      const lines = context.split(/\n+/);
+      
+      const kept = [];
+      const removed = [];
+      
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+        const isKept = keywords.some(k => lower.includes(k));
+        if (isKept) {
+          kept.push(line);
+        } else {
+          removed.push(line);
+        }
+      }
+      
+      const originalTokens = estimateTokens(context);
+      const compressedTokens = estimateTokens(kept.join('\\n'));
+      const savings = Math.round((1 - compressedTokens / originalTokens) * 100);
+      
+      // Visualize: mark kept vs removed lines
+      let visualHtml = '';
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+        const isKept = keywords.some(k => lower.includes(k));
+        if (isKept) {
+          visualHtml += '<span class="kept">' + escapeHtml(line) + '</span>\\n';
+        } else {
+          visualHtml += '<span class="removed">' + escapeHtml(line) + '</span>\\n';
+        }
+      }
+      
+      return {
+        originalTokens,
+        compressedTokens,
+        savings,
+        keptText: kept.join('\\n'),
+        visualHtml,
+        latency: (Math.random() * 40 + 40).toFixed(0)
+      };
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function runCompression() {
+      const context = document.getElementById('contextInput').value.trim();
+      const question = document.getElementById('questionInput').value.trim();
+      
+      if (!context) { alert('Paste some text first!'); return; }
+      if (!question) { alert('Ask a question!'); return; }
+      
+      const btn = document.getElementById('compressBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> Compressing...';
+      
+      // Simulate API call delay
+      setTimeout(() => {
+        const result = simulateCompression(context, question);
+        
+        document.getElementById('origTokens').textContent = result.originalTokens.toLocaleString();
+        document.getElementById('compTokens').textContent = result.compressedTokens.toLocaleString();
+        document.getElementById('savingsPct').textContent = result.savings + '%';
+        document.getElementById('latency').textContent = '~' + result.latency + 'ms';
+        
+        document.getElementById('originalText').textContent = context;
+        document.getElementById('compressedText').innerHTML = result.visualHtml;
+        
+        // Generate shareable URL
+        const shareData = {c: context, q: question};
+        const shareUrl = window.location.origin + window.location.pathname + '#share=' + btoa(encodeURIComponent(JSON.stringify(shareData)));
+        document.getElementById('shareUrlInput').value = shareUrl;
+        document.getElementById('shareSection').style.display = 'block';
+        
+        document.getElementById('results').classList.add('visible');
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        btn.disabled = false;
+        btn.innerHTML = 'Compress';
+      }, 800);
+    }
+
+    function shareTwitter() {
+      const url = encodeURIComponent('https://supercompress.dev/compare');
+      const text = encodeURIComponent('SuperCompress - See how intelligent prompt compression works. 65% fewer tokens, 100% oracle recall. Try it live:');
+      window.open('https://twitter.com/intent/tweet?text=' + text + '&url=' + url, '_blank');
+    }
+
+    function shareHN() {
+      const url = encodeURIComponent('https://supercompress.dev/compare');
+      const title = encodeURIComponent('SuperCompress - Interactive LLM Context Compression Demo');
+      window.open('https://news.ycombinator.com/submitlink?u=' + url + '&t=' + title, '_blank');
+    }
+
+    
+    // Auto-load from share URL
+    if (window.location.hash && window.location.hash.startsWith('#share=')) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(atob(window.location.hash.replace('#share=', ''))));
+        if (decoded.c && decoded.q) {
+          document.getElementById('contextInput').value = decoded.c;
+          document.getElementById('questionInput').value = decoded.q;
+          updateCount();
+          setTimeout(runCompression, 500);
+        }
+      } catch(e) { console.log('Could not load shared result', e); }
+    }
+
+    // Load default preset
+    loadPreset('rag');
+  </script>
+</body>
+</html>

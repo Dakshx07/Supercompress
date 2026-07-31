@@ -1,0 +1,5 @@
+# SuperCompress API server
+# This repo is the website + API. For the Python library: pip install supercompress
+# or see github.com/Supercompress/Supercompress-nn
+httpx>=0.27.0
+firebase-admin>=6.0.0

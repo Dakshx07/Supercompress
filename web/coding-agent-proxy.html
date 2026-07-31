@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>SuperCompress — Coding Agent Plugin</title>
+  <meta name="description" content="SuperCompress coding agent plugin. Install once to compress context for Cursor, Windsurf, Continue, Cline, Claude Code, Codex, and Aider." />
+  <meta property="og:title" content="SuperCompress Coding Agent Plugin" />
+  <meta property="og:description" content="Auto-configure every coding agent to compress context before LLM calls. ~65% token savings." />
+  <meta property="og:url" content="https://supercompress.dev/docs/coding-agents" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SuperCompress Coding Agent Plugin" />
+  <meta http-equiv="refresh" content="0;url=/docs/coding-agents" />
+<script>location.replace('/docs/coding-agents')</script>
+  <link rel="canonical" href="https://supercompress.dev/docs/coding-agents" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/style.css?v=110" />
+  <style>
+    /* ── Blog article styles ── */
+    .article-page {
+      background: var(--bg);
+      min-height: 100vh;
+    }
+    .article-hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 80px var(--frame) 0;
+    }
+    .article-hero-tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .article-hero h1 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(36px, 6vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      max-width: 900px;
+      margin-bottom: 20px;
+    }
+    .article-hero h1 em {
+      font-style: italic;
+      color: var(--brand);
+    }
+    .article-lead {
+      max-width: 640px;
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--text-body);
+      margin-bottom: 32px;
+    }
+    .article-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      padding-bottom: 32px;
+      border-bottom: 0.5px solid var(--card-border);
+      margin-bottom: 0;
+    }
+    .article-body {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px var(--frame) 96px;
+    }
+    .article-body h2 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(24px, 3vw, 30px);
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin: 48px 0 16px;
+      padding-top: 16px;
+    }
+    .article-body h2:first-child { margin-top: 0; }
+    .article-body h3 {
+      font-family: var(--sans);
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin: 28px 0 10px;
+    }
+    .article-body p {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text-body);
+      margin-bottom: 16px;
+    }
+    .article-body a {
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .article-body a:hover { color: #1d4ed8; }
+    .article-body ul, .article-body ol {
+      margin: 0 0 16px 24px;
+    }
+    .article-body li {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-body);
+      margin-bottom: 6px;
+    }
+    .article-body li strong { color: var(--text-primary); }
+    .article-body code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: #f0f0ee;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text);
+    }
+    .article-body pre {
+      background: #f6f6f4;
+      border: 0.5px solid var(--card-border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+    .article-body pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+    .article-body blockquote {
+      border-left: 3px solid var(--brand);
+      padding: 12px 20px;
+      margin: 20px 0;
+      background: #fafaf8;
+      border-radius: 0 6px 6px 0;
+    }
+    .article-body blockquote p {
+      font-style: italic;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .install-block {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin: 24px 0;
+    }
+    .install-block code {
+      background: rgba(255,255,255,0.08) !important;
+      color: #93c5fd !important;
+    }
+    .install-block .cmd {
+      display: block;
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: #f8fafc;
+      padding: 8px 0;
+    }
+    .install-block .cmd::before {
+      content: "$ ";
+      color: #64748b;
+    }
+    .install-block .comment {
+      color: #64748b;
+      font-size: 0.82rem;
+      font-style: italic;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .comparison-table th {
+      text-align: left;
+      padding: 12px 14px;
+      background: #f6f6f4;
+      color: var(--text-primary);
+      font-weight: 500;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .comparison-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--card-border);
+      color: var(--text-body);
+    }
+    .comparison-table tr:hover td { background: #fafaf8; }
+    .comparison-table .good { color: #059669; font-weight: 500; }
+    .article-cta {
+      max-width: 720px;
+      margin: 48px auto 0;
+      padding: 32px var(--frame);
+      text-align: center;
+    }
+    .article-cta-inner {
+      background: #fafaf8;
+      border: 0.5px solid var(--card-border);
+      border-radius: 12px;
+      padding: 40px 32px;
+    }
+    .article-cta-inner h2 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(24px, 3vw, 30px);
+      margin-bottom: 12px;
+    }
+    .article-cta-inner p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+    .article-cta-inner .btn-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .article-cta-inner .btn-brand:hover { background: #1d4ed8; }
+    .article-cta-inner .btn-link {
+      display: inline-block;
+      margin-left: 16px;
+      color: var(--text-muted);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    @media (max-width: 640px) {
+      .agent-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .agent-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .agent-card .check { color: #059669; font-size: 18px; }
+  </style>
+</head>
+<body class="article-page">
+  <div class="df-page-bg-top" aria-hidden="true"></div>
+  <div class="df-page-bg-bottom" aria-hidden="true"></div>
+
+  <div class="df-page">
+    <!-- Header -->
+    <header class="df-header">
+      <div class="df-header-blur" aria-hidden="true"></div>
+      <div class="df-header-inner">
+        <a href="/" class="df-logo-desktop">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word">Super<em>Compress</em></span>
+        </a>
+        <div class="df-header-end">
+          <nav class="df-nav-pill" aria-label="Main">
+            <a href="/">Home</a>
+            <a href="/token-compression">Guide</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+            <a href="/playground">Playground</a>
+          </nav>
+        </div>
+        <div class="df-mobile-bar">
+          <a href="/" class="df-logo-mobile">
+            <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
+            <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+          </a>
+          <button type="button" class="df-menu-btn" id="df-menu-btn" aria-label="Toggle menu" aria-expanded="false">
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <div class="df-mobile-nav hidden" id="df-mobile-nav">
+        <a href="/">Home</a>
+        <a href="/token-compression">Guide</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+        <a href="/playground">Playground</a>
+      </div>
+    </header>
+    <div class="df-header-spacer" aria-hidden="true"></div>
+
+    <div class="df-main-wrap">
+      <main class="df-main article-page">
+
+        <!-- Hero -->
+        <section class="article-hero">
+          <span class="article-hero-tag">Product Launch</span>
+          <h1>SuperCompress Proxy — One Command, <em>Every</em> Coding Agent, ~65% Fewer Tokens</h1>
+          <p class="article-lead">Install once, run setup once. SuperCompress detects coding agents and installs an MCP plugin that compresses large context before inference — Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more. Keep your normal login. Optional localhost API proxy is opt-in.</p>
+          <div class="article-meta">
+            <span>Published July 13, 2026</span>
+            <span>·</span>
+            <span>5 min read</span>
+            <span>·</span>
+            <span>Product</span>
+          </div>
+        </section>
+
+        <!-- Body -->
+        <div class="article-body">
+
+          <p>If you use a coding agent like Cursor or Windsurf every day, you've probably noticed two things:</p>
+
+          <ol>
+            <li>Your token usage is <strong>massive</strong> — every file context, conversation history, and tool output gets sent to the LLM as prompt tokens</li>
+            <li>Your bill grows with it — at GPT-4 Turbo pricing ($10/1M input tokens), a heavy Cursor user spends $50–200+/month on prompt tokens alone</li>
+          </ol>
+
+          <p>We built SuperCompress to solve this: it compresses prompt context before it reaches the LLM, cutting token costs by ~65% with no quality loss. The problem was always <em>integration</em> — adding middleware, configuring agents, setting up proxies. Too many steps.</p>
+
+          <p><strong>Not anymore.</strong></p>
+
+          <h2>One Command</h2>
+
+          <div class="install-block">
+            <span class="comment"># Install. Then setup. MCP-first — subscription / login safe.</span>
+            <span class="cmd">npm install -g supercompress-proxy</span>
+            <span class="cmd">supercompress setup</span>
+          </div>
+
+          <p>That's it. npm install alone does not rewrite agent configs. <code>setup</code> links your SuperCompress account, then:</p>
+
+          <ol>
+            <li>Detects coding agents installed on your machine</li>
+            <li>Installs the <code>compress_context</code> MCP plugin for supported agents</li>
+            <li>Optionally opts into a localhost OpenAI/Anthropic base-URL proxy if you pass <code>--proxy</code></li>
+          </ol>
+
+          <p>From this moment forward, agents can call <code>compress_context</code> on large dumps before they burn tokens. Provider-managed subscription sessions stay on MCP — no API-key mode required.</p>
+
+          <h2>Works With Compatible Agents</h2>
+
+          <div class="agent-grid">
+            <div class="agent-card"><span class="check">✓</span> Cursor</div>
+            <div class="agent-card"><span class="check">✓</span> Claude Code</div>
+            <div class="agent-card"><span class="check">✓</span> Codex</div>
+            <div class="agent-card"><span class="check">✓</span> FreeBuff</div>
+            <div class="agent-card"><span class="check">✓</span> OpenCode</div>
+            <div class="agent-card"><span class="check">✓</span> + 44 more catalogued</div>
+          </div>
+
+          <p>When a new agent exposes a configurable OpenAI- or Anthropic-compatible endpoint, run <code>supercompress setup</code> again to detect it and follow its manual configuration steps.</p>
+
+          <h2>How It Works</h2>
+
+          <p>The proxy runs on your machine at <code>localhost:8080</code>. Your coding agents are configured to send their LLM requests there instead of directly to OpenAI/Anthropic. The proxy:</p>
+
+          <ol>
+            <li><strong>Receives</strong> the messages from your coding agent</li>
+            <li><strong>Compresses</strong> the context using the SuperCompress API (billable through your plan)</li>
+            <li><strong>Forwards</strong> the compressed messages to the real provider (OpenAI/Anthropic)</li>
+            <li><strong>Returns</strong> the response back to your coding agent</li>
+          </ol>
+
+          <p>Your provider API key stays on your machine. Only the context text is sent to the SuperCompress API for compression. The proxy adds ~60ms of overhead — invisible compared to a 5–30 second LLM call.</p>
+
+          <h2>The Cost Math</h2>
+
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Without Proxy</th>
+                <th>With Proxy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tokens per request</td>
+                <td>~4,000</td>
+                <td class="good">~1,400</td>
+              </tr>
+              <tr>
+                <td>Cost per 1K requests (GPT-4 Turbo)</td>
+                <td>$40</td>
+                <td class="good">~$14</td>
+              </tr>
+              <tr>
+                <td>Monthly cost (heavy Cursor user)</td>
+                <td>$50–200</td>
+                <td class="good">~$18–70</td>
+              </tr>
+              <tr>
+                <td>Context window fit</td>
+                <td>100K window fills fast</td>
+                <td class="good">~3x more effective space</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>What About SuperCompress Pricing?</h2>
+
+          <p>Every compression call goes through the SuperCompress API. Free accounts get 5M tokens/month; enable pay-as-you-go for more:</p>
+
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Price</th>
+                <th>Tokens</th>
+                <th>With a Coding Agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Free</td>
+                <td>$0</td>
+                <td>5M / month included</td>
+                <td>Light daily use for most solo agents</td>
+              </tr>
+              <tr>
+                <td>Pay as you go</td>
+                <td>$1 / 1M tokens</td>
+                <td>Unlimited after free</td>
+                <td>Heavy Cursor / Claude Code days</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p><strong>The math works in your favor.</strong> If you're spending $50–200/month on Cursor tokens, saving 65% means you save $33–130/month. Over the free 5M, SuperCompress overage is $1 per million tokens compressed — a small fraction of what you save on the model bill.</p>
+
+          <h2>For Teams</h2>
+
+          <p>Run the proxy as a shared Docker container for your whole team:</p>
+
+          <pre><code>docker run -p 8080:8080 \
+  -e SUPERCOMPRESS_API_KEY=sc_live_team_key \
+  -e PROXY_PORT=8080 \
+  supercompress/proxy</code></pre>
+
+          <p>Every developer on the team configures their agent to point at the shared proxy. Usage is centralized under one API key with pay-as-you-go enabled. The dashboard shows per-developer usage.</p>
+
+          <h2>What Developers Are Saying</h2>
+
+          <blockquote>
+            <p>"I was spending $180/month on Cursor. After installing the SuperCompress proxy, it dropped to ~$60/month. The setup took 30 seconds and I haven't touched it since."</p>
+          </blockquote>
+
+          <blockquote>
+            <p>"The auto-detection found all three of my agents (Cursor, Continue, Claude Code) and configured them all at once. This is how every developer tool should work."</p>
+          </blockquote>
+
+          <h2>Get Started</h2>
+
+          <div class="install-block">
+            <span class="comment"># Install. Then setup.</span>
+            <span class="cmd">npm install -g supercompress-proxy</span>
+            <span class="cmd">supercompress setup</span>
+          </div>
+
+          <p>You'll need a SuperCompress account. If you don't have one, <code>setup</code> opens <a href="/dashboard">supercompress.dev/dashboard</a> to sign in and link this install.</p>
+
+          <p>For complete documentation, see the <a href="/docs/coding-agents">coding agents guide</a>. Source: <a href="https://github.com/Supercompress/Supercompress">GitHub</a>.</p>
+
+        </div>
+
+        <!-- CTA -->
+        <section class="article-cta">
+          <div class="article-cta-inner">
+            <h2>Ready to cut your coding agent costs?</h2>
+            <p>One command. Every agent. ~65% fewer tokens. Forever.</p>
+            <a href="/dashboard?signup=1&amp;utm_source=coding_agent_page&amp;utm_medium=cta&amp;utm_campaign=activation" class="btn-brand" data-growth-event="plugin_api_signup">Get your API key →</a>
+            <a href="/token-compression" class="btn-link">How compression works</a>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Footer -->
+      <footer class="df-footer blog-footer">
+        <div class="df-footer-inner">
+          <div class="df-footer-grid">
+            <div class="df-footer-brand">
+              <p class="df-footer-heading">SuperCompress</p>
+              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+            </div>
+            <div class="df-footer-links">
+              <div>
+                <p class="df-footer-heading">Navigation</p>
+                <ul>
+                  <li><a href="/">Home</a></li>
+                  <li><a href="/token-compression">Guide</a></li>
+                  <li><a href="/dashboard">Dashboard</a></li>
+                  <li><a href="/playground">Playground</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Features</p>
+                <ul>
+                  <li><a href="/precision-mode-compression">Precision Mode</a></li>
+                  <li><a href="/domain-preprocessors">Domain Preprocessors</a></li>
+                  <li><a href="/reversible-compression-ccr">CCR Compression</a></li>
+                  <li><a href="/cache-aligner-prefix-stabilization">CacheAligner</a></li>
+                  <li><a href="/mcp-integration">MCP Server</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Resources</p>
+                <ul>
+                  <li><a href="/docs/" target="_blank" rel="noopener">Documentation</a></li>
+                  <li><a href="/blog">Blog</a></li>
+                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
+                  <li><a href="https://pypi.org/project/supercompress/">PyPI</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Mobile menu toggle ──
+    const menuBtn = document.getElementById('df-menu-btn');
+    const mobileNav = document.getElementById('df-mobile-nav');
+    if (menuBtn && mobileNav) {
+      menuBtn.addEventListener('click', function() {
+        const isOpen = mobileNav.classList.toggle('hidden');
+        menuBtn.setAttribute('aria-expanded', !isOpen);
+      });
+    }
+  </script>
+  <script src="/assets/js/supercompress.js?v=12"></script>
+</body>
+</html>

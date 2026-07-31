@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CacheAligner: KV Cache Prefix Stabilization for LLM Providers — SuperCompress</title>
+  <meta name="description" content="CacheAligner wraps compressed LLM context in a deterministic, byte-identical XML preamble so OpenAI, Anthropic, and vLLM can reuse KV cache across requests. Reduce TTFT and cost per call." />
+  <meta property="og:title" content="CacheAligner: KV Cache Prefix Stabilization for LLM Providers" />
+  <meta property="og:description" content="CacheAligner wraps compressed LLM context in a deterministic XML preamble so providers can reuse KV cache across requests. ~60 stable prefix tokens, zero configuration." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://supercompress.dev/cache-aligner-prefix-stabilization" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="CacheAligner: KV Cache Prefix Stabilization for LLM Providers" />
+  <meta name="twitter:description" content="CacheAligner wraps compressed context in a deterministic XML preamble so OpenAI, Anthropic, and vLLM can reuse KV cache across requests." />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="KV cache, prefix caching, prompt caching, LLM caching, OpenAI prompt caching, Anthropic prompt caching, vLLM APC, automatic prefix caching, cache hit rate, TTFT reduction, SuperCompress CacheAligner" />
+  <link rel="canonical" href="https://supercompress.dev/cache-aligner-prefix-stabilization" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/supercompress.css?v=106" />
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; background: #fbfbf8; color: #141412; line-height: 1.7; }
+    .post-header { max-width: 760px; margin: 0 auto; padding: 48px 24px 24px; }
+    .post-header h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 12px 0; }
+    .post-header .meta { color: #6b7280; font-size: 0.875rem; }
+    .post-content { max-width: 760px; margin: 0 auto; padding: 0 24px 64px; }
+    .post-content h2 { font-size: 1.4rem; margin: 40px 0 12px; }
+    .post-content h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+    .post-content p { margin: 16px 0; }
+    .post-content pre { background: #f4f4f0; border: 1px solid #e5e5e0; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+    .post-content code { background: #f4f4f0; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+    .post-content pre code { background: none; padding: 0; }
+    .post-content ul, .post-content ol { margin: 12px 0; padding-left: 24px; }
+    .post-content li { margin: 6px 0; }
+    .post-content blockquote { border-left: 3px solid #1d4ed8; margin: 20px 0; padding: 12px 20px; background: #f0f4ff; border-radius: 0 8px 8px 0; }
+    .sc-tag { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; background: #e5e5e0; margin-right: 6px; }
+    .sc-tag--new { background: #dbeafe; color: #1d4ed8; }
+    .nav-bar { display: flex; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #e5e5e0; align-items: center; }
+    .nav-bar a { color: #6b7280; text-decoration: none; font-size: 0.875rem; }
+    .nav-bar a:hover { color: #1d4ed8; }
+    .nav-bar .brand { font-weight: 600; color: #141412; margin-right: auto; }
+    .nav-bar .brand em { font-style: normal; color: #1d4ed8; }
+    @media (max-width: 600px) { .post-header h1 { font-size: 1.5rem; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "CacheAligner: KV Cache Prefix Stabilization for LLM Providers",
+    "description": "CacheAligner wraps compressed LLM context in a deterministic XML preamble so OpenAI, Anthropic, and vLLM can reuse KV cache across requests. Reduce TTFT and cost per call.",
+    "author": {"@type": "Organization", "name": "SuperCompress"},
+    "datePublished": "2026-07-08",
+    "publisher": {"@type": "Organization", "name": "SuperCompress"},
+    "mainEntityOfPage": {"@type": "WebPage", "@id": "https://supercompress.dev/cache-aligner-prefix-stabilization"}
+  }
+  </script>
+</head>
+<body>
+  <nav class="nav-bar">
+    <a href="/" class="brand">Super<em>Compress</em></a>
+    <a href="/blog">Blog</a>
+    <a href="/playground">Playground</a>
+    <a href="https://github.com/Supercompress/Supercompress">GitHub</a>
+  </nav>
+
+  <header class="post-header">
+    <span class="sc-tag sc-tag--new">New</span>
+    <span class="sc-tag">Feature</span>
+    <h1>CacheAligner: KV Cache Prefix Stabilization for LLM Providers</h1>
+    <p class="meta">July 8, 2026 · 5 min read</p>
+  </header>
+
+  <main class="post-content">
+    <p>Every call to an LLM provider (OpenAI, Anthropic, vLLM) reprocesses the prompt prefix — the system message, instructions, and context header — to compute its KV (key-value) cache. If the same prefix appears in multiple requests, the provider can reuse the cached KV state instead of recomputing it. This is called <strong>prefix caching</strong> or <strong>KV cache reuse</strong>.</p>
+
+    <p>The catch: the prefix must be <em>byte-identical</em> across requests. Any variation — a different timestamp, a reordered section, even an extra space — invalidates the cache. CacheAligner solves this for compressed context by wrapping every compressed output in a deterministic, byte-identical XML preamble.</p>
+
+    <h2>The Problem: Compressed Output Is Not Cache-Friendly</h2>
+
+    <p>When you compress context with SuperCompress, the output varies per request — different inputs produce different kept lines. This is the whole point of query-aware compression. But it means the upstream provider can't cache the KV state for the compressed content because every request looks different.</p>
+
+    <p>Even with a shared system prompt and fixed instructions, the compressed context block changes on every call, so the KV cache hit only covers the system prompt — typically a few hundred tokens. The bulk of the prompt (the compressed context) is never cached.</p>
+
+    <h2>How CacheAligner Works</h2>
+
+    <p>CacheAligner wraps the compressed text in a stable <code>&lt;supercompress&gt;</code> XML envelope:</p>
+
+    <pre>&lt;supercompress version="1" type="compressed_context"&gt;
+The following text has been optimized by SuperCompress. It preserves
+the information most relevant to answering the user's question while
+removing low-value tokens. Use this context to answer the user.
+
+--- compressed context ---
+
+[compressed text goes here — this is the only part that varies]
+
+--- end compressed context ---
+&lt;/supercompress&gt;
+
+Answer the question: ${query}</pre>
+
+    <p>The preamble (<code>&lt;supercompress&gt;</code> through <code>--- compressed context ---</code>) is <strong>~250 characters (~60 tokens)</strong> of byte-identical, cacheable prefix. Every request starts with the exact same tokens. Only the variable compressed content and query change.</p>
+
+    <h3>How providers use the cached prefix</h3>
+
+    <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+      <tr style="border-bottom: 1px solid #e5e5e0;">
+        <th style="text-align: left; padding: 8px 12px;">Provider</th>
+        <th style="text-align: left; padding: 8px 12px;">Caching mechanism</th>
+        <th style="text-align: left; padding: 8px 12px;">Impact</th>
+      </tr>
+      <tr style="border-bottom: 1px solid #e5e5e0;">
+        <td style="padding: 8px 12px;">OpenAI</td>
+        <td style="padding: 8px 12px;">Automatic prefix caching (≥1,024 tokens)</td>
+        <td style="padding: 8px 12px;">Cache hit + stable preamble contribute to threshold</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #e5e5e0;">
+        <td style="padding: 8px 12px;">Anthropic</td>
+        <td style="padding: 8px 12px;">Explicit <code>cache_control</code> markers</td>
+        <td style="padding: 8px 12px;">Combine with system prompt for maximum reuse</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px;">vLLM</td>
+        <td style="padding: 8px 12px;">Automatic Prefix Caching (APC)</td>
+        <td style="padding: 8px 12px;">Self-hosted deployments benefit from exact prefix match</td>
+      </tr>
+    </table>
+
+    <h2>Using CacheAligner in the API</h2>
+
+    <p>CacheAligner is opt-in via the <code>cache_prefix</code> parameter:</p>
+
+    <pre>curl -X POST https://supercompress.dev/api/v1/compress \
+  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": "long text to compress...",
+    "query": "What matters?",
+    "cache_prefix": true
+  }'</pre>
+
+    <p>The response includes <code>cache_prefix_applied: true</code> and the <code>compressed_text</code> is wrapped in the deterministic preamble.</p>
+
+    <h3>Response</h3>
+
+    <pre>{
+  "compressed_text": "&lt;supercompress version=\"1\"...&gt;\n...compressed output...\nAnswer the question: What matters?",
+  "cache_prefix_applied": true,
+  "original_tokens": 2048,
+  "kept_tokens": 320,
+  "kv_savings_pct": 84.4,
+  ...
+}</pre>
+
+    <h2>CacheAligner + System Prompts</h2>
+
+    <p>For maximum cache hit rates, combine CacheAligner with a stable system prompt:</p>
+
+    <pre>System: You are a helpful assistant specialized in analyzing technical context.
+
+CacheAligner-wrapped compressed context
+
+Question: What is the root cause?</pre>
+
+    <p>The system prompt + CacheAligner preamble form a longer stable prefix. With OpenAI's 1,024-token minimum for automatic caching, a 500-token system prompt + 60-token CacheAligner preamble = 560 stable tokens. Add 464+ tokens of compressed content that happens to be identical across similar queries (e.g., repeated headers or shared boilerplate), and the entire prefix is cached.</p>
+
+    <h2>Browser-Side CacheAligner</h2>
+
+    <p>CacheAligner is also available in the browser engine:</p>
+
+    <pre>const E = window.SuperCompressEngine;
+const result = E.compressAdaptive(context, query, model);
+const { wrapped, preambleTokens } = E.cacheWrap(result.compressed_text, query);
+
+console.log(preambleTokens);  // ~60 tokens of cacheable prefix
+console.log(wrapped);         // Fully wrapped output, ready to send to any LLM</pre>
+
+    <h2>Provider-Specific Best Practices</h2>
+
+    <h3>OpenAI</h3>
+    <p>OpenAI's automatic prefix caching caches any prefix ≥1,024 tokens. To maximize hits: place a long, stable system prompt before the CacheAligner wrapper. Use the <code>prompt_cache_key</code> parameter to route similar requests to the same cache pool.</p>
+
+    <h3>Anthropic (Claude)</h3>
+    <p>Anthropic requires explicit <code>cache_control</code> markers on content blocks. Place your system message and the CacheAligner preamble in a content block with <code>"cache_control": {"type": "ephemeral"}</code>. This ensures the cached block survives across requests within the 5-minute cache window.</p>
+
+    <h3>vLLM (Self-Hosted)</h3>
+    <p>vLLM's Automatic Prefix Caching (APC) caches KV blocks at the PagedAttention block level. CacheAligner's byte-identical preamble creates exact block matches, so vLLM can reuse cached blocks without any special configuration. Enable APC with <code>--enable-prefix-caching</code> when starting the vLLM server.</p>
+
+    <h2>Why "CacheAligner"?</h2>
+
+    <p>The name comes from the core insight: provider-side KV cache alignment depends on the <em>exact byte sequence</em> of the prompt prefix. CacheAligner aligns the compressed output to a stable template so the provider's caching infrastructure can recognize and reuse it — no guessing, no heuristics, just a deterministic wrapper that every provider treats the same way.</p>
+
+    <h2>Combined with CCR</h2>
+
+    <p>CacheAligner works alongside <a href="/reversible-compression-ccr">CCR (Cache, Compress, Retrieve)</a>. Enable both for reversible compression with provider-side caching:</p>
+
+    <pre>curl -X POST https://supercompress.dev/api/v1/compress \
+  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": "long text...",
+    "query": "What matters?",
+    "ccr": true,
+    "cache_prefix": true
+  }'</pre>
+
+    <p>The compressed output will have interspersed <code>[SC-Retrieve: hash]</code> markers for reversible retrieval, wrapped in the CacheAligner preamble for KV cache hits.</p>
+
+    <h2>What's Next</h2>
+
+    <p>CacheAligner is available now in the SuperCompress API (v0.7+). Set <code>cache_prefix=true</code> on any compression request to start caching. Future versions will add:</p>
+    <ul>
+      <li>Automatic preamble length scaling for provider-specific cache thresholds</li>
+      <li>Provider-aware middleware that emits proper <code>cache_control</code> markers upstream</li>
+      <li>Cache hit rate reporting through the API response</li>
+    </ul>
+  </main>
+</body>
+</html>

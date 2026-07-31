@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quickstart — SuperCompress Documentation</title>
+  <meta name="description" content="Get started with SuperCompress in under 5 minutes. Install, get an API key, compress your first prompt." />
+  <meta property="og:title" content="Quickstart — SuperCompress Documentation" />
+  <meta property="og:description" content="Get started with SuperCompress in under 5 minutes." />
+  <meta property="og:url" content="https://supercompress.dev/docs/quickstart" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://supercompress.dev/docs/quickstart" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="/assets/css/supercompress.css" />
+  <link rel="stylesheet" href="/assets/css/docs.css" />
+</head>
+<body>
+  <div class="docs-layout">
+    <!-- Sidebar (same as index) -->
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <a href="/docs/" class="docs-sidebar-logo">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
+        <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="docs-sidebar-section">Getting started</div>
+      <a href="/docs/" class="docs-sidebar-link">Overview</a>
+      <a href="/docs/quickstart" class="docs-sidebar-link active">Quickstart</a>
+      <div class="docs-sidebar-section">Reference</div>
+      <a href="/docs/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="/docs/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="/docs/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="/docs/usage" class="docs-sidebar-link">Usage</a>
+      <div class="docs-sidebar-section">Deep dives</div>
+      <a href="/docs/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/docs/environment" class="docs-sidebar-link">Environment & CO₂</a>
+    </aside>
+    <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="docs-main">
+      <nav class="docs-nav">
+        <div class="docs-nav-inner">
+          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+            <span>Docs</span>
+          </button>
+          <div class="docs-nav-end">
+            <nav class="docs-nav-pill" aria-label="Main">
+              <a href="/">Home</a>
+              <a href="/token-compression">Guide</a>
+              <a href="/blog">Blog</a>
+              <a href="/dashboard">Dashboard</a>
+              <a href="/playground">Playground</a>
+              <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+            </nav>
+            <a href="/dashboard" class="docs-nav-cta">Get API key</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="docs-content">
+        <h1 class="df-reveal">Quickstart</h1>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Install SuperCompress, get an API key, and compress your first prompt — in under 5 minutes.</p>
+
+        <div class="doc-callout doc-callout--info">
+          <span class="doc-callout-label">Prefer the hosted API?</span>
+          Skip the install and go straight to <a href="/dashboard">getting an API key</a>. The hosted API returns compressed results in ~5ms overhead.
+        </div>
+
+        <div class="doc-toc">
+          <h3>In this guide</h3>
+          <ol>
+            <li><a href="#install">Install the package</a></li>
+            <li><a href="#get-a-key">Get an API key</a></li>
+            <li><a href="#first-compression">Compress your first prompt</a></li>
+            <li><a href="#understand">Understand what happened</a></li>
+            <li><a href="#next-steps">Next steps</a></li>
+          </ol>
+        </div>
+
+        <h2 id="install">1. Install the package</h2>
+        <p>The fastest way to try SuperCompress is with the Python library. It works on any system with Python 3.10+.</p>
+        <pre><code><span class="kw">pip</span> install supercompress</code></pre>
+        <p>That's it. No model downloads, no ONNX Runtime, no GPU drivers. The trained policy weights are bundled with the package (~200KB total).</p>
+
+        <p>For development (tests, frontend export):</p>
+        <pre><code><span class="kw">pip</span> install -e <span class="str">".&#91;dev&#93;"</span></code></pre>
+
+        <h2 id="get-a-key">2. Get an API key</h2>
+        <p>To use the hosted API, head to the <a href="/dashboard">dashboard</a>, sign in with Google or email, and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
+        <p>For local-only use, you don't need a key — the library compresses entirely on-device.</p>
+        <p>Set your key as an environment variable:</p>
+        <pre><code><span class="kw">export</span> <span class="str">SUPERCOMPRESS_API_KEY</span>=sc_live_YOUR_KEY</code></pre>
+
+        <h2 id="first-compression">3. Compress your first prompt</h2>
+        <p>Create a file called <code>compress.py</code>:</p>
+        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_context
+
+context = <span class="str">"""\
+## User account info
+User ID: 4521
+Plan: Pro
+Billing cycle: monthly
+Seats: 5
+
+## Feature requests (Q2)
+Multi-workspace view — in progress
+Dark mode — planned
+API rate limit increase — under review
+
+## Recent activity
+2026-06-28 — upgraded from Starter to Pro
+2026-06-25 — generated 3 API keys
+2026-06-20 — hit rate limit, filed support ticket
+"""</span>
+
+question = <span class="str">"What plan is the user on and how many seats do they have?"</span>
+
+result = compress_context(context, question)
+
+<span class="kw">print</span>(result.compressed_text)</code></pre>
+        <p>Run it:</p>
+        <pre><code><span class="kw">python</span> compress.py</code></pre>
+        <p>Output:</p>
+        <pre><code><span class="cm">## User account info</span>
+User ID: 4521
+Plan: Pro
+Billing cycle: monthly
+Seats: 5
+
+<span class="cm">## Recent activity</span>
+2026-06-28 — upgraded from Starter to Pro</code></pre>
+        <p>Notice that the <strong>Feature requests</strong> section was dropped — it's irrelevant to a question about the current plan. The <strong>Recent activity</strong> section was partially kept because the upgrade confirms the plan. The compiler preserved what matters and cut the rest.</p>
+
+        <h2 id="understand">4. Understand what happened</h2>
+        <p>The <code>compress_context</code> function returns a <code>CompressResult</code> with useful metadata:</p>
+        <pre><code><span class="kw">print</span>(<span class="str">f"Original: {result.original_tokens} tokens"</span>)
+<span class="kw">print</span>(<span class="str">f"Compressed: {result.kept_tokens} tokens"</span>)
+<span class="kw">print</span>(<span class="str">f"Saved: {result.kv_savings_pct:.1f}%"</span>)
+<span class="kw">print</span>(<span class="str">f"Policy: {result.policy_name}"</span>)</code></pre>
+        <p>On this example you'll see something like:</p>
+        <pre><code>Original: 104 tokens
+Compressed: 40 tokens
+Saved: 61.5%
+Policy: SuperCompress</code></pre>
+        <p>The function also supports <strong>compiler mode</strong> (default in the hosted API) which doesn't require a budget — it maximizes removal while keeping important evidence and reporting a risk level.</p>
+
+        <h2 id="next-steps">5. Next steps</h2>
+        <ul>
+          <li><strong>Use the hosted API</strong> — <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="/docs/api-reference">API reference</a>.</li>
+          <li><strong>Wire it into your app</strong> — add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="/docs/integrations">integrations</a>.</li>
+          <li><strong>Deploy on your own server</strong> — <code>pip install supercompress</code> and call it from any Python backend. See <a href="/docs/usage">usage</a>.</li>
+          <li><strong>Try the playground</strong> — test compression on your own text in-browser at <a href="/playground">supercompress.dev/playground</a>.</li>
+          <li><strong>Compare approaches</strong> — see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="/benchmarks">supercompress.dev/benchmarks</a>.</li>
+        </ul>
+
+        <h2>Using the hosted API (curl)</h2>
+        <p>If you don't want to install anything, call the hosted API directly. One-liner form-encoded POST works with any HTTP client:</p>
+        <pre><code><span class="cm"># Quick one-liner</span>
+<span class="kw">curl</span> -d <span class="str">"context=Your long context here...&query=What do you want to know?"</span> \
+  <span class="kw">https://supercompress.dev/compress</span> \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
+
+<span class="cm"># Or as JSON (standard)</span>
+<span class="kw">curl</span> -X POST https://supercompress.dev/api/v1/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"Your long context here…","query":"What do you want to know?"}'</span>
+
+<span class="cm"># Or GET with query params (small contexts)</span>
+<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=Your+long+context&query=What+do+you+want&api_key=sc_live_YOUR_KEY"</span></code></pre>
+        <p>All three work. Response:</p>
+        <pre><code class="cm">{
+  "compressed_text": "…",
+  "original_tokens": 104,
+  "kept_tokens": 40,
+  "kv_savings_pct": 61.5,
+  "important_kept_pct": 0.95,
+  "compression_risk": "low",
+  "kept_blocks": ["User account info", "Recent activity"],
+  "dropped_blocks": ["Feature requests (Q2)"]
+}</code></pre>
+
+        <h2>Using the Python client</h2>
+        <p>The <code>SuperCompress</code> client wraps the hosted API for Python users:</p>
+        <pre><code><span class="kw">from</span> supercompress.client <span class="kw">import</span> SuperCompress
+
+sc = SuperCompress()  <span class="cm"># reads SUPERCOMPRESS_API_KEY</span>
+out = sc.compress(context, question)
+<span class="kw">print</span>(out.compressed_text)</code></pre>
+
+        <div class="doc-footer">
+          <p>Next: <a href="/docs/api-reference">API Reference →</a></p>
+        </div>
+
+    </div>
+
+      <!-- Full SuperCompress footer -->
+      <footer class="df-footer" style="margin-top:-2px">
+        <div class="df-footer-inner">
+          <div class="df-footer-grid">
+            <div class="df-footer-brand">
+              <p class="df-footer-heading">SuperCompress</p>
+              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+            </div>
+            <div class="df-footer-links">
+              <div>
+                <p class="df-footer-heading">Navigation</p>
+                <ul>
+                  <li><a href="/#impact">Savings</a></li>
+                  <li><a href="/#demo">Demo</a></li>
+                  <li><a href="#features">Features</a></li>
+                  <li><a href="/#quickstart">Quick start</a></li>
+                  <li><a href="/blog">Blog</a></li>
+                  <li><a href="/dashboard">Dashboard</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Resources</p>
+                <ul>
+                  <li><a href="/token-compression">Token compression guide</a></li>
+                  <li><a href="/benchmarks">Benchmarks</a></li>
+                  <li><a href="/compare">Compare methods</a></li>
+                  <li><a href="/playground">Playground</a></li>
+                  <li><a href="/research">Research &amp; citation</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Documentation</p>
+                <ul>
+                  <li><a href="/docs/">Documentation</a></li>
+                  <li><a href="/docs/quickstart">Quickstart</a></li>
+                  <li><a href="/docs/api-reference">API reference</a></li>
+                  <li><a href="/docs/coding-agents">Coding Agents</a></li>
+                  <li><a href="/docs/environment">Environment</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Social</p>
+                <ul>
+                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+        </div>
+        <div class="df-footer-watermark" aria-hidden="true">
+          <p>SuperCompress</p>
+        </div>
+      </footer>
+  </div>
+
+  <script src="/assets/js/supercompress.js"></script>
+  <script>
+    (function() {
+      var sidebar = document.getElementById('docs-sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      var toggle = document.getElementById('mobile-toggle');
+      function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('open'); }
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      if (toggle) toggle.addEventListener('click', openSidebar);
+      if (overlay) overlay.addEventListener('click', closeSidebar);
+
+      // Copy-to-clipboard buttons on code blocks
+      document.querySelectorAll('.docs-content pre').forEach(function(pre) {
+        var btn = document.createElement('button');
+        btn.textContent = 'Copy';
+        btn.className = 'doc-copy-btn';
+        btn.setAttribute('aria-label', 'Copy code block');
+        btn.addEventListener('click', function() {
+          var code = pre.querySelector('code');
+          var text = code ? code.textContent : pre.textContent;
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          }).catch(function() {
+            btn.textContent = 'Failed';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          });
+        });
+        pre.style.position = 'relative';
+        pre.appendChild(btn);
+      });
+    })();
+  </script>
+</body>
+</html>

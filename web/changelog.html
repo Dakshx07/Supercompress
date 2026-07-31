@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog — SuperCompress</title>
+  <meta name="description" content="Release notes for SuperCompress: coding-agent plugin, API, and product updates. Every version we ship." />
+  <meta property="og:title" content="Changelog — SuperCompress" />
+  <meta property="og:description" content="Release notes for SuperCompress coding-agent plugin, API, and product updates." />
+  <meta property="og:url" content="https://www.supercompress.dev/changelog" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Changelog — SuperCompress" />
+  <meta name="twitter:description" content="Release notes for SuperCompress." />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://www.supercompress.dev/changelog" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=105" />
+  <style>
+    .cl-page { padding-bottom: 96px; }
+    .cl-hero {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 56px var(--frame-buffer) 32px;
+    }
+    @media (min-width: 640px) {
+      .cl-hero { padding-top: 72px; }
+    }
+    .cl-kicker {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .cl-hero h1 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(40px, 6vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 16px;
+    }
+    .cl-hero h1 em { font-style: italic; color: var(--brand); }
+    .cl-lead {
+      max-width: 560px;
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--text-body);
+      margin: 0 0 28px;
+    }
+    .cl-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .cl-link-quiet {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--brand-dark);
+      text-decoration: none;
+    }
+    .cl-link-quiet:hover { color: var(--brand); }
+
+    .cl-feed {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 8px var(--frame-buffer) 0;
+    }
+    .cl-entry {
+      padding: 36px 0;
+      border-top: 1px solid var(--card-border);
+    }
+    .cl-entry:first-child { border-top: none; }
+    .cl-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .cl-ver {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .cl-ver:hover { color: var(--brand); }
+    .cl-date {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .cl-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+    }
+    .cl-badge--unreleased {
+      background: var(--frame-bg);
+      color: var(--text-muted);
+    }
+    .cl-body h3 {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 20px 0 10px;
+    }
+    .cl-body h3:first-child { margin-top: 0; }
+    .cl-body ul {
+      margin: 0;
+      padding: 0 0 0 1.15em;
+    }
+    .cl-body li {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-body);
+      margin: 0 0 8px;
+    }
+    .cl-body li strong { color: var(--text-primary); font-weight: 600; }
+    .cl-body code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--frame-bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .cl-foot-note {
+      max-width: 760px;
+      margin: 24px auto 0;
+      padding: 0 var(--frame-buffer);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .cl-foot-note a { color: var(--brand-dark); }
+  </style>
+</head>
+<body>
+  <nav class="sc-nav">
+    <div class="sc-nav-inner">
+      <a class="sc-brand" href="/">
+        <img src="/assets/img/logo-chevrons.png" alt="" width="22" height="22" />
+        <span>supercompress</span>
+      </a>
+      <div class="sc-nav-links">
+        <a href="/#coding-agents">Agents</a>
+        <a href="/benchmarks">Benchmarks</a>
+        <a href="/docs/">Docs</a>
+        <a href="/changelog" aria-current="page">Changelog</a>
+      </div>
+      <div class="sc-nav-end">
+        <a class="sc-login" href="/dashboard">Login</a>
+        <a class="btn-primary btn-primary-sm" href="/playground">
+          <span class="btn-primary-label">Try playground</span>
+          <span class="btn-primary-arrow" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="cl-page">
+    <header class="cl-hero">
+      <p class="cl-kicker">Releases</p>
+      <h1>What’s <em>new</em>.</h1>
+      <p class="cl-lead">Notes for every SuperCompress ship — coding-agent plugin, API, and product. Mirrored on GitHub Releases.</p>
+      <div class="cl-actions">
+        <a class="btn-primary btn-primary-sm" href="https://github.com/Supercompress/Supercompress/releases" target="_blank" rel="noopener">
+          <span class="btn-primary-label">GitHub releases</span>
+          <span class="btn-primary-arrow" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
+        <a class="cl-link-quiet" href="https://github.com/Supercompress/Supercompress/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Raw CHANGELOG.md ↗</a>
+      </div>
+    </header>
+
+    <div class="cl-feed">
+      <article class="cl-entry" id="unreleased">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#unreleased">Unreleased</a>
+          <span class="cl-badge cl-badge--unreleased">main</span>
+        </div>
+        <div class="cl-body">
+          <ul>
+            <li>Public GitHub org repository; site links point to GitHub.</li>
+            <li>Changelog page + GitHub release workflow.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.6">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.6">0.5.6</a>
+          <span class="cl-date">2026-07-31</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li>Every-message compress threshold lowered (compress prompts ≥40 chars; tiny ones still write inbox).</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.5">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.5">0.5.5</a>
+          <span class="cl-date">2026-07-31</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Every-message auto-compress</strong>: IDE <code>beforeSubmitPrompt</code> writes <code>~/.supercompress/inbox/latest.md</code> on every submit; Claude Code + Codex <code>UserPromptSubmit</code> inject compressed digests; <code>postToolUse</code> threshold lowered to 800 chars.</li>
+            <li>Always-on agent rule forces Read of inbox digest first every turn.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.4">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.4">0.5.4</a>
+          <span class="cl-date">2026-07-28</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li>OpenCode MCP: write <code>enabled: true</code>, <code>timeout: 60000</code>, and <code>experimental.mcp_timeout</code>. Prefer <code>supercompress-mcp</code> on PATH over a baked absolute Node path.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.3">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.3">0.5.3</a>
+          <span class="cl-date">2026-07-28</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li>Harden MCP stdio server against <code>-32000: Connection closed</code>: catch unhandled errors, keep process alive on tool failures, timeouts on API calls, stderr-only logging.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.2">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.2">0.5.2</a>
+          <span class="cl-date">2026-07-26</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li>Ship LICENSE + CHANGELOG in the npm tarball.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.1">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.1">0.5.1</a>
+          <span class="cl-date">2026-07-26</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>postinstall is guidance-only</strong> — no longer rewrites agent MCP configs on <code>npm install</code>. Use <code>supercompress setup</code> or <code>supercompress plugin</code>.</li>
+            <li><strong>FreeBuff dual-launch</strong> — MCP compress handshake waits for tool responses.</li>
+            <li>Docs/README aligned with MCP-first install path; agent catalog count 49.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="cl-entry" id="v0.5.0">
+        <div class="cl-meta">
+          <a class="cl-ver" href="#v0.5.0">0.5.0</a>
+          <span class="cl-date">2026-07-26</span>
+          <span class="cl-badge">proxy</span>
+        </div>
+        <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li>MCP-first coding-agent plugin (<code>compress_context</code>, <code>connect_account</code>, <code>usage_summary</code>).</li>
+            <li>Optional localhost API proxy via <code>supercompress setup --proxy</code>.</li>
+            <li>Hard launch of SuperCompress coding agent integrations (Cursor, Claude Code, Codex, and more).</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+
+    <p class="cl-foot-note">
+      Source of truth: <a href="https://github.com/Supercompress/Supercompress/blob/main/CHANGELOG.md">CHANGELOG.md</a>.
+      Publish with <code>scripts/publish-github-release.sh &lt;version&gt;</code>.
+    </p>
+  </main>
+
+  <footer class="sc-footer">
+    <div class="edge sc-footer-inner">
+      <a class="sc-brand" href="/"><img src="/assets/img/logo-chevrons.png" alt="" width="20" height="20" /><span>supercompress</span></a>
+      <p>Keep the model. Cut the wasted context.</p>
+      <nav class="sc-footer-links">
+        <a href="/docs/">docs</a>
+        <a href="/changelog">changelog</a>
+        <a href="/benchmarks">benchmarks</a>
+        <a href="https://github.com/Supercompress/Supercompress/releases" target="_blank" rel="noopener">releases</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

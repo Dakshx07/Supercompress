@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress - Cut Your LLM API Costs by 65%</title>
+  <meta name="description" content="SuperCompress is open-source prompt compression that cuts LLM token costs by ~65%. Reduce input tokens before OpenAI, Claude, Gemini, RAG, chatbot, and agent calls while preserving answer-critical evidence." />
+  <meta property="og:title" content="SuperCompress - Cut Your LLM API Costs by 65%" />
+  <meta property="og:description" content="Reduce LLM API costs by ~65% while preserving answer-critical evidence. Open source, CPU-only, ~5K parameters." />
+  <meta property="og:url" content="https://supercompress.dev/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta property="og:image" content="https://supercompress.dev/assets/img/og-image-v4.png" />
+  <meta property="og:image:width" content="1920" />
+  <meta property="og:image:height" content="1080" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SuperCompress - Cut Your LLM API Costs by 65%" />
+  <meta name="twitter:description" content="Open-source prompt compression that cuts LLM token costs by ~65%. CPU-only, ~5K parameters, preserves answer-critical evidence." />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="prompt compression for AI apps, LLM token compression, consumer AI apps, chatbot cost reduction, RAG context compression, AI support automation, copilot prompt optimization, OpenAI cost reduction" />
+  <meta name="ai-purpose" content="SuperCompress is open-source prompt compression for AI apps, reducing oversized LLM inputs before inference." />
+  <link rel="canonical" href="https://supercompress.dev/" />
+  <link rel="alternate" type="text/plain" href="https://supercompress.dev/llms.txt" title="LLMs.txt" />
+  <link rel="alternate" type="text/plain" href="https://supercompress.dev/llms-full.txt" title="Full LLM index" />
+  <link rel="alternate" type="application/json" href="https://supercompress.dev/ai-search.json" title="AI search facts" />
+  <link rel="icon" href="/favicon-v4.ico" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-v4.svg" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-v4-48.png" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-v4-192.png" />
+  <meta name="theme-color" content="rgb(251,251,248)" />
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=115" />
+  <!-- Preconnect hints for faster external resource loading -->
+  <link rel="preload" href="assets/video/launch-post-poster.jpg?v=3" as="image" fetchpriority="high" />
+  <link rel="preload" href="assets/video/launch-post.mp4?v=3" as="video" type="video/mp4" />
+  <link rel="preconnect" href="https://github.com" />
+  <link rel="dns-prefetch" href="https://github.com" />
+
+  <link rel="preconnect" href="https://pypi.org" />
+  <link rel="dns-prefetch" href="https://pypi.org" />
+  <!-- Vercel Web Analytics -->
+  <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "SuperCompress",
+      "item": "https://supercompress.dev/"
+    }]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "SuperCompress",
+    "url": "https://supercompress.dev",
+    "logo": "https://supercompress.dev/assets/img/logo-chevrons.png",
+    "sameAs": [
+      "https://github.com/Supercompress/Supercompress",
+      "https://pypi.org/project/supercompress/",
+      "https://twitter.com/supercompress",
+      "https://www.linkedin.com/company/supercompress"
+    ],
+    "knowsAbout": [
+      "Prompt compression",
+      "LLM token compression",
+      "Context compression",
+      "RAG optimization",
+      "AI cost optimization",
+      "Agent memory compression"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "SuperCompress",
+    "url": "https://supercompress.dev",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://supercompress.dev/playground?query={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "applicationCategory": "DeveloperApplication",
+    "applicationSubCategory": "LLM token compression",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Prompt compression for AI apps — reduce oversized chat history, RAG chunks, support logs, and tool context before LLM inference while keeping answer-critical evidence.",
+    "url": "https://supercompress.dev",
+    "mainEntityOfPage": "https://supercompress.dev/",
+    "sameAs": [
+      "https://github.com/Supercompress/Supercompress",
+      "https://pypi.org/project/supercompress/",
+      "https://supercompress.dev/llms.txt",
+      "https://supercompress.dev/ai-search.json"
+    ],
+    "keywords": "prompt compression for AI apps, LLM token compression, consumer AI apps, context compression, RAG optimization, chatbot cost reduction, AI support automation, OpenAI cost reduction, Claude prompt compression, Gemini prompt compression, agent memory compression",
+    "featureList": [
+      "Query-aware prompt compression",
+      "RAG context compression",
+      "Agent memory compression",
+      "Selection-based evidence preservation",
+      "OpenAI, Claude, Gemini, and local model preprocessing"
+    ],
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah"
+    },
+    "softwareVersion": "0.5.2",
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+  <!-- VideoObject schema for launch video -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": "SuperCompress Launch Video — LLM Token Compression",
+    "description": "SuperCompress reduces input tokens before LLM inference for chatbots, AI search, support agents, copilots, RAG, and agent workflows.",
+    "thumbnailUrl": "https://supercompress.dev/assets/video/launch-post-poster.jpg",
+    "uploadDate": "2026-07-24",
+    "duration": "PT46S",
+    "contentUrl": "https://supercompress.dev/assets/video/launch-post.mp4",
+    "publisher": {
+      "@type": "Organization",
+      "name": "SuperCompress"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is token compression?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Token compression is a technique that reduces the number of tokens sent to an LLM during inference by removing low-value tokens while preserving the information needed to answer the current query. It's not summarization — it selectively removes lines that score low against the current question."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much does SuperCompress cost?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "SuperCompress is free and open source under the MIT license. The Python library costs nothing. The hosted API has a free tier with 100K tokens per month and paid plans starting at $10/month."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is LLM context compression?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "LLM context compression reduces the size of the prompt sent to a language model by removing irrelevant or low-value tokens while preserving the information needed to answer the current question."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does SuperCompress compare to truncation?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Truncation keeps only the head and tail of context, dropping the middle. SuperCompress compiles context around the current query, removes low-value blocks, and reports how much important context was kept."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does SuperCompress require a GPU?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. SuperCompress runs entirely on CPU with a tiny ~5K parameter policy. It compresses context before GPU inference with ~60ms latency."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is SuperCompress free and open source?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. SuperCompress is open source under the MIT license. The Python library and browser demo are free. The hosted API has a free tier with 100K tokens/month."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="df-page-bg-top" aria-hidden="true"></div>
+  <div class="df-page-bg-bottom" aria-hidden="true"></div>
+
+  <div class="df-page">
+    <header class="df-header">
+      <div class="df-header-blur" aria-hidden="true"></div>
+      <div class="df-header-inner">
+        <a href="/" class="df-logo-desktop">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word">Super<em>Compress</em></span>
+        </a>
+
+        <div class="df-header-end">
+          <nav class="df-nav-pill" aria-label="Main">
+            <a href="/token-compression">Guide</a>
+            <a href="/#impact">Savings</a>
+            <a href="/#demo">Demo</a>
+            <a href="/#quickstart">Quick start</a>
+          </nav>
+          <nav class="df-nav-pill df-nav-pill--solo" aria-label="Documentation">
+            <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+          </nav>
+          <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
+            <a href="/dashboard">Dashboard</a>
+          </nav>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M23.6004 9.5927l-.0337-.0862L20.3.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412l-3.935 8.604H8.924L4.989.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412L.434 9.5065l-.032.0862c-.468 1.228-.148 2.628.804 3.55l.008.008.022.02 6.044 4.533-.032.024 5.735 4.36 5.735-4.36-.033-.024 6.045-4.533.022-.02.008-.008c.95-.922 1.27-2.322.803-3.55z"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="df-mobile-bar">
+          <a href="/" class="df-logo-mobile">
+            <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
+            <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+          </a>
+          <button type="button" class="df-menu-btn" id="df-menu-btn" aria-label="Toggle menu" aria-expanded="false">
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <div class="df-mobile-nav hidden" id="df-mobile-nav">
+        <a href="/#impact">Savings</a>
+        <a href="/#demo">Demo</a>
+        <a href="#features">Features</a>
+        <a href="#coding-agents">Coding agents</a>
+        <a href="/#quickstart">Quick start</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/Supercompress/Supercompress">GitHub</a>
+      </div>
+    </header>
+
+    <div class="df-header-spacer" aria-hidden="true"></div>
+
+    <div class="df-main-wrap">
+      <main class="df-main">
+        <!-- Hero copy -->
+        <section class="hero-content-wrapper">
+          <div class="hero-content-inner">
+            <a href="https://www.producthunt.com/products/supercompress?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-supercompress" target="_blank" rel="noopener noreferrer" class="ph-badge animate-hero-enter" style="--enter-delay:0s">
+              <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1192250&theme=light&t=1783615733783" alt="SuperCompress – Cut your LLM Token Costs by 65% | Product Hunt" width="250" height="54" />
+            </a>
+            <h1 id="hero-title">
+              <span class="animate-hero-word" style="--stagger:1">Cut</span>
+              <span class="animate-hero-word" style="--stagger:2">Your</span>
+              <span class="animate-hero-word" style="--stagger:3">LLM</span>
+              <span class="animate-hero-word" style="--stagger:4">API</span>
+              <span class="animate-hero-word" style="--stagger:5">Costs</span>
+              <span class="animate-hero-word" style="--stagger:6">by</span>
+              <span class="animate-hero-word" style="--stagger:7">65%.</span>
+            </h1>
+            <p class="hero-lead animate-hero-enter" style="--enter-delay:0.78s">
+              For teams running chat, RAG, support, or coding agents. SuperCompress removes low-value context before inference, so your existing models do more with the tokens you already pay for.
+            </p>
+            <div class="hero-actions animate-hero-enter" style="--enter-delay:0.74s">
+              <a href="/coding-agent-proxy?utm_source=homepage&amp;utm_medium=hero&amp;utm_campaign=activation" class="btn-brand" data-growth-event="hero_plugin_click">Install the agent plugin</a>
+              <a href="#demo" class="btn-link-muted" data-growth-event="hero_demo_click">Try it on your context</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Hero visual — launch video (muted autoplay + unmute) -->
+        <section class="hero-visual-section" aria-label="Product preview">
+          <div class="hero-frame-mobile">
+            <div class="hero-frame hero-frame-mobile-inner is-live" id="launch-video-frame-mobile">
+              <div class="hero-frame-embed">
+                <img class="hero-frame-poster" src="assets/video/launch-post-poster.jpg?v=3" alt="SuperCompress launch video preview" width="1280" height="720" loading="lazy" />
+                <video class="hero-frame-video hero-frame-video--live" src="assets/video/launch-post.mp4?v=3" autoplay muted loop playsinline preload="auto" poster="assets/video/launch-post-poster.jpg?v=3"></video>
+              </div>
+              <div class="launch-video-unmute">
+                <button type="button" class="launch-video-sound" aria-label="Unmute launch video">Unmute</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-frame-outer">
+            <div class="hero-frame-wrapper">
+              <div class="hero-frame animate-hero-enter is-live" id="launch-video-frame" style="--enter-delay:1.2s">
+                <div class="hero-frame-embed">
+                  <img class="hero-frame-poster" src="assets/video/launch-post-poster.jpg?v=3" alt="SuperCompress launch video preview" width="1280" height="720" loading="eager" fetchpriority="high" />
+                  <video class="hero-frame-video hero-frame-video--live" src="assets/video/launch-post.mp4?v=3" autoplay muted loop playsinline preload="auto" poster="assets/video/launch-post-poster.jpg?v=3"></video>
+                </div>
+                <div class="launch-video-unmute">
+                  <button type="button" class="launch-video-sound" id="launch-video-sound" aria-label="Unmute launch video">Unmute</button>
+                </div>
+                <p class="hero-frame-caption">Prompt compression · RAG context · chat memory · CPU-only policy</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Vision / editorial scroll -->
+        <section class="df-vision" id="vision">
+          <div class="df-vision-runway" id="vision-runway">
+            <div class="df-vision-sticky">
+              <h2 class="df-vision-text" id="vision-text">
+                <span class="vision-block" data-vision-block="0">
+                  <span class="vision-word">Consumer</span> <span class="vision-word">AI</span> <span class="vision-word">apps</span> <span class="vision-word">send</span> <span class="vision-word">chat</span> <span class="vision-word">history,</span> <span class="vision-word">retrieved</span> <span class="vision-word">docs,</span> <span class="vision-word">tool</span> <span class="vision-word">traces,</span> <span class="vision-word">and</span> <span class="vision-word">user</span> <span class="vision-word">context</span> <span class="vision-word">on</span> <span class="vision-word">every</span> <span class="vision-word">request.</span>
+                </span>
+                <span class="vision-block" data-vision-block="1">
+                  <span class="vision-word">That</span> <span class="vision-word">context</span> <span class="vision-word">drives</span> <span class="vision-word">LLM</span> <span class="vision-word">API</span> <span class="vision-word">cost,</span> <span class="vision-word">latency,</span> <span class="vision-word">and</span> <span class="vision-word">context-window</span> <span class="vision-word">pressure</span> <span class="vision-word">before</span> <span class="vision-word">the</span> <span class="vision-word">answer</span> <span class="vision-word">is</span> <span class="vision-word">generated.</span>
+                </span>
+                <span class="vision-block" data-vision-block="2">
+                  <span class="vision-word">SuperCompress</span> <span class="vision-word">runs</span> <span class="vision-word">before</span> <span class="vision-word">inference,</span> <span class="vision-word">selecting</span> <span class="vision-word">the</span> <span class="vision-word">context</span> <span class="vision-word">most</span> <span class="vision-word">relevant</span> <span class="vision-word">to</span> <span class="vision-word">the</span> <span class="vision-word">current</span> <span class="vision-word">user</span> <span class="vision-word">request.</span>
+                </span>
+                <span class="vision-block" data-vision-block="3">
+                  <span class="vision-word">Use</span> <span class="vision-word">it</span> <span class="vision-word">for</span> <span class="vision-word">chatbots,</span> <span class="vision-word">AI</span> <span class="vision-word">search,</span> <span class="vision-word">support</span> <span class="vision-word">agents,</span> <span class="vision-word">copilots,</span> <span class="vision-word">RAG,</span> <span class="vision-word">and</span> <span class="vision-word">any</span> <span class="vision-word">feature</span> <span class="vision-word">where</span> <span class="vision-word">context</span> <span class="vision-word">grows</span> <span class="vision-word">with</span> <span class="vision-word">users.</span>
+                </span>
+              </h2>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trust + live impact demo -->
+        <section class="df-trust" id="impact">
+          <div class="df-trust-head df-reveal">
+            <h2>Control AI feature cost before the model call</h2>
+            <p class="df-section-desc" style="margin-top:12px;max-width:700px">Paste the same context a production AI feature would send: chat history, retrieval output, support logs, or tool results. SuperCompress shows what can be removed before the request reaches the model.</p>
+          </div>
+          <div class="df-trust-grid df-reveal-stagger">
+            <article class="df-trust-card">
+              <p class="df-trust-label">Cost model</p>
+              <h3>Estimate token savings before rollout</h3>
+              <p>Compare original tokens, compressed tokens, percent removed, and estimated inference impact before adding compression to production traffic.</p>
+              <ul>
+                <li>Tokens saved = original − kept per compression</li>
+                <li>Works with OpenAI, Claude, Gemini, and local model calls</li>
+              </ul>
+            </article>
+            <article class="df-trust-card">
+              <p class="df-trust-label">Quality</p>
+              <h3>Prompt compression without blind truncation</h3>
+              <p>Head/tail truncation can remove the line that answers the user. SuperCompress selects context against the current query and reports important-kept metadata.</p>
+              <ul>
+                <li>82.5% average token savings on bundled long-context presets</li>
+                <li>Important-kept and risk metadata on every compiler result</li>
+              </ul>
+            </article>
+            <article class="df-trust-card">
+              <p class="df-trust-label">Deployment</p>
+              <h3>Drop-in preprocessing for production AI apps</h3>
+              <p>Run compression locally with the Python package or call the hosted API before sending context to the LLM provider.</p>
+              <ul>
+                <li>pip install · MIT license</li>
+                <li>Live hosted API + dashboard</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="impact-calc df-reveal" id="demo">
+            <div class="impact-calc-input">
+              <p class="impact-calc-label">Try a consumer app context</p>
+              <div class="impact-preset-row">
+                <button type="button" class="impact-preset-btn" data-preset="mockingbird">Long document</button>
+                <button type="button" class="impact-preset-btn" data-preset="coding">Tool trace</button>
+                <button type="button" class="impact-preset-btn" data-preset="markdown">Help center doc</button>
+                <button type="button" class="impact-drop-zone" id="impact-drop-zone">Drop .md file</button>
+                <input type="file" id="impact-file-input" accept=".md,.txt,.markdown,text/plain,text/markdown" hidden />
+              </div>
+              <label class="impact-calc-label" for="impact-query">User request</label>
+              <input class="impact-query-input" id="impact-query" type="text" placeholder="What should the AI feature answer from this context?" />
+              <label class="impact-calc-label" for="impact-prompt">Prompt context</label>
+              <textarea id="impact-prompt" placeholder="Paste chat history, RAG chunks, tool output, support logs, or app context…"></textarea>
+              <div class="impact-calc-actions">
+                <button type="button" class="btn-brand" id="impact-send">Compress</button>
+                <span class="impact-calc-hint">Enter in question field · ⌘/Ctrl+Enter in context</span>
+              </div>
+              <p class="impact-calc-note">Runs locally with the trained SuperCompress compiler. The user request defines what matters, so duplicate history, irrelevant retrieval chunks, and tool noise can be removed before the LLM call.</p>
+              <p class="impact-status" id="impact-status" aria-live="polite"></p>
+            </div>
+            <div class="impact-calc-stats" aria-live="polite">
+              <p class="impact-calc-label">Token &amp; inference impact</p>
+              <ul class="impact-stat-list">
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Input tokens</span>
+                  <span class="impact-stat-val" id="impact-in-tokens">—</span>
+                </li>
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Tokens after SuperCompress</span>
+                  <span class="impact-stat-val" id="impact-out-tokens">—</span>
+                </li>
+                <li class="impact-stat-row impact-stat-row--accent">
+                  <span class="impact-stat-name">Tokens removed</span>
+                  <span class="impact-stat-val" id="impact-tokens-removed">—</span>
+                </li>
+                <li class="impact-stat-row impact-stat-row--accent">
+                  <span class="impact-stat-name">Tokens saved</span>
+                  <span class="impact-stat-val" id="impact-pct-saved">—</span>
+                </li>
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Context size saved</span>
+                  <span class="impact-stat-val" id="impact-chars-saved">—</span>
+                </li>
+                <li class="impact-stat-row impact-stat-row--accent">
+                  <span class="impact-stat-name">Answer quality retained</span>
+                  <span class="impact-stat-val" id="impact-quality">—</span>
+                </li>
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Estimated prefill compute (before)</span>
+                  <span class="impact-stat-val-wrap">
+                    <span class="impact-stat-val" id="impact-power-before">—</span>
+                    <span class="impact-stat-unit">est. prefill</span>
+                  </span>
+                </li>
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Estimated prefill compute (after)</span>
+                  <span class="impact-stat-val-wrap">
+                    <span class="impact-stat-val" id="impact-power-after">—</span>
+                    <span class="impact-stat-unit">est. prefill</span>
+                  </span>
+                </li>
+                <li class="impact-stat-row impact-stat-row--accent">
+                  <span class="impact-stat-name">Estimated compute saved</span>
+                  <span class="impact-stat-val" id="impact-power-saved">—</span>
+                </li>
+                <li class="impact-stat-row impact-stat-row--accent">
+                  <span class="impact-stat-name">Cooling estimate saved</span>
+                  <span class="impact-stat-val-wrap">
+                    <span class="impact-stat-val" id="impact-water-saved">—</span>
+                    <span class="impact-stat-unit">datacenter cooling (est.)</span>
+                  </span>
+                </li>
+                <li class="impact-stat-row">
+                  <span class="impact-stat-name">Emissions estimate saved</span>
+                  <span class="impact-stat-val" id="impact-co2-saved">—</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <div class="df-container df-container-wide">
+          <!-- Features -->
+          <section class="df-features" id="features">
+            <div class="df-features-inner">
+              <header class="df-features-header df-reveal">
+                <h2>Compress prompts before they hit the model.</h2>
+                <p class="df-features-lead">
+                  SuperCompress is built for production AI features with growing context: chatbots, AI search, support copilots, RAG pipelines, and agent workflows. On bundled long-context presets, compiler mode removes <strong>82.5% of tokens on average</strong> while keeping query-critical evidence.
+                </p>
+              </header>
+              <div class="df-features-charts df-reveal" style="--reveal-delay: 100ms">
+                <figure class="df-feature-chart-card">
+                  <img src="assets/img/chart-oracle-recall.svg" alt="Oracle recall at 35% budget: SuperCompress 100%, H2O ~98%, FIFO and truncation ~25%" loading="lazy" width="920" height="320" />
+                  <figcaption class="df-feature-chart-legend">
+                    <span class="df-legend-swatch df-legend-swatch--base"></span> Baselines
+                    <span class="df-legend-swatch df-legend-swatch--sc"></span> SuperCompress
+                    <span class="df-legend-note">Fixed 35% budget · 8 seeds</span>
+                  </figcaption>
+                </figure>
+                <figure class="df-feature-chart-card">
+                  <img src="assets/img/chart-adaptive-savings.svg" alt="Compiler mode token savings on long-context presets" loading="lazy" width="920" height="320" />
+                  <figcaption class="df-feature-chart-legend">
+                    <span class="df-legend-swatch df-legend-swatch--sc"></span> Query-aware compiler mode
+                    <span class="df-legend-note">Real preset contexts</span>
+                  </figcaption>
+                </figure>
+              </div>
+            </div>
+          </section>
+
+          <!-- Coding agent plugin -->
+          <section class="sc-agent-section df-reveal" id="coding-agents" aria-labelledby="coding-agents-title">
+            <div class="sc-agent-copy">
+              <p class="sc-agent-eyebrow">Coding agent plugin · MCP-first</p>
+              <h2 id="coding-agents-title">One install. Every agent. Fewer tokens.</h2>
+              <p class="sc-agent-lead">Auto-detect Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more. The MCP plugin compresses huge dumps before they burn tokens — keep your normal login. No provider API-key mode required.</p>
+              <div class="sc-agent-install" aria-label="Install SuperCompress coding agent plugin">
+                <span class="sc-agent-prompt">$</span>
+                <code>npm install -g supercompress-proxy</code>
+                <button type="button" class="sc-agent-copy-btn" data-copy="npm install -g supercompress-proxy" aria-label="Copy npm install command">Copy</button>
+              </div>
+              <div class="sc-agent-install sc-agent-install--secondary">
+                <span class="sc-agent-prompt">$</span>
+                <code>supercompress setup</code>
+              </div>
+              <p class="sc-agent-note">Detects 48 integrations. Installs MCP for Cursor, Claude, Codex, FreeBuff, OpenCode, Gemini CLI — subscription/login safe. Optional <code>--proxy</code> only if you want base-URL rewrite.</p>
+              <div class="sc-agent-actions">
+                <a class="btn-brand" href="/docs/coding-agents?utm_source=homepage&amp;utm_medium=agent_section&amp;utm_campaign=activation" data-growth-event="agent_section_click">Install for your agent</a>
+                <a class="sc-agent-text-link" href="/docs/coding-agents">See how it works <span aria-hidden="true">↗</span></a>
+              </div>
+            </div>
+            <div class="sc-agent-console" aria-label="SuperCompress setup preview">
+              <div class="sc-agent-console-bar"><span class="sc-agent-dot"></span><span class="sc-agent-dot"></span><span class="sc-agent-dot"></span><span class="sc-agent-console-title">supercompress plugin</span></div>
+              <div class="sc-agent-console-body">
+                <p><span class="sc-agent-ok">✓</span> Detected Cursor, Claude Code, Codex, FreeBuff, OpenCode</p>
+                <p><span class="sc-agent-ok">✓</span> MCP plugin installed</p>
+                <p><span class="sc-agent-ok">✓</span> Cursor rule written</p>
+                <p><span class="sc-agent-ok">✓</span> Works with login — no API-key mode</p>
+                <p class="sc-agent-console-muted">Ask your agent to compress large context → <span class="sc-agent-dim">compress_context</span><span class="sc-agent-cursor" aria-hidden="true">▋</span></p>
+              </div>
+              <div class="sc-agent-grid" aria-label="Supported coding agents">
+                <span>Cursor</span><span>Claude Code</span><span>Codex</span><span>FreeBuff</span><span>OpenCode</span><span>Gemini CLI</span><span>Windsurf</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="df-quickstart df-reveal" id="quickstart" style="--reveal-delay: 180ms">
+            <h3 class="df-quickstart-title">Quick start</h3>
+            <pre class="code-block df-quickstart-code"><code><span class="kw">curl</span> -d <span class="str">"context=…&amp;query=…"</span> \
+  <span class="kw">https://supercompress.dev/compress</span> \
+  -H <span class="str">"X-API-Key: sc_live_…"</span></code></pre>
+            <p class="df-quickstart-note">
+              Production API — metered in your <a href="/dashboard">dashboard</a>. Requires a <code>sc_live_…</code> key.
+              Python: <code>pip install supercompress</code>               · <a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a>
+            </p>
+          </section>
+
+        </div>
+
+        <div class="df-features-spacer" aria-hidden="true"></div>
+      </main>
+
+      <!-- CTA -->
+      <section class="df-cta">
+        <div class="df-cta-inner df-reveal">
+          <h2>Ship AI features with lower per-request cost.</h2>
+          <p>Prompt compression for chat, search, support, RAG, and agentic app workflows. Open source · MIT.</p>
+          <a href="/dashboard?signup=1&amp;utm_source=homepage&amp;utm_medium=footer_cta&amp;utm_campaign=activation" class="btn-brand" data-growth-event="api_signup_click">Get a free API key</a>
+          <a href="/docs/" class="btn-link-muted" style="display:inline-flex;margin-top:16px" target="_blank" rel="noopener">Read the docs</a>
+          <a href="https://github.com/Supercompress/Supercompress" class="btn-link-muted" style="display:inline-flex;margin-top:16px">View on GitHub</a>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="df-footer">
+        <div class="df-footer-inner">
+          <div class="df-footer-grid">
+            <div class="df-footer-brand">
+              <p class="df-footer-heading">SuperCompress</p>
+              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+            </div>
+            <div class="df-footer-links">
+              <div>
+                <p class="df-footer-heading">Navigation</p>
+                <ul>
+                  <li><a href="/#impact">Savings</a></li>
+                  <li><a href="/#demo">Demo</a></li>
+                  <li><a href="#features">Features</a></li>
+                  <li><a href="/#quickstart">Quick start</a></li>
+                  <li><a href="/blog">Blog</a></li>
+                  <li><a href="/dashboard">Dashboard</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Resources</p>
+                <ul>
+                  <li><a href="/token-compression">Token compression guide</a></li>
+                  <li><a href="/benchmarks">Benchmarks</a></li>
+                  <li><a href="/changelog">Changelog</a></li>
+                  <li><a href="/compare">Compare methods</a></li>
+                  <li><a href="/precision-mode-compression">Precision Mode</a></li>
+                  <li><a href="/domain-preprocessors">Domain Preprocessors</a></li>
+                  <li><a href="/reversible-compression-ccr">CCR Compression</a></li>
+                  <li><a href="/supercompress-vs-headroom">Vs Headroom</a></li>
+                  <li><a href="/playground">Playground</a></li>
+                  <li><a href="/research">Research &amp; citation</a></li>
+                  <li><a href="/ai-search">AI search facts</a></li>
+                  <li><a href="/llms.txt">LLMs.txt</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">SEO Guides</p>
+                <ul>
+                  <li><a href="/prompt-compression">Prompt compression</a></li>
+                  <li><a href="/llm-token-compression">LLM token compression</a></li>
+                  <li><a href="/context-compression">Context compression</a></li>
+                  <li><a href="/reduce-openai-costs">Reduce OpenAI costs</a></li>
+                  <li><a href="/llm-cost-optimization">LLM cost optimization</a></li>
+                  <li><a href="/open-source-token-compression">Open-source compression</a></li>
+                  <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+                  <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Documentation</p>
+                <ul>
+                  <li><a href="/docs/" target="_blank" rel="noopener">Documentation</a></li>
+                  <li><a href="/docs/quickstart" target="_blank" rel="noopener">Quickstart</a></li>
+                  <li><a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a></li>
+                  <li><a href="/docs/environment" target="_blank" rel="noopener">Environment</a></li>
+                  <li><a href="/docs/coding-agents" target="_blank" rel="noopener">Coding agents</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Social</p>
+                <ul>
+                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+        </div>
+        <div class="df-footer-watermark" aria-hidden="true">
+          <p>SuperCompress</p>
+        </div>
+    </footer>
+    </div>
+  </div>
+
+  <script src="assets/js/impact-presets.js?v=1"></script>
+  <script src="assets/js/compress-engine.js?v=4"></script>
+  <script src="assets/js/impact-calculator.js?v=8"></script>
+  <script src="assets/js/supercompress.js?v=11"></script>
+  <script src="assets/js/affiliate-track.js?v=1"></script>
+</body>
+</html>

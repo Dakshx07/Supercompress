@@ -1,0 +1,103 @@
+screenshots/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+checkpoints/*.pt
+!checkpoints/default.pt
+!checkpoints/.gitkeep
+.DS_Store
+.env
+.env.*
+.vercel
+node_modules/
+server.log
+*.log
+test-results/
+skills-lock.json
+.agents/
+.claude/
+
+# Private competition / product notes
+SUBMISSION.md
+PRODUCT.md
+docs/ASUS_TRACK.md
+docs/PITCH_SCRIPT.md
+docs/DEPLOY*.md
+docs/VERCEL_MIGRATION.md
+.env.example
+.env*.local
+
+# Outreach / backlink / SEO strategy — private planning
+outreach/
+SEO_STRATEGY.md
+docs/SEO_SETUP.md
+BACKLINK_*
+PLAN.md
+PLAN_*.md
+*-plan.md
+ARCHITECTURE.md
+
+# Local video project + large media (keep posters + web launch-post.mp4 tracked)
+/video/
+launchvideoforwebsite/
+web/assets/video/*.mp4
+!web/assets/video/launch-post.mp4
+!web/assets/video/launch.mp4
+web/assets/pitch/
+
+# Internal / ops pages — never in public repo
+web/pitch.html
+web/internal.html
+web/outreach.html
+web/ph-launch.html
+web/founder.html
+web/launch-kit.html
+web/affiliate-creator-kit.html
+web/playbook.html
+web/suite.html
+web/ab-tests/
+web/ab-compare.html
+web/ab-comparison.html
+web/assets/css/pitch.css
+
+# Ops / outreach / SEO generator scripts
+scripts/send_batch_*.py
+scripts/generate_seo_batch*.py
+scripts/generate_seo_pages.py
+scripts/backlink_directories.py
+scripts/audit_*.py
+scripts/update_issues.py
+scripts/issues_*.py
+scripts/prs_*.py
+scripts/pr_*.py
+scripts/send_email.py
+scripts/send_*.py
+scripts/affiliate_*.py
+scripts/email_tracker*.py
+scripts/email_tracker_data.json
+scripts/train_checkpoint.py
+scripts/train_model.py
+scripts/capture-screenshots.js
+scripts/generate_og_image.py
+scripts/backfill_contacts.py
+scripts/create_test_emails.py
+scripts/replace_gitlab_github.py
+scripts/reverse_to_gitlab.py
+scripts/sync-vercel-env.py
+scripts/__pycache__/
+
+# Screenshots and local media
+screenshots/
+
+# Welcome email drain secret
+outreach/.welcome_drain_secret
+
+# Remotion / local film project (do not ship)
+launch-video/
+
+# Local staging for org profile README
+.github-org-profile/
+.vercel.supercompress-final.bak/

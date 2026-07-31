@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Dashboard — SuperCompress</title>
+  <meta name="description" content="Manage SuperCompress API keys, view usage, and access documentation." />
+  <meta property="og:title" content="API Dashboard — SuperCompress" />
+  <meta property="og:url" content="https://supercompress.dev/dashboard" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress API Dashboard — Manage Keys &amp; Usage" />
+  <meta name="twitter:description" content="Create and manage SuperCompress API keys, view usage analytics, and manage billing." />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="API key management, LLM API dashboard, token usage dashboard, prompt compression API, SuperCompress dashboard, API billing" />
+  <link rel="canonical" href="https://supercompress.dev/dashboard" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <meta name="theme-color" content="rgb(251,251,248)" />
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=102" />
+  <style>
+    /* Dashboard: no dark bg layers, full light page */
+    html, body.dash-page {
+      background: rgb(251, 251, 248) !important;
+      min-height: 100%;
+    }
+    body.dash-page .df-page-bg-top,
+    body.dash-page .df-page-bg-bottom { display: none !important; }
+
+    /* ── Billing / Plans ── */
+    .dash-billing-status {
+      margin-bottom: 32px;
+      padding: 24px 28px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .dash-billing-status-loader {
+      font-size: 14px;
+      color: var(--text-body);
+    }
+
+    .dash-billing-status-active {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .dash-billing-status-info h2 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .dash-billing-status-info p {
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.5;
+    }
+
+    .dash-billing-status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+    }
+
+    .dash-billing-status-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .dash-billing-usage-bar-wrap {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 0.5px solid var(--card-border);
+    }
+
+    .dash-billing-usage-bar-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-body);
+      margin-bottom: 8px;
+    }
+
+    .dash-billing-usage-bar-label strong {
+      color: var(--text-primary);
+    }
+
+    .dash-billing-usage-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--card-border);
+      overflow: hidden;
+    }
+
+    .dash-billing-usage-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--brand);
+      transition: width 0.4s ease;
+    }
+
+    .dash-billing-usage-fill--high {
+      background: #f59e0b;
+    }
+
+    .dash-billing-usage-fill--full {
+      background: #ef4444;
+    }
+
+    .dash-plans-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .dash-plans-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .dash-plans-grid { grid-template-columns: 1fr; }
+    }
+
+    .dash-plan-card {
+      display: flex;
+      flex-direction: column;
+      padding: 28px 24px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 4px;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .dash-plan-card:hover {
+      border-color: #d4d4d4;
+    }
+
+    .dash-plan-card--featured {
+      border-color: rgba(37, 99, 235, 0.3);
+      background: var(--feat-blue);
+    }
+
+    .dash-plan-card--featured:hover {
+      border-color: rgba(37, 99, 235, 0.5);
+    }
+
+    .dash-plan-card--current {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 1px var(--brand);
+    }
+
+    .dash-plan-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .dash-plan-card--featured .dash-plan-badge {
+      color: var(--brand-dark);
+    }
+
+    .dash-plan-price {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+    }
+
+    .dash-plan-price span {
+      font-size: 14px;
+      color: var(--text-body);
+      font-family: var(--sans);
+      font-weight: 400;
+    }
+
+    .dash-plan-features {
+      list-style: none;
+      margin: 0 0 24px;
+      flex: 1;
+    }
+
+    .dash-plan-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.4;
+    }
+
+    .dash-plan-features li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+      flex-shrink: 0;
+    }
+
+    .dash-plan-cta {
+      margin-top: auto;
+    }
+
+    .dash-plan-cta .btn-brand {
+      width: 100%;
+      padding: 10px 16px;
+    }
+
+    .dash-plan-current-label {
+      display: block;
+      text-align: center;
+      padding: 10px 16px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--panel-bg);
+    }
+
+    .dash-billing-note {
+      font-size: 13px;
+      color: var(--text-body);
+      line-height: 1.5;
+    }
+
+    .dash-billing-note a {
+      color: var(--brand);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .dash-billing-note a:hover {
+      color: var(--brand-dark);
+    }
+
+    /* ── Coding Agents ── */
+    .dash-coding-cta {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 28px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 4px;
+      background: linear-gradient(135deg, #fff 0%, #f0f5ff 100%);
+      margin-bottom: 24px;
+    }
+    .dash-coding-cta-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .dash-coding-cta-text h3 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .dash-coding-cta-text p {
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .dash-coding-cta-code {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    .dash-coding-cta-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .dash-coding-cta-actions .btn-brand {
+      padding: 10px 20px;
+    }
+    .dash-coding-summary {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+      .dash-coding-summary { flex-wrap: wrap; }
+    }
+    .dash-coding-summary-stat {
+      flex: 1;
+      min-width: 120px;
+      padding: 18px 16px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 4px;
+      background: #fff;
+      text-align: center;
+    }
+    .dash-coding-summary-stat--accent {
+      border-color: rgba(37, 99, 235, 0.3);
+      background: var(--feat-blue);
+    }
+    .dash-coding-summary-n {
+      display: block;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .dash-coding-summary-l {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+  </style>
+  <!-- Preconnect hints for faster external resource loading -->
+  <link rel="preconnect" href="https://github.com" />
+  <link rel="dns-prefetch" href="https://github.com" />
+  
+  <!-- Vercel Web Analytics -->
+  <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://supercompress.dev/"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API Dashboard",
+      "item": "https://supercompress.dev/dashboard"
+    }]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Create and manage SuperCompress API keys, view usage analytics, and manage billing for the hosted prompt compression API.",
+    "url": "https://supercompress.dev/dashboard",
+    "sameAs": "https://github.com/Supercompress/Supercompress",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+<body class="df-page dash-page">
+
+  <div class="df-page-inner">
+    <header class="df-header">
+      <div class="df-header-blur" aria-hidden="true"></div>
+      <div class="df-header-inner">
+        <a href="/" class="df-logo-desktop">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word">Super<em>Compress</em></span>
+        </a>
+
+        <div class="df-header-end">
+          <nav class="df-nav-pill" aria-label="Dashboard">
+            <a href="/">Home</a>
+            <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+            <a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a>
+          </nav>
+          <div class="dash-profile hidden" id="dash-profile">
+            <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu">
+              <span class="dash-profile-initial" id="dash-profile-initial">?</span>
+            </button>
+            <div class="dash-profile-dropdown">
+              <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
+              <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
+              <button type="button" class="dash-profile-signout" id="dash-signout">Sign out</button>
+            </div>
+          </div>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M23.6004 9.5927l-.0337-.0862L20.3.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412l-3.935 8.604H8.924L4.989.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412L.434 9.5065l-.032.0862c-.468 1.228-.148 2.628.804 3.55l.008.008.022.02 6.044 4.533-.032.024 5.735 4.36 5.735-4.36-.033-.024 6.045-4.533.022-.02.008-.008c.95-.922 1.27-2.322.803-3.55z"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="df-mobile-bar">
+          <a href="/" class="df-logo-mobile">
+            <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
+            <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+          </a>
+          <button type="button" class="df-menu-btn" id="df-menu-btn" aria-label="Toggle menu" aria-expanded="false">
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <div class="df-mobile-nav hidden" id="df-mobile-nav">
+        <a href="/">Home</a>
+        <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+        <a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a>
+        <a href="https://github.com/Supercompress/Supercompress">GitHub</a>
+      </div>
+    </header>
+
+    <div class="df-header-spacer" aria-hidden="true"></div>
+
+    <!-- Auth -->
+    <section class="dash-auth" id="view-auth">
+      <div class="dash-auth-card">
+        <p class="dash-section-label">API Dashboard</p>
+        <h1 id="auth-title">Sign in</h1>
+        <p class="dash-auth-sub" id="auth-subtitle">Sign in or create an account to manage API keys, usage, and billing.</p>
+
+        <div id="firebase-auth-area">
+          <button type="button" class="dash-btn-google" id="btn-google">
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Continue with Google
+          </button>
+          <div class="dash-auth-divider">or</div>
+          <div class="dash-auth-tabs">
+            <button type="button" class="dash-auth-tab active" data-tab="signin">Log in</button>
+            <button type="button" class="dash-auth-tab" data-tab="signup">Sign up</button>
+          </div>
+          <form class="dash-auth-form" id="auth-form">
+            <label class="dash-field-label" for="auth-email">Email</label>
+            <input class="dash-field-input" id="auth-email" type="email" required autocomplete="email" />
+            <label class="dash-field-label" for="auth-password">Password</label>
+            <input class="dash-field-input" id="auth-password" type="password" required minlength="6" autocomplete="current-password" />
+            <button type="submit" class="btn-brand dash-auth-submit" id="auth-submit">Log in</button>
+          </form>
+        </div>
+
+        <div id="dev-auth-area" class="hidden">
+          <p class="dash-auth-sub">Sign in with email. If Firebase auth is unavailable on this deployment, configure <code>FIREBASE_*</code> variables and redeploy, or use dev mode if enabled.</p>
+          <form class="dash-auth-form" id="dev-auth-form">
+            <label class="dash-field-label" for="dev-email">Email</label>
+            <input class="dash-field-input" id="dev-email" type="email" required placeholder="you@company.com" />
+            <button type="submit" class="btn-brand dash-auth-submit">Log in</button>
+          </form>
+        </div>
+
+        <p class="dash-auth-error hidden" id="auth-error"></p>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <div class="dash-shell hidden" id="view-dashboard">
+      <div class="df-container df-container-wide">
+        <div class="dash-api-banner hidden" id="dash-api-banner">
+          <strong>Offline demo mode.</strong> Could not reach the hosted API — keys are stored in this browser only. Refresh once the API is available, or run locally:
+          <code>SC_AUTH_DEV=1 SC_KEY_STORE=memory python scripts/local_web_server.py</code>
+        </div>
+
+        <div class="dash-info-banner" id="dash-info-banner">
+          <strong>Production API.</strong> Calls to <code>/api/v1/compress</code> with your key are metered here. The landing-page impact calculator runs the same engine in-browser and does not use your key or appear in usage.
+        </div>
+
+        <nav class="dash-topnav" aria-label="Dashboard sections">
+          <button type="button" class="dash-topnav-item active" data-panel="keys">API keys</button>
+          <button type="button" class="dash-topnav-item" data-panel="usage">Usage</button>
+          <button type="button" class="dash-topnav-item" data-panel="agents">Coding Agents</button>
+          <button type="button" class="dash-topnav-item" data-panel="billing">Billing</button>
+          <a class="dash-topnav-item dash-topnav-link" href="/docs/" target="_blank" rel="noopener">Documentation ↗</a>
+        </nav>
+
+        <div id="panel-keys">
+          <div class="dash-panel-head">
+            <div>
+              <h1>API keys</h1>
+              <p>Get a key, install the package, call <code>compress()</code>. That’s it.</p>
+            </div>
+            <button type="button" class="btn-brand" id="btn-create-key">Create key</button>
+          </div>
+
+          <div class="dash-integrate" id="dash-integrate">
+            <div class="dash-integrate-head">
+              <p class="dash-integrate-label">Integrate in 2 steps</p>
+              <div class="dash-snippet-tabs" role="tablist" aria-label="Code example">
+                <button type="button" class="dash-snippet-tab active" data-snippet="python">Python</button>
+                <button type="button" class="dash-snippet-tab" data-snippet="node">Node</button>
+                <button type="button" class="dash-snippet-tab" data-snippet="curl">cURL</button>
+              </div>
+            </div>
+            <pre class="dash-snippet-code" id="dash-snippet-code" aria-live="polite"></pre>
+            <div class="dash-integrate-actions">
+              <button type="button" class="btn-link-muted dash-snippet-copy" id="btn-copy-snippet">Copy code</button>
+              <span class="dash-integrate-hint">Set <code>SUPERCOMPRESS_API_KEY</code> or paste your key below.</span>
+            </div>
+          </div>
+
+          <div class="dash-stats" id="keys-stats">
+            <div class="dash-stat-card">
+              <span class="dash-stat-n" id="stat-keys">0</span>
+              <span class="dash-stat-l">Active keys</span>
+            </div>
+            <div class="dash-stat-card dash-stat-card--accent">
+              <span class="dash-stat-n" id="stat-requests">0</span>
+              <span class="dash-stat-l">Total requests</span>
+            </div>
+            <div class="dash-stat-card">
+              <span class="dash-stat-n" id="stat-saved">0</span>
+              <span class="dash-stat-l">Tokens saved</span>
+            </div>
+            <div class="dash-stat-card">
+              <span class="dash-stat-n" id="stat-in">0</span>
+              <span class="dash-stat-l">Tokens in</span>
+            </div>
+          </div>
+
+          <div class="dash-keys-grid" id="keys-grid">
+            <p class="dash-empty">No API keys yet. Create one to get started.</p>
+          </div>
+        </div>
+
+        <div id="panel-usage" class="hidden">
+          <div class="dash-panel-head">
+            <div>
+              <h1>Usage by key</h1>
+              <p>Every <code>POST /api/v1/compress</code> with your key updates this table. Send a test request to verify metering.</p>
+            </div>
+            <button type="button" class="btn-brand" id="btn-test-key">Send test request</button>
+          </div>
+          <div class="dash-table-panel">
+            <div class="dash-table-wrap">
+              <table class="dash-table" id="usage-table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Requests</th>
+                    <th>Tokens in</th>
+                    <th>Kept</th>
+                    <th>Saved</th>
+                    <th>Last used</th>
+                  </tr>
+                </thead>
+                <tbody id="usage-tbody">
+                  <tr><td colspan="6" class="dash-empty">No usage yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coding Agents -->
+        <div id="panel-agents" class="hidden">
+          <div class="dash-panel-head">
+            <div>
+              <h1>Coding Agents</h1>
+              <p>Track token usage per coding agent. Install <strong>SuperCompress</strong> to automatically compress compatible requests from the agents you use.</p>
+            </div>
+          </div>
+
+          <!-- CTA banner: shown when no coding agents have been used yet -->
+          <div class="dash-coding-cta" id="coding-cta">
+            <div class="dash-coding-cta-icon">⚡</div>
+            <div class="dash-coding-cta-text">
+              <h3>Connect your coding agents</h3>
+              <p>Install SuperCompress to automatically compress context from <strong>Cursor</strong>, <strong>Windsurf</strong>, <strong>Continue</strong>, <strong>Cline</strong>, <strong>Claude Code</strong>, <strong>Codex</strong>, and any OpenAI-compatible agent.</p>
+              <pre class="dash-coding-cta-code" id="coding-cta-code">npm install supercompress-proxy
+npm exec supercompress setup</pre>
+              <div class="dash-coding-cta-actions">
+                <a href="/docs/coding-agents" class="btn-brand" target="_blank" rel="noopener">Setup guide →</a>
+                <button type="button" class="btn-link-muted" id="btn-test-proxy">Already set up? Refresh stats</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agent usage table -->
+          <div class="dash-coding-stats hidden" id="coding-stats-container">
+            <div class="dash-coding-summary" id="coding-summary">
+              <div class="dash-coding-summary-stat">
+                <span class="dash-coding-summary-n" id="coding-total-agents">0</span>
+                <span class="dash-coding-summary-l">Agents</span>
+              </div>
+              <div class="dash-coding-summary-stat">
+                <span class="dash-coding-summary-n" id="coding-total-requests">0</span>
+                <span class="dash-coding-summary-l">Total requests</span>
+              </div>
+              <div class="dash-coding-summary-stat dash-coding-summary-stat--accent">
+                <span class="dash-coding-summary-n" id="coding-total-saved">0</span>
+                <span class="dash-coding-summary-l">Tokens saved</span>
+              </div>
+              <div class="dash-coding-summary-stat">
+                <span class="dash-coding-summary-n" id="coding-total-in">0</span>
+                <span class="dash-coding-summary-l">Tokens compressed</span>
+              </div>
+            </div>
+            <div class="dash-table-panel">
+              <div class="dash-table-wrap">
+                <table class="dash-table" id="coding-table">
+                  <thead>
+                    <tr>
+                      <th>Coding Agent</th>
+                      <th>Requests</th>
+                      <th>Tokens in</th>
+                      <th>Tokens out</th>
+                      <th>Tokens saved</th>
+                      <th>Savings %</th>
+                      <th>Last used</th>
+                    </tr>
+                  </thead>
+                  <tbody id="coding-tbody">
+                    <tr><td colspan="7" class="dash-empty">No coding agent usage yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing / PAYG -->
+        <div id="panel-billing" class="hidden">
+          <div class="dash-panel-head">
+            <div>
+              <h1>Usage &amp; billing</h1>
+              <p>Every account includes $5 free tokens each month (5M). After that, enable pay-as-you-go at $1 per 1M tokens.</p>
+            </div>
+          </div>
+
+          <!-- Current allowance + PAYG status -->
+          <div class="dash-billing-status" id="billing-status-card">
+            <div class="dash-billing-status-loader">Loading billing status…</div>
+          </div>
+
+          <div class="dash-plans-grid" id="plans-grid">
+            <div class="dash-plan-card" data-plan="free">
+              <div class="dash-plan-badge">Included free</div>
+              <div class="dash-plan-price">$5<span> / mo</span></div>
+              <ul class="dash-plan-features">
+                <li>5M tokens every month</li>
+                <li>Hard stop when allowance runs out</li>
+                <li>Up to 10 API keys</li>
+              </ul>
+              <div class="dash-plan-cta">
+                <span class="dash-plan-current-label" id="free-plan-label">Included</span>
+              </div>
+            </div>
+
+            <div class="dash-plan-card dash-plan-card--featured" data-plan="payg">
+              <div class="dash-plan-badge">Pay as you go</div>
+              <div class="dash-plan-price">$1<span> / 1M tokens</span></div>
+              <ul class="dash-plan-features">
+                <li>Same 5M free included</li>
+                <li>Unlimited after free allowance</li>
+                <li>Card on file · billed monthly</li>
+              </ul>
+              <div class="dash-plan-cta">
+                <button type="button" class="dash-plan-btn btn-brand" data-plan-btn="payg" id="btn-enable-payg">Add payment method</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-billing-note">
+            <p>Questions about usage billing? <a href="mailto:arjunkshah21@gmail.com">Contact us</a>.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Create key modal -->
+  <div class="dash-modal hidden" id="modal-create">
+    <div class="dash-modal-card">
+      <h2>Name your key</h2>
+      <label class="dash-field-label" for="key-name">Key name</label>
+      <input class="dash-field-input" id="key-name" type="text" placeholder="Production" maxlength="80" />
+      <button type="button" class="btn-brand" id="btn-confirm-create">Create</button>
+      <button type="button" class="btn-link-muted" id="btn-cancel-create">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Secret reveal modal -->
+  <div class="dash-modal hidden" id="modal-secret">
+    <div class="dash-modal-card dash-modal-card--wide">
+      <h2>You're ready to integrate</h2>
+      <p class="dash-warn">Copy your API key now — it’s only shown once.</p>
+      <code class="dash-key-full" id="secret-value"></code>
+      <button type="button" class="btn-brand" id="btn-copy-secret">Copy key</button>
+
+      <div class="dash-integrate dash-integrate--modal">
+        <div class="dash-integrate-head">
+          <p class="dash-integrate-label">Then paste this into your app</p>
+          <div class="dash-snippet-tabs" role="tablist" aria-label="Integration example">
+            <button type="button" class="dash-snippet-tab active" data-snippet="python" data-snippet-scope="modal">Python</button>
+            <button type="button" class="dash-snippet-tab" data-snippet="node" data-snippet-scope="modal">Node</button>
+            <button type="button" class="dash-snippet-tab" data-snippet="curl" data-snippet-scope="modal">cURL</button>
+          </div>
+        </div>
+        <pre class="dash-snippet-code" id="modal-snippet-code"></pre>
+        <button type="button" class="btn-link-muted dash-snippet-copy" id="btn-copy-modal-snippet">Copy code</button>
+      </div>
+
+      <button type="button" class="btn-link-muted" id="btn-close-secret">Done</button>
+    </div>
+  </div>
+
+  <!-- Rename modal -->
+  <div class="dash-modal hidden" id="modal-rename">
+    <div class="dash-modal-card">
+      <h2>Rename key</h2>
+      <label class="dash-field-label" for="rename-input">New name</label>
+      <input class="dash-field-input" id="rename-input" type="text" maxlength="80" />
+      <button type="button" class="btn-brand" id="btn-confirm-rename">Save</button>
+      <button type="button" class="btn-link-muted" id="btn-cancel-rename">Cancel</button>
+    </div>
+  </div>
+
+  <script src="assets/js/firebase-config.js?v=3"></script>
+  <script src="assets/js/supercompress.js?v=1"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=14"></script>
+  <script src="assets/js/affiliate-track.js?v=1"></script>
+</body>
+</html>

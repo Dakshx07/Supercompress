@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Everything is managed server-side only (Admin SDK).
+    // Clients read/write nothing directly — dashboard goes through FastAPI.
+    match /users/{userId}/{document=**} {
+      allow read, write: if false;
+    }
+    match /key_index/{hash} {
+      allow read, write: if false;
+    }
+    match /keys/{keyId} {
+      allow read, write: if false;
+    }
+    match /usage/{userId}/{document=**} {
+      allow read, write: if false;
+    }
+    match /config/{document=**} {
+      allow read, write: if false;
+    }
+    match /ccr/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

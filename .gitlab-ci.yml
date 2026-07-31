@@ -1,0 +1,30 @@
+stages:
+  - verify
+
+python-smoke:
+  stage: verify
+  image: python:3.11-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - python -m pip install -e .
+  script:
+    - |
+      python - <<'PY'
+      from supercompress import compress_context
+
+      result = compress_context(
+          "The checkout failed because the database pool was exhausted.",
+          "Why did checkout fail?",
+      )
+      assert result.compressed_text
+      assert result.kept_tokens <= result.original_tokens
+      print(f"ok: {result.original_tokens} -> {result.kept_tokens} tokens")
+      PY
+
+javascript-syntax:
+  stage: verify
+  image: node:20-slim
+  script:
+    - node --check mcp/server.js
+    - node --check packages/proxy/bin/supercompress.js
+    - node --check api/v1/compress.js

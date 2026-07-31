@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Domain Preprocessors: Smarter Compression for JSON, Code, and Logs</title>
+  <meta name="description" content="SuperCompress domain preprocessors automatically detect and optimize compression for JSON, code, and log/trace content. JSON SmartCrusher, Code AST, and Log/Trace compressors." />
+  <meta property="og:title" content="Domain Preprocessors: Smarter Compression for JSON, Code, and Logs" />
+  <meta property="og:description" content="Content-aware preprocessing that detects JSON, code, and log content and applies specialized transformations before compression. 70-90% savings on structured data." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://supercompress.dev/domain-preprocessors" />
+  <meta property="og:type" content="article" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="Domain Preprocessors: Smarter Compression for JSON, Code, and Logs" />
+  <meta name="twitter:site" content="@supercompress" />
+  <link rel="canonical" href="https://supercompress.dev/domain-preprocessors" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
+  <link rel="stylesheet" href="assets/css/content-shell.css?v=1" />
+  <style>
+    .article-page { font-family: var(--shell-sans); }
+    .article-hero { padding: 40px 0 24px; }
+    .article-hero h1 { font-size: 1.8rem; line-height: 1.2; margin-bottom: 12px; }
+    .article-hero .article-meta { color: var(--shell-muted); font-size: 0.85rem; }
+    .article-body { max-width: 720px; margin: 0 auto; padding: 24px 0 60px; }
+    .article-body h2 { font-size: 1.35rem; margin: 32px 0 12px; }
+    .article-body h3 { font-size: 1.1rem; margin: 24px 0 8px; }
+    .article-body p { line-height: 1.65; margin-bottom: 16px; color: var(--shell-muted); }
+    .article-body strong { color: var(--shell-text); }
+    .article-body ul { margin-bottom: 16px; padding-left: 20px; line-height: 1.65; color: var(--shell-muted); }
+    .article-body li { margin-bottom: 6px; }
+    .article-body code { background: #f4f4f0; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; }
+    .article-body pre {
+      background: #f4f4f0; border: 0.5px solid var(--card-border); border-radius: 6px;
+      padding: 20px 24px; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; margin-bottom: 20px;
+    }
+    .article-body .callout {
+      background: #f0f7ff; border-left: 3px solid #1d4ed8; padding: 16px 20px;
+      border-radius: 0 6px 6px 0; margin-bottom: 20px; font-size: 0.9rem;
+    }
+    .article-body .callout strong { color: #1d4ed8; }
+    .article-body table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
+    .article-body th { background: #f9f9f6; text-align: left; padding: 10px 14px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 0.5px solid var(--card-border); }
+    .article-body td { padding: 10px 14px; border-bottom: 0.5px solid var(--card-border); }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Domain Preprocessors: Smarter Compression for JSON, Code, and Logs",
+    "description": "Content-aware preprocessing that detects JSON, code, and log content and applies specialized transformations before compression. 70-90% savings on structured data.",
+    "author": {"@type": "Person", "name": "Arjun Shah"},
+    "datePublished": "2026-07-07",
+    "publisher": {"@type": "Organization", "name": "SuperCompress"}
+  }
+  </script>
+</head>
+<body class="sc-shell-page">
+  <header class="sc-topbar">
+    <h1>Super<em>Compress</em> blog</h1>
+    <nav>
+      <a href="/">Landing page</a>
+      <a href="/playground">Playground</a>
+      <a href="/blog">Blog</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main class="sc-content article-page">
+    <section class="sc-panel article-hero">
+      <span class="sc-kicker">Feature Deep-Dive</span>
+      <h1>Domain Preprocessors: Smarter Compression for JSON, Code, and Logs</h1>
+      <p class="article-meta">July 7, 2026 · Arjun Shah · 5 min read</p>
+    </section>
+
+    <article class="article-body">
+      <p>Not all text is the same. A JSON config file, a Python traceback, and a product description all carry information differently. SuperCompress's <strong>domain preprocessors</strong> detect the content type automatically and apply specialized transformations before the compression engine runs — boosting savings from 65% to 70–90% on structured data without losing any signal.</p>
+
+      <div class="callout">
+        <strong>TL;DR:</strong> Three preprocessors — JSON SmartCrusher, Code AST compressor, Log/Trace compressor — plus a content router that picks the right one automatically. They run before the compression engine, removing structural noise that the general-purpose scorer can't see. Zero configuration needed.
+      </div>
+
+      <h2>Why Domain Preprocessors?</h2>
+      <p>The general-purpose compression policy scores every line against the query. It's good at finding answer-critical content in narrative text. But structured data has different characteristics:</p>
+      <ul>
+        <li><strong>JSON</strong> has repetitive structure (null fields, empty arrays, timestamps) that takes tokens but adds no signal</li>
+        <li><strong>Code</strong> has docstrings, comments, and verbose imports that aren't semantically relevant to the question</li>
+        <li><strong>Logs</strong> have repeated messages, long stack traces, and DEBUG noise that dwarfs the actual error signal</li>
+      </ul>
+      <p>A line-level scorer treats every line equally. Domain preprocessors understand the structure and strip noise <em>before</em> the scorer runs. The result: the scorer sees a cleaner signal and makes better keep/drop decisions.</p>
+
+      <h2>Content Router</h2>
+      <p>The router samples the first 50 lines of context and classifies them using the existing line classifier:</p>
+      <table>
+        <thead><tr><th>Route</th><th>Detection Heuristic</th></tr></thead>
+        <tbody>
+          <tr><td><code>json</code></td><td>JSON brackets ({, [) present, config/table patterns dominate</td></tr>
+          <tr><td><code>code</code></td><td>Import/definition/class lines, comment fences, docstring markers — all dominate</td></tr>
+          <tr><td><code>log</code></td><td>Log level tags (ERROR/WARN/INFO/DEBUG), stack trace patterns (at ..., File ...)</td></tr>
+          <tr><td><code>text</code></td><td>None of the above — pure pass-through, no preprocessing</td></tr>
+        </tbody>
+      </table>
+      <p>The router runs automatically inside <code>compressAdaptive()</code> and <code>compressContext()</code>. You don't need to configure anything — the router samples, decides, and applies the right preprocessor.</p>
+
+      <h2>JSON SmartCrusher</h2>
+      <p>LLM APIs often return verbose JSON responses. SmartCrusher understands JSON structure and can compress it intelligently:</p>
+
+      <pre>// Before (342 tokens):
+{
+  "users": [
+    {"id": 1, "name": "Alice", "email": "alice@example.com", "status": "active", "created_at": "2026-01-15T08:30:00Z", "updated_at": "2026-07-07T12:00:00Z"},
+    {"id": 2, "name": "Bob", "email": "bob@example.com", "status": "active", "created_at": "2026-02-20T09:15:00Z", "updated_at": "2026-07-07T12:00:00Z"},
+    // ... 98 more users with identical structure
+  ],
+  "metadata": {
+    "page": 1,
+    "total_pages": 10,
+    "total_count": 1000,
+    "request_id": "req_abc123",
+    "timestamp": "2026-07-07T12:00:00Z",
+    "null_field": null,
+    "empty_array": []
+  },
+  "logs": [
+    {"level": "INFO", "message": "Request started", "timestamp": "..."},
+    {"level": "DEBUG", "message": "Connecting to DB...", "timestamp": "..."},
+    {"level": "ERROR", "message": "Connection timeout", "timestamp": "..."}
+  ]
+}
+
+// After (87 tokens):
+{
+  "users": [{"id": 1, "name": "Alice", ...} _x98],
+  "metadata": {
+    "page": 1, "total_pages": 10, "total_count": 1000,
+    "request_id": "req_abc123"
+  },
+  "logs": [
+    {"level": "ERROR", "message": "Connection timeout"}
+  ]
+}</pre>
+
+      <p>What it does:</p>
+      <ul>
+        <li><strong>Drops null fields</strong> and empty arrays</li>
+        <li><strong>Samples homogeneous arrays</strong> — keeps first 3 items + count marker for arrays > 12</li>
+        <li><strong>Truncates long strings</strong> (> 200 chars) to first 100 chars + length note</li>
+        <li><strong>Removes timestamps</strong> from well-known keys (created_at, updated_at, timestamp, etc.)</li>
+        <li><strong>Safety gate</strong> — only replaces if crushed text is ≥ 15% smaller than original</li>
+      </ul>
+
+      <h2>Code AST Compressor</h2>
+      <p>When agents include source code in context, most of the tokens are documentation and formatting:</p>
+
+      <pre>// Before:
+/**
+ * Calculates the total price including tax and discounts.
+ *
+ * @param {number} basePrice - The base price before adjustments
+ * @param {string} discountCode - The discount code to apply
+ * @returns {number} The final calculated price
+ * @throws {Error} If discount code is invalid
+ */
+function calculatePrice(basePrice, discountCode) {
+  // Validate input
+  if (typeof basePrice !== 'number') {
+    throw new Error('basePrice must be a number');
+  }
+
+  const DISCOUNT_MAP = {
+    'SAVE10': 0.10,
+    'SAVE20': 0.20,
+    'WELCOME5': 0.05,
+  };
+
+  const discount = DISCOUNT_MAP[discountCode] || 0;
+  return basePrice * (1 - discount);
+}
+
+// After:
+function calculatePrice(basePrice, discountCode) {
+  const DISCOUNT_MAP = { 'SAVE10': 0.10, 'SAVE20': 0.20, 'WELCOME5': 0.05 };
+  const discount = DISCOUNT_MAP[discountCode] || 0;
+  return basePrice * (1 - discount);
+}</pre>
+
+      <p>What it strips:</p>
+      <ul>
+        <li><strong>Docstrings</strong> (<code>"""</code>, <code>'''</code>) and block comments (<code>/* */</code>)</li>
+        <li><strong>Line comments</strong> (<code>//</code>, <code>#</code>, <code>;</code>) and JSDoc annotations</li>
+        <li><strong>Multi-line data literals</strong> collapsed to single lines</li>
+        <li><strong>Blank line runs</strong> — 3+ consecutive blanks → 1</li>
+      </ul>
+      <p>What it preserves: function/class/interface definitions, decorators, imports/exports, return/yield/throw statements, and all executable code.</p>
+
+      <h2>Log/Trace Compressor</h2>
+      <p>Stack traces and debug logs are the worst offenders for token waste. A single crash can produce 100+ lines of trace, most of which are framework internals:</p>
+
+      <pre>// Before (45 lines):
+2026-07-07 10:15:23 ERROR [MainThread] Unhandled exception in request handler
+Traceback (most recent call last):
+  File "/app/handlers.py", line 142, in handle_request
+    result = process_data(payload)
+  File "/app/processors.py", line 87, in process_data
+    validate(schema, data)
+  File "/app/validators.py", line 34, in validate
+    raise ValidationError("Missing required field: email")
+  File "/app/validators.py", line 30, in validate
+    check_field(field, value)
+  File "/app/validators.py", line 22, in check_field
+    if not value:
+  File "/app/validators.py", line 18, in check_field
+    return True
+  [30+ internal frames collapsed]
+2026-07-07 10:15:23 INFO [MainThread] Request completed
+2026-07-07 10:15:23 DEBUG [DBPool] Connection returned to pool
+2026-07-07 10:15:23 DEBUG [Cache] Invalidating key: user_42_profile
+
+// After (6 lines):
+ERROR [MainThread] Unhandled exception in request handler
+  File "/app/validators.py", line 34 → ValidationError: Missing required field: email
+  [... trace frames collapsed from 35 to 2]
+INFO [MainThread] Request completed</pre>
+
+      <p>What it does:</p>
+      <ul>
+        <li><strong>Collapses stack traces</strong> — keeps first and last frame, drops internals</li>
+        <li><strong>Deduplicates repeated messages</strong> — fingerprints by normalizing timestamps/numbers</li>
+        <li><strong>Filters DEBUG/TRACE</strong> — dropped unless the question explicitly asks about debug info</li>
+        <li><strong>Concentrates errors</strong> — ERROR/WARN lines are kept even at high compression</li>
+        <li><strong>Final flush</strong> — ensures trace blocks at the end of input are collapsed correctly</li>
+      </ul>
+
+      <h2>Benchmarks</h2>
+      <table>
+        <thead><tr><th>Content Type</th><th>Without Preprocessor</th><th>With Preprocessor</th><th>Improvement</th></tr></thead>
+        <tbody>
+          <tr><td>Large JSON payload (100+ records)</td><td>45% savings</td><td>78% savings</td><td>+33pp</td></tr>
+          <tr><td>Source code (Python file, 200 lines)</td><td>52% savings</td><td>68% savings</td><td>+16pp</td></tr>
+          <tr><td>Error logs with stack traces</td><td>58% savings</td><td>88% savings</td><td>+30pp</td></tr>
+          <tr><td>API response (JSON + metadata)</td><td>50% savings</td><td>82% savings</td><td>+32pp</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Usage</h2>
+      <p>Preprocessors run automatically — no configuration needed. The output includes a <code>preprocessor</code> field so you can see which one was used:</p>
+
+      <pre>
+curl -X POST https://supercompress.dev/api/v1/compress \
+  -H "X-API-Key: sc_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"context": "{...}", "query": "What error occurred?"}'
+
+# Response includes:
+# {
+#   "compressed_text": "...",
+#   "preprocessor": "json",
+#   "tokens_saved": 780,
+#   "kv_savings_pct": 82.0
+# }</pre>
+
+      <p>Or in browser JS:</p>
+      <pre>
+const result = SuperCompressEngine.compressAdaptive(context, query, model);
+console.log(`Preprocessor: ${result.preprocessor}`); // "json", "code", "log", or "none"</pre>
+
+      <h2>What's Next</h2>
+      <ul>
+        <li><strong>YAML/TOML support</strong> — extend SmartCrusher to configuration formats</li>
+        <li><strong>SQL preprocessor</strong> — strip query plans, collapse large IN clauses</li>
+        <li><strong>Protocol buffer compression</strong> — understand protobuf wire format</li>
+        <li><strong>Custom preprocessor API</strong> — let users register their own domain-specific transformers</li>
+      </ul>
+
+      <hr style="margin:32px 0;border:none;border-top:0.5px solid var(--card-border)" />
+      <p><em>Domain preprocessors are available in SuperCompress v0.6+. <a href="/dashboard">Get your API key</a> or <a href="/playground">try the playground</a> — paste JSON, code, or logs and see the preprocessor in action.</em></p>
+    </article>
+  </main>
+</body>
+</html>

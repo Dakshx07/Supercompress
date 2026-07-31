@@ -1,0 +1,40 @@
+{
+  "name": "supercompress-cli",
+  "version": "1.0.4",
+  "description": "SuperCompress CLI — auto-compress LLM context for coding agents. Cuts ~65% of token costs.",
+  "keywords": [
+    "supercompress",
+    "prompt-compression",
+    "cursor",
+    "windsurf",
+    "continue",
+    "cline",
+    "claude-code",
+    "token-compression",
+    "llm-cost"
+  ],
+  "homepage": "https://supercompress.dev/docs/coding-agents",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Supercompress/Supercompress.git",
+    "directory": "packages/supercompress-cli"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "commonjs",
+  "bin": {
+    "supercompress": "bin/supercompress.js"
+  },
+  "files": [
+    "bin/",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "echo '✓ supercompress-cli installed! Run: supercompress setup'"
+  },
+  "dependencies": {
+    "@agents-npm-packages/supercompress": "^1.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

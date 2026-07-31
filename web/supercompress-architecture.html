@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress Architecture — How Query-Aware Prompt Compression Works | SuperCompress</title>
+  <meta name="description" content="Deep dive into SuperCompress's architecture: the ~5K-parameter query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 65% token reduction with 97% oracle recall." />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="SuperCompress Architecture — How Query-Aware Prompt Compression Works" />
+  <meta property="og:description" content="How a ~5K-parameter CPU policy achieves 65% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
+  <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress Architecture — Query-Aware Prompt Compression" />
+  <meta name="twitter:description" content="How the ~5K-parameter policy works: segmentation, scoring, compilation, and verification." />
+  <link rel="canonical" href="https://supercompress.dev/supercompress-architecture" />
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SuperCompress Architecture — How Query-Aware Prompt Compression Works",
+    "description": "Technical deep dive into SuperCompress's query-aware compression architecture: ~5K-parameter policy, segment-then-score pipeline, compiler mode, and verifier.",
+    "datePublished": "2026-07-03",
+    "author": { "@type": "Organization", "name": "SuperCompress" },
+    "publisher": { "@type": "Organization", "name": "SuperCompress", "url": "https://supercompress.dev" }
+  }</script>
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://supercompress.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Architecture", "item": "https://supercompress.dev/supercompress-architecture" }
+    ]
+  }</script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #08080e; color: #c8c8d0; line-height: 1.7; }
+    .container { max-width: 860px; margin: 0 auto; padding: 64px 24px 96px; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 300; color: #f0f0f8; letter-spacing: -.03em; margin-bottom: 8px; }
+    .meta { color: #666; font-size: 0.85rem; margin-bottom: 12px; }
+    .subtitle { color: #888; font-size: 1.05rem; margin-bottom: 48px; max-width: 680px; }
+    h2 { font-size: 1.3rem; font-weight: 400; color: #e0e0f0; margin: 48px 0 16px; letter-spacing: -.01em; border-top: 1px solid #1c1c2e; padding-top: 40px; }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 400; color: #d0d0e0; margin: 28px 0 10px; }
+    p { font-size: 0.92rem; color: #999; margin-bottom: 16px; }
+    a { color: #a78bfa; text-decoration: none; }
+    a:hover { color: #c4b5fd; text-decoration: underline; }
+    ul, ol { margin: 0 0 16px 20px; }
+    li { font-size: 0.9rem; color: #999; margin-bottom: 6px; }
+    li strong { color: #c8c8d8; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; background: #0d0d16; padding: 1px 5px; border-radius: 4px; color: #b0b0c8; }
+    pre { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 8px; padding: 16px; overflow-x: auto; margin-bottom: 20px; }
+    pre code { background: none; padding: 0; font-size: 0.78rem; line-height: 1.6; color: #a0a0b8; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.85rem; }
+    th { text-align: left; padding: 10px 12px; background: #0d0d16; color: #b0b0c8; font-weight: 500; border-bottom: 1px solid #1c1c2e; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1c1c2e; color: #999; }
+    tr:hover td { background: #0d0d16; }
+    .highlight-box { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 10px; padding: 24px; margin: 24px 0; }
+    .highlight-box h3 { margin: 0 0 10px; font-size: 0.95rem; color: #a78bfa; }
+    .cta-section { margin-top: 48px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: 10px; background: #7c3aed; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: all .15s; }
+    .btn:hover { background: #6d28d9; transform: translateY(-1px); text-decoration: none; }
+    .btn-outline { background: transparent; border: 1px solid #2d2d44; color: #b0b0c8; }
+    .btn-outline:hover { border-color: #7c3aed; color: #c4b5fd; background: rgba(124,58,237,0.08); text-decoration: none; }
+    .toc { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; }
+    .toc h2 { font-size: 0.95rem; font-weight: 600; color: #a78bfa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: .06em; border: none; padding: 0; }
+    .toc ol { list-style: none; padding: 0; margin: 0; }
+    .toc li { padding: 5px 0; font-size: 0.9rem; }
+    .toc li a { color: #b0b0c8; }
+    .toc li a:hover { color: #c4b5fd; }
+    .flow-diagram { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 10px; padding: 20px; margin: 20px 0; font-family: 'SF Mono', monospace; font-size: 0.82rem; color: #888; line-height: 2; text-align: center; }
+    .flow-diagram .arrow { color: #a78bfa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SuperCompress Architecture</h1>
+    <p class="meta">Last updated July 3, 2026 · 10 min read</p>
+    <p class="subtitle">How a ~5,000-parameter query-aware policy running on CPU removes ~65% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
+
+    <div class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#overview">1. System Overview</a></li>
+        <li><a href="#pipeline">2. The Compression Pipeline</a></li>
+        <li><a href="#policy">3. The Learned Policy</a></li>
+        <li><a href="#compiler">4. Compiler Mode</a></li>
+        <li><a href="#verifier">5. The Verifier</a></li>
+        <li><a href="#deployment">6. Deployment Architecture</a></li>
+        <li><a href="#comparison">7. Comparison with Alternatives</a></li>
+      </ol>
+    </div>
+
+    <section id="overview">
+      <h2>1. System Overview</h2>
+      <p>SuperCompress is a query-aware context compression engine. It sits between your application and the LLM, analyzing every line of the prompt against the user's question and removing content that scores low on relevance.</p>
+
+      <div class="flow-diagram">
+        Context + Query<br/>
+        <span class="arrow">↓</span><br/>
+        Segmenter → Scorer (<strong>~5K params</strong>) → Compiler → Verifier<br/>
+        <span class="arrow">↓</span><br/>
+        Compressed Context → LLM
+      </div>
+
+      <p>The key design choices:</p>
+      <ul>
+        <li><strong>~5K parameters</strong> — a tiny feed-forward network that runs on CPU in ~15ms. No GPU needed.</li>
+        <li><strong>Query-aware</strong> — scores each passage against the user's specific question, not just the content type.</li>
+        <li><strong>No model download</strong> — the policy is bundled in the pip package (~200KB total).</li>
+        <li><strong>Deterministic given inputs</strong> — same context + query always produces the same compression. Predictable and auditable.</li>
+      </ul>
+
+      <p>The system is designed for <a href="/serverless-prompt-compression">serverless deployment</a> — cold start is ~60ms, making it suitable for AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</p>
+    </section>
+
+    <section id="pipeline">
+      <h2>2. The Compression Pipeline</h2>
+
+      <h3>Step 1: Segmentation</h3>
+      <p>The input context is split into semantic segments. Each segment is a coherent unit — a paragraph, a code block, a list item, or a section of a log file. The segmenter uses heuristics (blank lines, indentation, markdown headers, code fence boundaries) to identify natural breaks.</p>
+
+      <h3>Step 2: Feature Extraction</h3>
+      <p>Each segment is converted into a feature vector that captures:</p>
+      <ul>
+        <li><strong>Lexical overlap</strong> — n-gram similarity between the segment and the query</li>
+        <li><strong>Positional features</strong> — where the segment appears in the context (beginning, middle, end)</li>
+        <li><strong>Structural features</strong> — whether it's code, prose, JSON, markdown, etc.</li>
+        <li><strong>Novelty score</strong> — information overlap with previously seen segments</li>
+      </ul>
+
+      <h3>Step 3: Scoring</h3>
+      <p>The learned policy takes the feature vector and outputs a relevance score (0–1) for each segment. The threshold is adaptive — the policy adjusts its cutoff based on the distribution of scores and the target compression ratio.</p>
+
+      <h3>Step 4: Assembly</h3>
+      <p>Segments with relevance scores above the threshold are assembled back into compressed context, preserving their original order. The assembly step also handles edge cases: keeping context boundaries legible, re-inserting necessary transition text, and ensuring the output is valid for the downstream LLM.</p>
+
+      <div class="highlight-box">
+        <h3>Key property: oracle recall</h3>
+        <p>SuperCompress targets 97%+ oracle recall — meaning the compressed prompt contains virtually all the information needed to answer the query, even when evaluated against the full original context. This is achieved by keeping the scorer conservative: when uncertain, it keeps the segment rather than dropping it.</p>
+      </div>
+    </section>
+
+    <section id="policy">
+      <h2>3. The Learned Policy</h2>
+
+      <p>The policy is a small feed-forward neural network with approximately 5,000 parameters. To put that in context:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Parameters</th>
+            <th>Relative size</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SuperCompress policy</td>
+            <td><strong>~5K</strong></td>
+            <td>1×</td>
+          </tr>
+          <tr>
+            <td><a href="/supercompress-vs-headroom">Headroom (ModernBERT)</a></td>
+            <td>165M+</td>
+            <td>33,000×</td>
+          </tr>
+          <tr>
+            <td>GPT-2 Small</td>
+            <td>124M</td>
+            <td>24,800×</td>
+          </tr>
+          <tr>
+            <td>BERT-Base</td>
+            <td>110M</td>
+            <td>22,000×</td>
+          </tr>
+          <tr>
+            <td>MiniLM-L6</td>
+            <td>22.7M</td>
+            <td>4,540×</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The small size is intentional. It means:</p>
+      <ul>
+        <li>The policy fits in L1 cache on modern CPUs — no memory bottleneck</li>
+        <li>Inference completes in microseconds per segment</li>
+        <li>The entire package (policy + code) is ~200KB — fits in a single network packet</li>
+        <li>No GPU, no ONNX Runtime, no model download</li>
+        <li><a href="/edge-prompt-compression">Edge deployment</a> is straightforward — the policy compiles to WASM for Cloudflare Workers</li>
+      </ul>
+
+      <p>The policy was trained on a dataset of ~100K (context, query, keep/drop) examples generated from real production prompts across customer support, code generation, data extraction, and Q&A tasks. Training used a contrastive loss that penalizes dropping segments that contain information needed to answer the query.</p>
+    </section>
+
+    <section id="compiler">
+      <h2>4. Compiler Mode</h2>
+
+      <p>In addition to the basic scoring policy, SuperCompress offers a <strong>compiler mode</strong> that applies a second-pass optimization. The compiler:</p>
+
+      <ol>
+        <li><strong>Deduplicates</strong> — removes repeated information across segments, keeping the most complete version</li>
+        <li><strong>Strips tool noise</strong> — removes boilerplate from tool outputs, stack traces, and logging statements that don't contribute to the answer</li>
+        <li><strong>Preserves dependencies</strong> — if a later segment references an earlier definition, both are kept even if one scores low individually</li>
+        <li><strong>Reports verification risk</strong> — the compiler flags segments where dropping them carries uncertainty, producing a risk score alongside the compressed output</li>
+      </ol>
+
+      <p>On the bundled long-context presets, compiler mode achieves <strong>82.5% average token savings</strong> with low-risk verification — compared to ~65% for the basic scoring policy alone.</p>
+    </section>
+
+    <section id="verifier">
+      <h2>5. The Verifier</h2>
+
+      <p>The verifier is a lightweight post-processing step that checks the compressed output for potential information loss. It answers two questions:</p>
+
+      <ul>
+        <li><strong>Entity coverage:</strong> Are all named entities from the original context that are relevant to the query preserved in the compressed output?</li>
+        <li><strong>Dependency integrity:</strong> If the context defines a term or concept that the query references, is that definition still present?</li>
+      </ul>
+
+      <p>The verifier produces a risk score (low, medium, high) for each compression. Applications can use this score to decide whether to use the compressed output, fall back to the original, or route to a more expensive model for verification.</p>
+
+      <p>In practice, >95% of compressions across the benchmark suite receive a low-risk score, and the high-risk cases are typically very short prompts where compression has little room to operate.</p>
+    </section>
+
+    <section id="deployment">
+      <h2>6. Deployment Architecture</h2>
+
+      <p>SuperCompress ships in three forms:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Form</th>
+            <th>Use case</th>
+            <th>Latency</th>
+            <th>Setup</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Python library</strong></td>
+            <td>Local in-process compression</td>
+            <td>~15ms</td>
+            <td><code>pip install supercompress</code></td>
+          </tr>
+          <tr>
+            <td><strong>Hosted API</strong></td>
+            <td>Zero-infrastructure compression</td>
+            <td>~5ms + network</td>
+            <td>Get a key at <a href="/dashboard">/dashboard</a></td>
+          </tr>
+          <tr>
+            <td><strong>GitLab CI</strong></td>
+            <td>CI/CD pipeline compression</td>
+            <td>—</td>
+            <td><code>uses: arjunkshah/supercompress/.github/actions/...</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>All three forms share the same core policy and produce identical compression results for the same inputs. The hosted API adds automatic scaling, rate limiting, and usage analytics through the <a href="/dashboard">dashboard</a>.</p>
+
+      <p>For framework-specific setup, see the integration guides for <a href="/fastapi-compression-middleware">FastAPI</a>, <a href="/flask-compression-integration">Flask</a>, <a href="/django-compression-views">Django</a>, <a href="/express-compression-routes">Express.js</a>, and <a href="/spring-compression-controllers">Spring Boot</a>.</p>
+    </section>
+
+    <section id="comparison">
+      <h2>7. Comparison with Alternatives</h2>
+
+      <p>SuperCompress's architecture differs fundamentally from other prompt compression approaches. Here's how:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Approach</th>
+            <th>Query-aware</th>
+            <th>Model size</th>
+            <th>Latency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>SuperCompress</strong></td>
+            <td>Learned scoring policy</td>
+            <td>Yes</td>
+            <td>~5K params</td>
+            <td>~15ms</td>
+          </tr>
+          <tr>
+            <td><a href="/supercompress-vs-headroom">Headroom</a></td>
+            <td>Transformer classifier</td>
+            <td>Type-only</td>
+            <td>165M+</td>
+            <td>~100ms + warmup</td>
+          </tr>
+          <tr>
+            <td><a href="/supercompress-vs-sliding-window">Sliding window</a></td>
+            <td>Fixed-position truncation</td>
+            <td>No</td>
+            <td>0</td>
+            <td>~0ms</td>
+          </tr>
+          <tr>
+            <td><a href="/supercompress-vs-top-k-retrieval">Top-K retrieval</a></td>
+            <td>Embedding similarity</td>
+            <td>Partial</td>
+            <td>Embedding model</td>
+            <td>~50ms</td>
+          </tr>
+          <tr>
+            <td><a href="/supercompress-vs-hyde">HyDE</a></td>
+            <td>Hypothetical doc + retrieval</td>
+            <td>Yes</td>
+            <td>LLM + embedding</td>
+            <td>~500ms+</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>For a comprehensive comparison, see the <a href="/supercompress-vs-alternatives">alternatives hub</a> and the <a href="/prompt-compression-guide">full guide</a>.</p>
+    </section>
+
+    <div class="cta-section">
+      <a href="/playground" class="btn">Try it in the playground &rarr;</a>
+      <a href="https://github.com/Supercompress/Supercompress" class="btn btn-outline" target="_blank">GitHub</a>
+      <a href="/dashboard" class="btn btn-outline">Get an API key</a>
+    </div>
+  </div>
+</body>
+</html>

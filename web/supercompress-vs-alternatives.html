@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperCompress vs Alternatives — Prompt Compression Compared (2026) | SuperCompress</title>
+  <meta name="description" content="Compare SuperCompress against every major prompt compression alternative: Headroom, sliding window, top-K retrieval, HyDE, MMR, Self-RAG, and more. See benchmarks, latency, and quality trade-offs." />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="SuperCompress vs Alternatives — Prompt Compression Compared (2026)" />
+  <meta property="og:description" content="Side-by-side comparison of SuperCompress against Headroom, sliding window, top-K, HyDE, MMR, Self-RAG, and every major prompt compression method." />
+  <meta property="og:url" content="https://supercompress.dev/supercompress-vs-alternatives" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress vs Alternatives — Prompt Compression Compared" />
+  <meta name="twitter:description" content="See how SuperCompress stacks up against Headroom, sliding window, top-K, HyDE, MMR, Self-RAG, and more." />
+  <meta name="twitter:site" content="@supercompress" />
+  <link rel="canonical" href="https://supercompress.dev/supercompress-vs-alternatives" />
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SuperCompress vs Alternatives — Prompt Compression Compared",
+    "description": "Side-by-side benchmarks and analysis of SuperCompress against every major prompt compression method.",
+    "datePublished": "2026-07-03",
+    "author": { "@type": "Organization", "name": "SuperCompress" },
+    "publisher": { "@type": "Organization", "name": "SuperCompress", "url": "https://supercompress.dev" }
+  }</script>
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Is SuperCompress always better than Headroom?", "acceptedAnswer": { "@type": "Answer", "text": "Not always. Headroom's proxy mode and MCP integration make it easier to add to existing applications without code changes. SuperCompress requires adding a library import or API call. However, in terms of compression quality, deployment footprint, and latency at scale, SuperCompress has clear architectural advantages." } },
+      { "@type": "Question", "name": "Can I use SuperCompress with other compression methods?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. SuperCompress's query-aware scoring complements other methods. For example, you can apply SuperCompress before a sliding window as a safety net, or use MMR for candidate selection and SuperCompress for final compression." } },
+      { "@type": "Question", "name": "Which method has the lowest latency?", "acceptedAnswer": { "@type": "Answer", "text": "Sliding window has zero latency. SuperCompress adds ~15ms. Top-K and MMR add ~20-50ms. Headroom adds ~100ms plus cold-start warmup. HyDE and Self-RAG add 500ms+ due to additional LLM calls." } }
+    ]
+  }</script>
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://supercompress.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "SuperCompress vs Alternatives", "item": "https://supercompress.dev/supercompress-vs-alternatives" }
+    ]
+  }</script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #08080e; color: #c8c8d0; line-height: 1.7; }
+    .container { max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; }
+
+    h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 300; color: #f0f0f8; letter-spacing: -.03em; margin-bottom: 8px; }
+    .subtitle { color: #888; font-size: 1.05rem; margin-bottom: 48px; max-width: 680px; }
+
+    h2 { font-size: 1.3rem; font-weight: 400; color: #e0e0f0; margin: 48px 0 16px; letter-spacing: -.01em; border-top: 1px solid #1c1c2e; padding-top: 40px; }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    h3 { font-size: 1rem; font-weight: 500; color: #d0d0e0; margin: 24px 0 8px; }
+
+    p { font-size: 0.92rem; color: #999; margin-bottom: 16px; }
+    a { color: #a78bfa; text-decoration: none; }
+    a:hover { color: #c4b5fd; text-decoration: underline; }
+
+    table { width: 100%; border-collapse: collapse; margin: 20px 0 28px; font-size: 0.85rem; }
+    th { text-align: left; padding: 10px 14px; background: #0d0d16; color: #b0b0c8; font-weight: 500; border-bottom: 1px solid #2d2d44; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1c1c2e; color: #999; }
+    tr:hover td { background: #0d0d16; }
+    .row-highlight td { color: #c4b5fd; }
+    .row-highlight td:first-child { font-weight: 600; }
+
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+    @media (max-width: 680px) { .comparison-grid { grid-template-columns: 1fr; } }
+    .comparison-card { padding: 20px; background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 10px; transition: border-color 0.15s; }
+    .comparison-card:hover { border-color: #2d2d44; }
+    .comparison-card h3 { margin: 0 0 4px; font-size: 0.95rem; font-weight: 500; }
+    .comparison-card h3 a { color: #c8c8d8; }
+    .comparison-card h3 a:hover { color: #c4b5fd; }
+    .comparison-card p { font-size: 0.82rem; color: #777; margin: 0 0 8px; }
+    .comparison-card .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; background: #1c1c2e; color: #888; }
+    .tag-sc { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .tag-headroom { background: rgba(59,130,246,0.15); color: #93c5fd; }
+
+    .why-summary { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 12px; padding: 28px; margin: 24px 0; }
+    .why-summary h3 { color: #a78bfa; margin: 0 0 12px; }
+    .why-summary ul { list-style: none; padding: 0; margin: 0; }
+    .why-summary li { padding: 6px 0; font-size: 0.9rem; color: #999; }
+    .why-summary li::before { content: "✓ "; color: #6ee7b7; font-weight: 700; }
+    .why-summary li strong { color: #c8c8d8; }
+
+    .cta-section { margin-top: 48px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: 10px; background: #7c3aed; color: #fff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: all .15s; }
+    .btn:hover { background: #6d28d9; transform: translateY(-1px); text-decoration: none; }
+    .btn-outline { background: transparent; border: 1px solid #2d2d44; color: #b0b0c8; }
+    .btn-outline:hover { border-color: #7c3aed; color: #c4b5fd; background: rgba(124,58,237,0.08); text-decoration: none; }
+
+    .faq { margin-top: 40px; }
+    .faq details { margin-bottom: 10px; padding: 14px 18px; background: #0d0d16; border-radius: 10px; border: 1px solid #1c1c2e; cursor: pointer; }
+    .faq summary { font-weight: 500; color: #c8c8d8; font-size: 0.9rem; }
+    .faq details p { margin-top: 10px; font-size: 0.85rem; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SuperCompress vs Alternatives</h1>
+    <p class="subtitle">A side-by-side comparison of every major prompt compression method — from lightweight scoring to full-model approaches — with benchmarks, trade-offs, and deployment guidance.</p>
+
+    <h2>At a glance</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Approach</th>
+          <th>Query-Aware</th>
+          <th>Model Size</th>
+          <th>Latency</th>
+          <th>Savings</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-highlight">
+          <td>SuperCompress</td>
+          <td>Learned policy (5K params)</td>
+          <td>Yes</td>
+          <td>~200KB</td>
+          <td>~15ms</td>
+          <td>~65%</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-headroom">Headroom</a></td>
+          <td>ModernBERT (165M+ params)</td>
+          <td>No (type-aware only)</td>
+          <td>~500MB</td>
+          <td>~100ms + warmup</td>
+          <td>~50%</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-sliding-window">Sliding Window</a></td>
+          <td>Keep last N tokens</td>
+          <td>No</td>
+          <td>0 (rule-based)</td>
+          <td>~0ms</td>
+          <td>Fixed 50%</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-top-k-retrieval">Top-K Retrieval</a></td>
+          <td>Embedding similarity</td>
+          <td>Partial</td>
+          <td>Embedding model</td>
+          <td>~50ms</td>
+          <td>Variable</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-hyde">HyDE</a></td>
+          <td>Hypothetical doc + retrieval</td>
+          <td>Yes</td>
+          <td>LLM + embedding</td>
+          <td>~500ms+</td>
+          <td>Variable</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-mmr">MMR</a></td>
+          <td>Diversity sampling</td>
+          <td>No</td>
+          <td>0 (algorithmic)</td>
+          <td>~20ms</td>
+          <td>Variable</td>
+        </tr>
+        <tr>
+          <td><a href="/supercompress-vs-self-rag">Self-RAG</a></td>
+          <td>On-demand LLM retrieval decisions</td>
+          <td>Yes</td>
+          <td>LLM</td>
+          <td>~1s+</td>
+          <td>Variable</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Detailed comparisons</h2>
+    <div class="comparison-grid">
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-headroom">SuperCompress vs Headroom</a></h3>
+        <p>Headroom uses a 165M+ parameter ModernBERT model with ONNX Runtime. It classifies prompt content by type (JSON, code, text) but does not score against the user's query. SuperCompress is 25,000x smaller and query-aware.</p>
+        <span class="tag tag-sc">5K params, query-aware</span>
+        <span class="tag tag-headroom">165M+ params, type-only</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-sliding-window">SuperCompress vs Sliding Window</a></h3>
+        <p>Sliding window keeps the last N tokens. It's fast and simple but drops older context that may be critical. SuperCompress keeps relevant context regardless of position.</p>
+        <span class="tag tag-sc">Position-independent</span>
+        <span class="tag">Always drops tail</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-top-k-retrieval">SuperCompress vs Top-K Retrieval</a></h3>
+        <p>Top-K uses embedding similarity to find relevant passages. It works well for RAG but misses non-vector context like instructions and conversation history.</p>
+        <span class="tag tag-sc">Full prompt analysis</span>
+        <span class="tag">Embedding-dependent</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-hyde">SuperCompress vs HyDE</a></h3>
+        <p>HyDE generates a hypothetical answer before retrieving. It adds an entire LLM call to the critical path, making it expensive for high-throughput systems.</p>
+        <span class="tag tag-sc">~15ms, no extra LLM call</span>
+        <span class="tag">2x+ LLM cost</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-mmr">SuperCompress vs MMR</a></h3>
+        <p>MMR trades relevance for diversity. It prevents redundancy but may drop the single most relevant passage. SuperCompress optimizes for the user's specific question.</p>
+        <span class="tag tag-sc">Query-optimized</span>
+        <span class="tag">Diversity-optimized</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-self-rag">SuperCompress vs Self-RAG</a></h3>
+        <p>Self-RAG lets the LLM decide when to retrieve. It's the most flexible but most expensive approach, requiring the LLM to participate in retrieval decisions.</p>
+        <span class="tag tag-sc">Deterministic, fast</span>
+        <span class="tag">LLM-participating, slow</span>
+      </div>
+    </div>
+
+    <h2>Why query-awareness wins</h2>
+    <div class="why-summary">
+      <h3>SuperCompress's advantages</h3>
+      <ul>
+        <li><strong>~5K parameters</strong> — 25,000x smaller than the next closest ML-based approach. Installs in milliseconds, not minutes.</li>
+        <li><strong>True query-awareness</strong> — Scores every line against the user's actual question, not just content type. A line about account settings is kept when the user asks about billing, dropped when they ask about features.</li>
+        <li><strong>No model download</strong> — <code>pip install supercompress</code> is fully self-contained. No downloading ModernBERT weights, ONNX Runtime, or ~500MB of dependencies.</li>
+        <li><strong>Serverless-ready</strong> — ~60ms cold start, ~200KB install size. Fits comfortably in AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</li>
+        <li><strong>Hosted API + local library</strong> — Use the hosted API (free tier available) for zero-infrastructure setup, or the local library for latency-sensitive workloads.</li>
+        <li><strong>97.5% oracle recall</strong> — The compressed prompt produces answers virtually identical to the full-prompt response, even when evaluated against the "oracle" test of whether any dropped content was actually needed.</li>
+      </ul>
+    </div>
+
+    <h2>Which method should you use?</h2>
+
+    <h3>Choose SuperCompress when:</h3>
+    <ul>
+      <li>You want the best compression-to-quality ratio (max savings, minimal quality loss)</li>
+      <li>You need serverless or edge deployment (Lambda, Cloudflare Workers, Vercel Edge)</li>
+      <li>You don't want to manage a model download or ~500MB of dependencies</li>
+      <li>You have diverse prompts where relevance varies by user question</li>
+      <li>You want a simple API: <code>from supercompress import compress</code></li>
+    </ul>
+
+    <h3>Choose an alternative when:</h3>
+    <ul>
+      <li><strong>Headroom:</strong> You want a proxy-based solution that wraps your existing LLM client, or prefer MCP integration over a library import</li>
+      <li><strong>Sliding window:</strong> You only care about the most recent tokens and want zero additional latency (e.g., streaming chat)</li>
+      <li><strong>Top-K / MMR:</strong> You already have a RAG pipeline with embeddings and want to optimize retrieval diversity</li>
+      <li><strong>HyDE / Self-RAG:</strong> You need the absolute maximum theoretical recall and have budget for additional LLM calls</li>
+    </ul>
+
+    <div class="faq">
+      <details>
+        <summary>Is SuperCompress always better than Headroom?</summary>
+        <p>Not always. Headroom's proxy mode and MCP integration make it easier to add to existing applications without code changes. SuperCompress requires adding a library import or API call. However, in terms of compression quality, deployment footprint, and latency at scale, SuperCompress has clear architectural advantages — see the <a href="/supercompress-vs-headroom">full comparison</a> for details.</p>
+      </details>
+      <details>
+        <summary>Can I use SuperCompress with other compression methods?</summary>
+        <p>Yes. SuperCompress's query-aware scoring complements other methods. For example, you can apply SuperCompress before a sliding window as a safety net, or use MMR for candidate selection and SuperCompress for final compression. See the <a href="/prompt-compression-guide">guide</a> for advanced patterns.</p>
+      </details>
+      <details>
+        <summary>Which method has the lowest latency?</summary>
+        <p>Sliding window has zero latency (simple array slice). SuperCompress adds ~15ms. Top-K/MMR add ~20-50ms. Headroom adds ~100ms + cold-start warmup. HyDE and Self-RAG add 500ms+ because they involve additional LLM calls.</p>
+      </details>
+    </div>
+
+    <div class="cta-section">
+      <a href="/playground" class="btn">Try it now &rarr;</a>
+      <a href="/prompt-compression-guide" class="btn btn-outline">Read the full guide</a>
+      <a href="https://github.com/Supercompress/Supercompress" class="btn btn-outline" target="_blank">GitHub</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Integrations — SuperCompress Documentation</title>
+  <meta name="description" content="Integrate SuperCompress with OpenAI, LangChain, Express.js, Vercel AI SDK, Anthropic, and more. Drop-in wrappers for popular LLM frameworks." />
+  <meta property="og:title" content="Integrations — SuperCompress Documentation" />
+  <meta property="og:description" content="Drop-in SuperCompress integration wrappers for OpenAI, LangChain, Express.js, Vercel AI SDK, and Anthropic." />
+  <meta property="og:url" content="https://supercompress.dev/docs/integrations" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://supercompress.dev/docs/integrations" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="/assets/css/supercompress.css" />
+  <link rel="stylesheet" href="/assets/css/docs.css" />
+</head>
+<body>
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <a href="/docs/" class="docs-sidebar-logo">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
+        <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="docs-sidebar-section">Getting started</div>
+      <a href="/docs/" class="docs-sidebar-link">Overview</a>
+      <a href="/docs/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <div class="docs-sidebar-section">Reference</div>
+      <a href="/docs/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="/docs/integrations" class="docs-sidebar-link active">Integrations</a>
+      <a href="/docs/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="/docs/usage" class="docs-sidebar-link">Usage</a>
+      <div class="docs-sidebar-section">Deep dives</div>
+      <a href="/docs/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/docs/environment" class="docs-sidebar-link">Environment & CO₂</a>
+    </aside>
+    <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="docs-main">
+      <nav class="docs-nav">
+        <div class="docs-nav-inner">
+          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg><span>Docs</span></button>
+          <div class="docs-nav-end">
+            <nav class="docs-nav-pill" aria-label="Main">
+              <a href="/">Home</a>
+              <a href="/token-compression">Guide</a>
+              <a href="/blog">Blog</a>
+              <a href="/dashboard">Dashboard</a>
+              <a href="/playground">Playground</a>
+              <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+            </nav>
+            <a href="/dashboard" class="docs-nav-cta">Get API key</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="docs-content">
+        <h1 class="df-reveal">Integrations</h1>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Drop compression into your existing LLM stack with one wrapper function. Each integration preserves your current API shape — just swap out the client or add a middleware step.</p>
+
+        <div class="doc-toc">
+          <h3>Integrations</h3>
+          <ol>
+            <li><a href="#python">Python (direct import)</a></li>
+            <li><a href="#openai">OpenAI SDK wrapper</a></li>
+            <li><a href="#langchain">LangChain hook</a></li>
+            <li><a href="#anthropic">Anthropic SDK wrapper</a></li>
+            <li><a href="#express">Express.js / Next.js middleware</a></li>
+            <li><a href="#vercel-ai-sdk">Vercel AI SDK</a></li>
+            <li><a href="#browser">Browser / static sites</a></li>
+            <li><a href="#curl">curl / any HTTP client</a></li>
+          </ol>
+        </div>
+
+        <h2 id="python">Python (direct import)</h2>
+        <p>The simplest integration — call compression before sending to any LLM:</p>
+        <pre><code><span class="kw">from</span> supercompress <span class="kw">import</span> compress_for_turn
+
+compressed, stats = compress_for_turn(
+    context_blocks=[system_prompt, tool_output, chat_history],
+    user_query=user_message,
+)
+<span class="cm"># Send `compressed` to your LLM</span>
+response = client.chat.completions.create(
+    model=<span class="str">"gpt-4o"</span>,
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: <span class="str">"You are a helpful assistant."</span>},
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: compressed},
+    ],
+)</code></pre>
+        <p>Track the savings:</p>
+        <pre><code><span class="kw">from</span> supercompress.benchmarks.metrics <span class="kw">import</span> sustainability_from_tokens_saved
+
+saved = stats.original_tokens - stats.kept_tokens
+impact = sustainability_from_tokens_saved(saved)
+<span class="kw">print</span>(<span class="str">f"Saved {impact.co2_kg_avoided:.6f} kg CO₂"</span>)</code></pre>
+
+        <h2 id="openai">OpenAI SDK wrapper</h2>
+        <p>The <code>SuperCompressOpenAI</code> wrapper replaces your OpenAI client. It compresses conversation history before every API call, preserving system messages and the latest user turn.</p>
+        <pre><code><span class="kw">from</span> openai_middleware <span class="kw">import</span> SuperCompressOpenAI
+
+client = SuperCompressOpenAI(budget_ratio=0.35)
+
+<span class="cm"># Use exactly like the regular OpenAI client</span>
+response = client.chat.completions.create(
+    model=<span class="str">"gpt-4o"</span>,
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: <span class="str">"Helpful assistant."</span>},
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: long_context},
+        {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: <span class="str">"OK."</span>},
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Summarize the key findings."</span>},
+    ],
+)
+
+<span class="kw">print</span>(client.get_stats())
+<span class="cm"># → {'total_original_tokens': 580, 'total_kept_tokens': 203, 'total_savings_pct': 65.0}</span></code></pre>
+        <p>Streaming works too — just pass <code>stream=True</code>.</p>
+        <p>The wrapper is available at <code>integrations/openai_middleware.py</code> in the repo.</p>
+
+        <div class="doc-callout doc-callout--tip">
+          <span class="doc-callout-label">How it works</span>
+          Only <strong>non-system</strong> messages are compressed. The latest user turn stays intact (it defines the query). System instructions remain verbatim.
+        </div>
+
+        <h2 id="langchain">LangChain hook</h2>
+        <p>Compress <code>HumanMessage</code> / <code>AIMessage</code> history before <code>invoke()</code>. No LangChain dependency in the core package — the example is copy-paste friendly.</p>
+        <p>Available at <code>examples/integrations/langchain_hook.py</code> in the repo.</p>
+        <pre><code><span class="kw">from</span> langchain_hook <span class="kw">import</span> compress_history
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">Message</span>:
+    role: str
+    content: str
+
+messages = [
+    Message(<span class="str">"system"</span>, <span class="str">"You are helpful."</span>),
+    Message(<span class="str">"user"</span>, <span class="str">"long log…\nentry 1\nentry 2\n..."</span>),
+    Message(<span class="str">"assistant"</span>, <span class="str">"Noted."</span>),
+    Message(<span class="str">"user"</span>, <span class="str">"Summarize entry 75"</span>),
+]
+
+compressed_msgs, meta = compress_history(messages)
+<span class="kw">print</span>(meta)
+<span class="cm"># → {'original_tokens': 580, 'kept_tokens': 203, 'kv_savings_pct': 65.0}</span></code></pre>
+        <p>The hook preserves system messages, compresses assistant/user history into a single context block, and appends the latest user query. The compressed messages can be passed directly to any LangChain chain.</p>
+
+        <h2 id="anthropic">Anthropic SDK wrapper</h2>
+        <p>Available at <code>integrations/anthropic_middleware.py</code>. Same pattern as the OpenAI wrapper — intercepts <code>messages</code> before sending to Anthropic's API, compresses history, tracks savings.</p>
+        <pre><code><span class="kw">from</span> anthropic_middleware <span class="kw">import</span> SuperCompressAnthropic
+
+client = SuperCompressAnthropic(budget_ratio=0.35)
+response = client.messages.create(
+    model=<span class="str">"claude-sonnet-4-20250514"</span>,
+    max_tokens=1024,
+    messages=[...],
+)</code></pre>
+
+        <h2 id="express">Express.js / Next.js middleware</h2>
+        <p>For Node.js backends, the Express middleware intercepts requests and compresses the <code>messages</code> field before forwarding to your LLM.</p>
+        <p>Available at <code>integrations/express-middleware.ts</code>.</p>
+        <pre><code><span class="kw">import</span> { supercompressMiddleware } <span class="kw">from</span> <span class="str">"express-middleware"</span>;
+
+<span class="kw">const</span> sc = supercompressMiddleware({
+  budgetRatio: 0.35,
+  verbose: true,
+});
+
+<span class="cm">// In your Express route handler</span>
+app.post(<span class="str">"/api/chat"</span>, sc.handler, <span class="kw">async</span> (req, res) => {
+  <span class="cm">// req.body.messages are now compressed!</span>
+  <span class="kw">const</span> response = <span class="kw">await</span> callLLM(req.body.messages);
+  res.json(response);
+});
+
+<span class="cm">// Track cumulative stats</span>
+<span class="kw">console</span>.log(sc.getStats());</code></pre>
+        <p>For Next.js App Router, use the <code>compressMessages()</code> function directly in your API route:</p>
+        <pre><code><span class="kw">export async function</span> POST(req: Request) {
+  <span class="kw">const</span> body = <span class="kw">await</span> req.json();
+  <span class="kw">const</span> compressed = <span class="kw">await</span> sc.compressMessages(body.messages);
+  <span class="cm">// Forward compressed to your LLM</span>
+}</code></pre>
+
+        <h2 id="vercel-ai-sdk">Vercel AI SDK</h2>
+        <p>Drop-in wrapper for <code>generateText</code> and <code>streamText</code>. Works with any provider: OpenAI, Anthropic, Google, Mistral.</p>
+        <p>Available at <code>integrations/vercel-ai-sdk.ts</code>.</p>
+        <pre><code><span class="kw">import</span> { SuperCompressAI } <span class="kw">from</span> <span class="str">"vercel-ai-sdk"</span>;
+<span class="kw">import</span> { openai } <span class="kw">from</span> <span class="str">"@ai-sdk/openai"</span>;
+
+<span class="kw">const</span> sc = <span class="kw">new</span> SuperCompressAI({ budgetRatio: 0.35 });
+
+<span class="cm">// Use instead of generateText()</span>
+<span class="kw">const</span> { text } = <span class="kw">await</span> sc.generateText({
+  model: openai(<span class="str">"gpt-4o"</span>),
+  messages: [longContext, userMessage],
+});
+
+<span class="cm">// Streaming with streamText</span>
+<span class="kw">const</span> result = <span class="kw">await</span> sc.streamText({
+  model: openai(<span class="str">"gpt-4o"</span>),
+  messages: [longContext, userMessage],
+});
+
+<span class="cm">// Track savings</span>
+<span class="kw">console</span>.log(sc.getStats());
+<span class="cm">// → { totalOriginalTokens: 1200, totalKeptTokens: 420, totalSavingsPct: 65 }</span></code></pre>
+
+        <h2 id="browser">Browser / static sites</h2>
+        <p>
+          For static sites and demos, the browser engine loads the trained policy <code>model.json</code>
+          and runs the identical eviction logic client-side.
+        </p>
+        <pre><code><span class="cm">&lt;!-- Load the engine --&gt;</span>
+&lt;script src=<span class="str">"assets/js/compress-engine.js"</span>&gt;&lt;/script&gt;
+
+<span class="cm">&lt;!-- In your JS --&gt;</span>
+&lt;script&gt;
+  <span class="kw">const</span> model = <span class="kw">await</span> SuperCompressEngine.loadModel(<span class="str">"assets/data/model.json"</span>);
+  <span class="kw">const</span> result = SuperCompressEngine.compressAdaptive(context, query, model);
+  <span class="kw">console</span>.log(result.compressed_text);
+  <span class="kw">console</span>.log(result.kv_savings_pct);
+&lt;/script&gt;</code></pre>
+        <p>Export the model from Python:</p>
+        <pre><code><span class="kw">python</span> scripts/export_model_json.py
+<span class="cm"># → Creates web/assets/data/model.json</span></code></pre>
+
+        <h2 id="curl">curl / any HTTP client</h2>
+        <p>Call the hosted API from any language or script. Three ways, same result:</p>
+        <pre><code><span class="cm"># Quickest — form-encoded, no JSON needed</span>
+<span class="kw">curl</span> -d <span class="str">"context=Your long context...&query=Summarize."</span> \
+  <span class="kw">https://supercompress.dev/compress</span> \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span>
+
+<span class="cm"># Standard JSON</span>
+<span class="kw">curl</span> -X POST https://supercompress.dev/api/v1/compress \
+  -H <span class="str">"X-API-Key: sc_live_YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"context":"Your long context…","query":"Summarize."}'</span>
+
+<span class="cm"># GET (small contexts only)</span>
+<span class="kw">curl</span> <span class="str">"https://supercompress.dev/compress?context=...&query=Summarize.&api_key=sc_live_YOUR_KEY"</span></code></pre>
+
+
+        <h2>Integration files</h2>
+        <p>All integration files are in the <a href="https://github.com/Supercompress/Supercompress/tree/main/integrations" target="_blank" rel="noopener">integrations/</a> directory and <a href="https://github.com/Supercompress/Supercompress/tree/main/examples/integrations" target="_blank" rel="noopener">examples/integrations/</a> directory of the repo.</p>
+        <table>
+          <thead>
+            <tr><th>File</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>integrations/openai_middleware.py</code></td><td>OpenAI SDK transparent wrapper</td></tr>
+            <tr><td><code>integrations/anthropic_middleware.py</code></td><td>Anthropic SDK transparent wrapper</td></tr>
+            <tr><td><code>integrations/vercel-ai-sdk.ts</code></td><td>Vercel AI SDK wrapper (generateText, streamText)</td></tr>
+            <tr><td><code>integrations/express-middleware.ts</code></td><td>Express.js / Next.js route middleware</td></tr>
+            <tr><td><code>examples/integrations/openai_wrapper.py</code></td><td>Lightweight OpenAI messages example</td></tr>
+            <tr><td><code>examples/integrations/langchain_hook.py</code></td><td>LangChain-compatible history compression</td></tr>
+            <tr><td><code>examples/integrations/raw_pipeline.py</code></td><td>Stdin/stdout compression pipeline</td></tr>
+            <tr><td><code>examples/integrations/curl_local_server.sh</code></td><td>cURL example against local dev server</td></tr>
+          </tbody>
+        </table>
+
+        <div class="doc-footer">
+          <p>Next: <a href="/docs/usage">Usage →</a></p>
+        </div>
+
+    </div>
+
+      <!-- Full SuperCompress footer -->
+      <footer class="df-footer" style="margin-top:-2px">
+        <div class="df-footer-inner">
+          <div class="df-footer-grid">
+            <div class="df-footer-brand">
+              <p class="df-footer-heading">SuperCompress</p>
+              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+            </div>
+            <div class="df-footer-links">
+              <div>
+                <p class="df-footer-heading">Navigation</p>
+                <ul>
+                  <li><a href="/#impact">Savings</a></li>
+                  <li><a href="/#demo">Demo</a></li>
+                  <li><a href="#features">Features</a></li>
+                  <li><a href="/#quickstart">Quick start</a></li>
+                  <li><a href="/blog">Blog</a></li>
+                  <li><a href="/dashboard">Dashboard</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Resources</p>
+                <ul>
+                  <li><a href="/token-compression">Token compression guide</a></li>
+                  <li><a href="/benchmarks">Benchmarks</a></li>
+                  <li><a href="/compare">Compare methods</a></li>
+                  <li><a href="/playground">Playground</a></li>
+                  <li><a href="/research">Research &amp; citation</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Documentation</p>
+                <ul>
+                  <li><a href="/docs/">Documentation</a></li>
+                  <li><a href="/docs/quickstart">Quickstart</a></li>
+                  <li><a href="/docs/api-reference">API reference</a></li>
+                  <li><a href="/docs/coding-agents">Coding Agents</a></li>
+                  <li><a href="/docs/environment">Environment</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Social</p>
+                <ul>
+                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+        </div>
+        <div class="df-footer-watermark" aria-hidden="true">
+          <p>SuperCompress</p>
+        </div>
+      </footer>
+  </div>
+
+  <script src="/assets/js/supercompress.js"></script>
+  <script>
+    (function() {
+      var s=document.getElementById('docs-sidebar'),o=document.getElementById('sidebar-overlay'),t=document.getElementById('mobile-toggle');
+      function oS(){s.classList.add('open');o.classList.add('open');}
+      function cS(){s.classList.remove('open');o.classList.remove('open');}
+      if(t)t.addEventListener('click',oS);if(o)o.addEventListener('click',cS);
+
+      // Copy-to-clipboard buttons on code blocks
+      document.querySelectorAll('.docs-content pre').forEach(function(pre) {
+        var btn = document.createElement('button');
+        btn.textContent = 'Copy';
+        btn.className = 'doc-copy-btn';
+        btn.setAttribute('aria-label', 'Copy code block');
+        btn.addEventListener('click', function() {
+          var code = pre.querySelector('code');
+          var text = code ? code.textContent : pre.textContent;
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          }).catch(function() {
+            btn.textContent = 'Failed';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          });
+        });
+        pre.style.position = 'relative';
+        pre.appendChild(btn);
+      });
+    })();
+  </script>
+</body>
+</html>

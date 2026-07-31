@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coding Agents — SuperCompress Documentation</title>
+  <meta name="description" content="Install SuperCompress once. Auto-detect Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more — then compress large context through MCP without provider API-key mode." />
+  <meta property="og:title" content="Coding Agents — SuperCompress Documentation" />
+  <meta property="og:description" content="One install. Auto-detect your agents. MCP plugin for subscription/login flows. ~65% fewer tokens." />
+  <meta property="og:url" content="https://supercompress.dev/docs/coding-agents" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://supercompress.dev/docs/coding-agents" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="/assets/css/supercompress.css" />
+  <link rel="stylesheet" href="/assets/css/docs.css" />
+</head>
+<body>
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <a href="/docs/" class="docs-sidebar-logo">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
+        <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="docs-sidebar-section">Getting started</div>
+      <a href="/docs/" class="docs-sidebar-link">Overview</a>
+      <a href="/docs/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <div class="docs-sidebar-section">Reference</div>
+      <a href="/docs/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="/docs/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="/docs/coding-agents" class="docs-sidebar-link active">Coding Agents</a>
+      <a href="/docs/usage" class="docs-sidebar-link">Usage</a>
+      <a href="/changelog" class="docs-sidebar-link">Changelog</a>
+      <div class="docs-sidebar-section">Deep dives</div>
+      <a href="/docs/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/docs/environment" class="docs-sidebar-link">Environment & CO₂</a>
+    </aside>
+    <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="docs-main">
+      <nav class="docs-nav">
+        <div class="docs-nav-inner">
+          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+            <span>Docs</span>
+          </button>
+          <div class="docs-nav-end">
+            <nav class="docs-nav-pill" aria-label="Main">
+              <a href="/">Home</a>
+              <a href="/token-compression">Guide</a>
+              <a href="/blog">Blog</a>
+              <a href="/dashboard">Dashboard</a>
+              <a href="/playground">Playground</a>
+              <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+            </nav>
+            <a href="/dashboard" class="docs-nav-cta">Get API key</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="docs-content">
+        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.2</p>
+        <h1 class="df-reveal">One install. Every agent. Fewer tokens.</h1>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> to connect your account, detect coding agents, and install an MCP plugin that compresses large dumps before they burn tokens — Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more. Keep your normal login. No provider API-key mode required.</p>
+
+        <div class="doc-callout doc-callout--tip">
+          <span class="doc-callout-label">Install in 30 seconds</span>
+          <pre style="margin:10px 0 0"><code><span class="kw">npm install</span> -g supercompress-proxy
+<span class="kw">supercompress</span> setup</code></pre>
+          <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> links your SuperCompress account, detects agents, and installs the MCP plugin. Re-run anytime with <code>supercompress plugin</code>.</p>
+        </div>
+
+        <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
+          <div class="ca-stat"><strong>~65%</strong><span>fewer tokens</span></div>
+          <div class="ca-stat"><strong>49</strong><span>agents catalogued</span></div>
+          <div class="ca-stat"><strong>MCP</strong><span>subscription-safe</span></div>
+          <div class="ca-stat"><strong>~60ms</strong><span>compress latency</span></div>
+        </div>
+
+        <div class="doc-toc">
+          <h3>In this guide</h3>
+          <ol>
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#install">Install</a></li>
+            <li><a href="#plugin">Detect + plugin</a></li>
+            <li><a href="#agents">Supported agents</a></li>
+            <li><a href="#tools">MCP tools</a></li>
+            <li><a href="#dashboard">Dashboard</a></li>
+            <li><a href="#proxy">Optional API proxy</a></li>
+            <li><a href="#uninstall">Uninstall</a></li>
+          </ol>
+        </div>
+
+        <h2 id="how-it-works">How it works</h2>
+        <p>Default path is <strong>MCP-first</strong>. Your agent keeps its normal Cursor / Claude / Codex / FreeBuff / OpenCode login. When context gets huge — file dumps, search results, logs, diffs — the agent calls <code>compress_context</code>. SuperCompress returns a smaller, evidence-preserving version metered to your plan.</p>
+        <pre><code><span class="cm"># Default — subscription / login safe</span>
+<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span>
+                 <span class="cm">MCP tool</span>              <span class="cm">~65% fewer tokens</span>
+
+<span class="cm"># Optional — only if you want localhost base-URL proxy mode</span>
+<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="str">localhost:8080/v1</span> ──<span class="op">→</span> <span class="kw">provider API</span></code></pre>
+
+        <div class="doc-callout doc-callout--info">
+          <span class="doc-callout-label">Privacy</span>
+          The MCP server runs on your machine. Context is sent to the SuperCompress compression API so the hosted compiler can process it. Provider API keys never leave your agent — and MCP mode does not require them at all.
+        </div>
+
+        <h2 id="install">Install</h2>
+        <pre><code><span class="kw">npm install</span> -g supercompress-proxy
+<span class="kw">supercompress</span> --version
+<span class="cm"># → 0.5.2</span></code></pre>
+        <p>Or one-shot without a global install:</p>
+        <pre><code><span class="kw">npm install</span> supercompress-proxy
+<span class="kw">npm exec</span> supercompress setup</code></pre>
+
+        <h2 id="plugin">Detect + plugin</h2>
+        <p><code>setup</code> links your account and installs the MCP plugin. Prefer <code>plugin</code> anytime you add a new agent:</p>
+        <pre><code><span class="kw">supercompress</span> setup
+<span class="kw">supercompress</span> plugin</code></pre>
+        <pre><code><span class="cm">$ supercompress plugin</span>
+<span class="op">✓</span> Detected Cursor, Claude Code, Codex, FreeBuff, OpenCode, …
+<span class="op">✓</span> MCP plugin installed for: Cursor, FreeBuff, OpenCode, Codex MCP, …
+<span class="op">✓</span> Cursor rule written
+<span class="op">→</span> Works with login — no provider API-key mode
+<span class="op">→</span> Restart your coding agent so MCP reloads</code></pre>
+
+        <div class="doc-steps">
+          <div class="doc-step"><span class="doc-step-n">1</span><div><strong>Install</strong><p>Add <code>supercompress-proxy</code> with npm.</p></div></div>
+          <div class="doc-step"><span class="doc-step-n">2</span><div><strong>Link</strong><p><code>supercompress setup</code> opens the dashboard and connects your account.</p></div></div>
+          <div class="doc-step"><span class="doc-step-n">3</span><div><strong>Restart</strong><p>Reload Cursor / Claude / Codex / FreeBuff / OpenCode so MCP servers load.</p></div></div>
+          <div class="doc-step"><span class="doc-step-n">4</span><div><strong>Compress</strong><p>Ask the agent to compress large context — tool: <code>compress_context</code>.</p></div></div>
+        </div>
+
+        <h2 id="agents">Supported agents</h2>
+        <p>The detector catalog covers <strong>49</strong> integrations. These get first-class MCP auto-plugin today:</p>
+
+        <div class="ca-agent-grid" aria-label="First-class MCP agents">
+          <article class="ca-agent"><h3>Cursor</h3><p>Writes <code>~/.cursor/mcp.json</code> + always-on rule.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>Claude Code</h3><p>Registers in <code>~/.claude.json</code>.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>Codex</h3><p>Updates <code>~/.codex/config.toml</code> MCP block.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>FreeBuff</h3><p>Global Codebuff/FreeBuff MCP via <code>~/.agents/mcp.json</code>.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>OpenCode</h3><p>Writes <code>mcp.supercompress</code> into <code>opencode.jsonc</code>.</p><span class="ca-badge">MCP</span></article>
+          <article class="ca-agent"><h3>Gemini CLI</h3><p>Registers in Gemini settings MCP servers.</p><span class="ca-badge">MCP</span></article>
+        </div>
+
+        <p class="ca-more-label">Also detected (manual endpoint / MCP where available)</p>
+        <div class="ca-chip-row" aria-label="Also detected agents">
+          <span>Windsurf</span><span>Continue</span><span>Cline</span><span>Aider</span><span>Goose</span><span>OpenHands</span><span>Roo Code</span><span>Copilot CLI</span><span>Amazon Q</span><span>Pi</span><span>Crush</span><span>+ more</span>
+        </div>
+        <p>Run <code>supercompress agents</code> to see what is installed on <em>your</em> machine.</p>
+
+        <h2 id="tools">MCP tools</h2>
+        <table>
+          <thead>
+            <tr><th>Tool</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>compress_context</code></td><td>Compress bulky coding context for a query. Returns compressed text + savings.</td></tr>
+            <tr><td><code>connect_account</code></td><td>Open the dashboard to link this install if you skipped setup.</td></tr>
+            <tr><td><code>usage_summary</code></td><td>Per-agent token savings for the connected SuperCompress account.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="dashboard">Dashboard tracking</h2>
+        <p>After agents start compressing, your <a href="/dashboard">dashboard</a> shows per-agent requests, tokens in/out/saved, and last-used time. Only usage metadata is sent — never prompt contents.</p>
+
+        <h2 id="proxy">Optional API proxy</h2>
+        <p>If you want the older base-URL rewrite path (provider API-key mode), opt in explicitly:</p>
+        <pre><code><span class="kw">supercompress</span> setup --proxy
+<span class="kw">supercompress</span> start</code></pre>
+        <p>That wires <code>http://localhost:8080/v1</code> for compatible OpenAI/Anthropic endpoints. Most subscription/login agents should stay on the default MCP plugin path instead.</p>
+
+        <div class="doc-callout doc-callout--warn">
+          <span class="doc-callout-label">When to use --proxy</span>
+          Only when your agent already uses a provider API key and exposes a configurable OpenAI/Anthropic base URL. ChatGPT-login Codex and similar hosted backends are not intercepted by the local proxy — use MCP.
+        </div>
+
+        <h2 id="uninstall">Uninstall</h2>
+        <pre><code><span class="kw">supercompress</span> uninstall
+<span class="kw">npm uninstall</span> -g supercompress-proxy</code></pre>
+        <p>Uninstall removes MCP registrations, restores backed-up configs, and cleans <code>~/.supercompress</code>.</p>
+
+        <div class="doc-footer">
+          <p>Next: <a href="/docs/usage">Usage →</a></p>
+        </div>
+      </div>
+
+      <footer class="df-footer" style="margin-top:-2px">
+        <div class="df-footer-inner">
+          <div class="df-footer-grid">
+            <div class="df-footer-brand">
+              <p class="df-footer-heading">SuperCompress</p>
+              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · coding agent plugin.</p>
+              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+            </div>
+            <div class="df-footer-links">
+              <div>
+                <p class="df-footer-heading">Navigation</p>
+                <ul>
+                  <li><a href="/#impact">Savings</a></li>
+                  <li><a href="/#demo">Demo</a></li>
+                  <li><a href="/#coding-agents">Coding agents</a></li>
+                  <li><a href="/dashboard">Dashboard</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Documentation</p>
+                <ul>
+                  <li><a href="/docs/">Documentation</a></li>
+                  <li><a href="/docs/coding-agents">Coding Agents</a></li>
+                  <li><a href="/docs/api-reference">API reference</a></li>
+                  <li><a href="/docs/quickstart">Quickstart</a></li>
+                </ul>
+              </div>
+              <div>
+                <p class="df-footer-heading">Social</p>
+                <ul>
+                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
+                  <li><a href="https://www.npmjs.com/package/supercompress-proxy">npm</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+        </div>
+        <div class="df-footer-watermark" aria-hidden="true"><p>SuperCompress</p></div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/assets/js/supercompress.js"></script>
+  <script>
+    (function() {
+      var sidebar = document.getElementById('docs-sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      var toggle = document.getElementById('mobile-toggle');
+      function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('open'); }
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      if (toggle) toggle.addEventListener('click', openSidebar);
+      if (overlay) overlay.addEventListener('click', closeSidebar);
+      document.querySelectorAll('.docs-content pre').forEach(function(pre) {
+        var btn = document.createElement('button');
+        btn.textContent = 'Copy';
+        btn.className = 'doc-copy-btn';
+        btn.setAttribute('aria-label', 'Copy code block');
+        btn.addEventListener('click', function() {
+          var code = pre.querySelector('code');
+          var text = code ? code.textContent : pre.textContent;
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          }).catch(function() {
+            btn.textContent = 'Failed';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+          });
+        });
+        pre.style.position = 'relative';
+        pre.appendChild(btn);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "SuperCompress: Learned Context Compression for Large Language Models"
+message: "If you use SuperCompress in your research, please cite it as below."
+type: software
+authors:
+  - family-names: Shah
+    given-names: Arjun
+    orcid: ""
+    affiliation: "SuperCompress"
+repository-code: "https://github.com/Supercompress/Supercompress"
+abstract: "SuperCompress is a learned context compression engine for LLMs. It uses a ~5K-parameter query-aware policy to remove wasted tokens before inference, cutting ~65% of prompt tokens while preserving answer-critical evidence."
+keywords:
+  - prompt compression
+  - token compression
+  - LLM optimization
+  - context compression
+  - AI cost reduction
+license: MIT
+version: "0.5.0"
+date-released: "2026-06-29"
+url: "https://supercompress.dev"
+preferred-citation:
+  type: software
+  title: "SuperCompress: Learned Context Compression for LLMs"
+  authors:
+    - family-names: Shah
+      given-names: Arjun
+  date: 2026
+  version: "0.5.0"
+  url: "https://supercompress.dev"

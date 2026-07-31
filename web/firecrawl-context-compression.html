@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firecrawl Context Compression: Compress Scraped Pages Before LLM Calls - SuperCompress</title>
+  <meta name="description" content="Compress Firecrawl scrape and crawl results before sending them to OpenAI, Claude, Gemini, LangChain, or agent workflows. Reduce token waste while preserving query-relevant evidence." />
+  <meta property="og:title" content="Firecrawl Context Compression with SuperCompress" />
+  <meta property="og:description" content="Compress long Firecrawl scrape results before the model call. Keep evidence, drop token waste." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://supercompress.dev/firecrawl-context-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <link rel="canonical" href="https://supercompress.dev/firecrawl-context-compression" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/supercompress.css?v=110" />
+  <style>
+    .seo-page { max-width: 920px; margin: 0 auto; padding: 72px 24px 96px; }
+    .seo-kicker { color: var(--brand); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
+    .seo-page h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(2.25rem, 6vw, 4.25rem); line-height: 1.02; letter-spacing: -.035em; max-width: 860px; margin: 0 0 18px; }
+    .seo-lead { font-size: clamp(1.05rem, 2vw, 1.28rem); line-height: 1.62; color: var(--text-body); max-width: 760px; }
+    .seo-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 52px; }
+    .seo-nav a { border: .5px solid var(--card-border); border-radius: 6px; padding: 9px 15px; color: var(--text-primary); text-decoration: none; background: #fff; font-size: 14px; }
+    .seo-section { margin-top: 44px; }
+    .seo-section h2 { font-family: var(--serif); font-weight: 300; font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.02em; margin: 0 0 14px; }
+    .seo-section p, .seo-section li { color: var(--text-body); line-height: 1.68; font-size: 15px; }
+    .seo-table { width: 100%; border-collapse: collapse; margin: 18px 0; background: #fff; border: .5px solid var(--card-border); }
+    .seo-table th, .seo-table td { text-align: left; padding: 14px; border-bottom: .5px solid var(--card-border); vertical-align: top; }
+    .seo-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+    pre { overflow-x: auto; background: #0f172a; color: #e5e7eb; padding: 18px; border-radius: 6px; font-size: 13px; line-height: 1.55; }
+    .seo-cta { margin-top: 46px; padding: 28px; border-radius: 6px; background: var(--feat-blue); border: .5px solid var(--card-border); }
+    .seo-cta-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Firecrawl Context Compression: Compress Scraped Pages Before LLM Calls",
+    "description": "Compress Firecrawl scrape and crawl results before sending them to LLMs.",
+    "datePublished": "2026-07-18",
+    "dateModified": "2026-07-18",
+    "author": {"@type": "Person", "name": "Arjun Shah"},
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://supercompress.dev/firecrawl-context-compression"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type":"Question","name":"Why compress Firecrawl output?","acceptedAnswer":{"@type":"Answer","text":"Scraped pages often include navigation, repeated boilerplate, unrelated sections, and long markdown blocks. Compressing around the user query reduces token waste before the LLM call."}},
+      {"@type":"Question","name":"Does this replace Firecrawl?","acceptedAnswer":{"@type":"Answer","text":"No. Firecrawl extracts page content. SuperCompress runs after extraction and before inference to reduce the context sent to the model."}}
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main class="seo-page">
+    <p class="seo-kicker">Integration guide</p>
+    <h1>Compress Firecrawl results before they hit your LLM.</h1>
+    <p class="seo-lead">Firecrawl is useful because it turns pages into model-ready content. The problem is that model-ready content can still be huge. SuperCompress runs between Firecrawl and the model, keeping query-relevant evidence while removing scraped noise.</p>
+    <nav class="seo-nav" aria-label="Related SuperCompress pages">
+      <a href="/">Home</a>
+      <a href="/dashboard?signup=1">Free API key</a>
+      <a href="/rag-token-optimization">RAG token optimization</a>
+      <a href="/langchain-prompt-compression">LangChain</a>
+      <a href="/benchmarks">Benchmarks</a>
+    </nav>
+
+    <section class="seo-section">
+      <h2>Where it fits</h2>
+      <table class="seo-table">
+        <thead><tr><th>Step</th><th>Without compression</th><th>With SuperCompress</th></tr></thead>
+        <tbody>
+          <tr><td>Scrape</td><td>Firecrawl returns markdown for full pages or crawls.</td><td>Same Firecrawl result.</td></tr>
+          <tr><td>Prompt assembly</td><td>Entire scrape dump enters the prompt.</td><td>Context is compressed around the current query.</td></tr>
+          <tr><td>Model call</td><td>LLM pays attention to boilerplate, nav, repeated sections, and irrelevant page chunks.</td><td>LLM sees less input, with the answer-critical evidence prioritized.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="seo-section">
+      <h2>Hosted API example</h2>
+      <pre><code>curl -X POST https://supercompress.dev/compress \
+  -H "X-API-Key: sc_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What pricing limits matter for a startup using this tool?",
+    "context": "PASTE_FIRECRAWL_MARKDOWN_HERE"
+  }'</code></pre>
+    </section>
+
+    <section class="seo-section">
+      <h2>Python pipeline sketch</h2>
+      <pre><code>from firecrawl import FirecrawlApp
+from supercompress import Compressor
+
+firecrawl = FirecrawlApp(api_key="fc-...")
+page = firecrawl.scrape_url("https://example.com/pricing", formats=["markdown"])
+
+query = "What pricing limits matter for a startup using this tool?"
+compressed = Compressor().compress(page["markdown"], query)
+
+# Send compressed.compressed_text to OpenAI, Claude, Gemini, or your agent.
+print(compressed.stats)</code></pre>
+    </section>
+
+    <section class="seo-section">
+      <h2>Best first use cases</h2>
+      <ul>
+        <li>AI search over scraped documentation</li>
+        <li>Competitive research agents that crawl multiple pricing pages</li>
+        <li>Sales/research workflows that scrape company websites</li>
+        <li>Coding agents that ingest docs before writing integration code</li>
+      </ul>
+    </section>
+
+    <section class="seo-section">
+      <h2>FAQ</h2>
+      <h3>Why compress Firecrawl output?</h3>
+      <p>Scraped pages often include navigation, repeated boilerplate, unrelated sections, and long markdown blocks. Compressing around the user query reduces token waste before the LLM call.</p>
+      <h3>Does this replace Firecrawl?</h3>
+      <p>No. Firecrawl extracts page content. SuperCompress runs after extraction and before inference to reduce the context sent to the model.</p>
+    </section>
+
+    <section class="seo-cta">
+      <p class="seo-kicker">Try it today</p>
+      <h2>Compress your first scrape result.</h2>
+      <p>Get a free hosted API key, paste a Firecrawl markdown result into the demo, and measure what drops before the model call.</p>
+      <p class="seo-cta-actions"><a class="btn-brand" href="/dashboard?signup=1&utm_source=seo&utm_medium=firecrawl_page&utm_campaign=gtm_execution">Get a free API key</a><a class="btn-link-muted" href="/#demo">Try the demo</a></p>
+    </section>
+  </main>
+</body>
+</html>

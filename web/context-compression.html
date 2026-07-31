@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Context Compression for AI Agents and RAG Pipelines - SuperCompress</title>
+  <meta name="description" content="Context compression keeps AI agents and RAG systems from sending bloated prompts for every LLM call." />
+  <meta property="og:title" content="Context Compression for AI Agents and RAG Pipelines" />
+  <meta property="og:description" content="Context compression keeps AI agents and RAG systems from sending bloated prompts for every LLM call." />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:url" content="https://supercompress.dev/context-compression" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="Context Compression for AI Agents and RAG Pipelines" />
+  <meta name="twitter:description" content="Context compression keeps AI agents and RAG systems from sending bloated prompts for every LLM call." />
+  <meta name="twitter:site" content="@supercompress" />
+  <link rel="canonical" href="https://supercompress.dev/context-compression" />
+  <meta property="article:published_time" content="2026-07-02" />
+  <meta property="article:modified_time" content="2026-07-03" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
+  <style>
+    .seo-page { max-width: 920px; margin: 0 auto; padding: 72px 24px 96px; }
+    .seo-kicker { color: var(--brand); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
+    .seo-page h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(2.25rem, 6vw, 4.25rem); line-height: 1.02; letter-spacing: -.035em; max-width: 840px; margin: 0 0 18px; }
+    .seo-lead { font-size: clamp(1.05rem, 2vw, 1.28rem); line-height: 1.62; color: var(--text-body); max-width: 760px; }
+    .seo-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 52px; }
+    .seo-nav a { border: .5px solid var(--card-border); border-radius: 6px; padding: 9px 15px; color: var(--text-primary); text-decoration: none; background: #fff; font-size: 14px; }
+    .seo-nav a:hover { border-color: var(--brand); color: var(--brand); }
+    .seo-section { margin-top: 44px; }
+    .seo-section h2 { font-family: var(--serif); font-weight: 300; font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.02em; margin: 0 0 14px; }
+    .seo-section p, .seo-section li { color: var(--text-body); line-height: 1.68; font-size: 15px; }
+    .seo-section h3 { font-size: 1.1rem; font-weight: 500; margin: 20px 0 10px; color: var(--text-primary); }
+    .seo-table { width: 100%; border-collapse: collapse; margin: 18px 0; background: #fff; border: .5px solid var(--card-border); }
+    .seo-table th, .seo-table td { text-align: left; padding: 14px; border-bottom: .5px solid var(--card-border); vertical-align: top; }
+    .seo-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+    pre { overflow-x: auto; background: #0f172a; color: #e5e7eb; padding: 18px; border-radius: 6px; font-size: 13px; line-height: 1.55; }
+    .seo-cta { margin-top: 46px; padding: 28px; border-radius: 6px; background: var(--feat-blue); border: .5px solid var(--card-border); }
+    .seo-author { margin: 8px 0 24px; font-size: 13px; color: var(--text-muted); }
+    .seo-author strong { color: var(--text-primary); }
+    @media (max-width: 760px) { .seo-page { padding-top: 42px; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Context Compression for AI Agents and RAG Pipelines",
+    "description": "Context compression keeps AI agents and RAG systems from sending bloated prompts for every LLM call.",
+    "datePublished": "2026-07-02",
+    "dateModified": "2026-07-03",
+    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.linkedin.com/in/arjunkshah", "url": "https://www.linkedin.com/in/arjunkshah"},
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://supercompress.dev/context-compression"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+            {
+        "@type": "Question",
+        "name": "Should I compress before or after retrieval?",
+        "acceptedAnswer": {"@type": "Answer", "text": "After retrieval. Retrieve broadly, then compress around the current question."}
+      },
+      {
+        "@type": "Question",
+        "name": "Can context compression improve latency?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. Fewer prompt tokens reduce GPU prefill time."}
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main class="seo-page">
+    <p class="seo-kicker">Context compression guide</p>
+    <h1>Context compression for agents and RAG</h1>
+    <p class="seo-lead">Context compression turns oversized agent memory, retrieved documents, and logs into a smaller context that still answers the user&#x27;s question.</p>
+    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> - Creator of SuperCompress - Updated 2026-07-03</p>
+    <nav class="seo-nav" aria-label="Related SuperCompress pages">
+      <a href="/">Home</a>
+      <a href="/token-compression">Guide</a>
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/playground">Playground</a>
+      <a href="/dashboard">API Key</a>
+    </nav>
+
+        <section class="seo-section">
+        <h2>Why agents need context compression</h2>
+        <p>AI agents accumulate context with every turn: conversation history, tool call results, code outputs. After 5-10 turns, a typical agent prompt can exceed 10,000 tokens.</p>
+<p>Without context compression, cost balloons, latency increases, and quality degrades as the model sifts through noise.</p>
+      </section>    <section class="seo-section">
+        <h2>RAG pipeline integration</h2>
+                        <pre><code>from supercompress import Compressor
+comp = Compressor()
+def rag_with_compression(query, retriever, llm):
+    docs = retriever.retrieve(query)
+    context = "
+
+".join([d.text for d in docs])
+    result = comp.compress(context, query)
+    return llm.generate(query, result.compressed_text)</code></pre>
+      </section>
+
+    <section class="seo-section">
+      <h2>Frequently asked questions</h2>
+            <h3>Should I compress before or after retrieval?</h3>
+      <p>After retrieval. Retrieve broadly, then compress around the current question.</p>
+      <h3>Can context compression improve latency?</h3>
+      <p>Yes. Fewer prompt tokens reduce GPU prefill time.</p>
+    </section>
+    <section class="seo-cta">
+      <p class="seo-cta-kicker">Build with less context</p>
+      <h2>Put compression in front of your next LLM call.</h2>
+      <p>Use the hosted API or run SuperCompress locally. Keep the evidence, drop the token waste, and measure the savings before it reaches your model.</p>
+      <p class="seo-cta-actions"><a class="btn-brand" href="/dashboard">Get an API key</a><a class="btn-link-muted" href="/token-compression">Read the guide</a></p>
+    </section>
+  </main>
+</body>
+</html>

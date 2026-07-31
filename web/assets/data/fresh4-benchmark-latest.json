@@ -1,0 +1,967 @@
+{
+  "meta": {
+    "fresh4_bench": true,
+    "note": "Brand-new dataset: ood_fresh4_hard (new wiki/RFC/READMEs buried in distractors) + never-used LongBench mix (musique/triviaqa/narrativeqa/samsum). Seed 9091. Primary = answer containment.",
+    "seed": 9091,
+    "per_task": 20,
+    "prior_real_bench_seed": 4242,
+    "tuned_against_seeds": [
+      777,
+      2026,
+      4242
+    ],
+    "hard_ood_path": "/tmp/sc-heldout/ood_fresh4/hard_cases.jsonl",
+    "rescored_punct_norm": true,
+    "engine_note": "founder/label reverse-bridge + trivia assemble + punct-normalized answers"
+  },
+  "gates": {
+    "avg_cut_ge_55": true,
+    "token_weighted_cut_ge_55": true,
+    "always_answer_ge_98": true,
+    "pass": true
+  },
+  "overall": {
+    "n": 93,
+    "mean_cut_pct": 65.92492424671794,
+    "token_weighted_cut_pct": 68.3,
+    "answer_all_kept_rate": 0.9830508474576272,
+    "answer_drops": 1,
+    "scoreable_answers": 59,
+    "drop_ids": [
+      {
+        "id": "16cbcc8b763a701d2c65eb13cb180e3195868e65de706ea5",
+        "task": "longbench_narrativeqa",
+        "dropped": [
+          "Ruth Anvoy"
+        ]
+      }
+    ],
+    "total_tokens_in": 1280751,
+    "total_tokens_out": 405465
+  },
+  "answer_scoreable": {
+    "n": 59,
+    "mean_cut_pct": 62.25526293168954,
+    "token_weighted_cut_pct": 64.8,
+    "answer_all_kept_rate": 0.9830508474576272,
+    "answer_drops": 1,
+    "scoreable_answers": 59,
+    "drop_ids": [
+      {
+        "id": "16cbcc8b763a701d2c65eb13cb180e3195868e65de706ea5",
+        "task": "longbench_narrativeqa",
+        "dropped": [
+          "Ruth Anvoy"
+        ]
+      }
+    ],
+    "total_tokens_in": 833937,
+    "total_tokens_out": 293831
+  },
+  "by_task": {
+    "ood_fresh4_hard": {
+      "n": 13,
+      "mean_cut_pct": 70.1182847985158,
+      "token_weighted_cut_pct": 69.9,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 13,
+      "drop_ids": [],
+      "total_tokens_in": 248138,
+      "total_tokens_out": 74720
+    },
+    "longbench_musique": {
+      "n": 20,
+      "mean_cut_pct": 52.609790182748895,
+      "token_weighted_cut_pct": 53,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 17,
+      "drop_ids": [],
+      "total_tokens_in": 283823,
+      "total_tokens_out": 133493
+    },
+    "longbench_triviaqa": {
+      "n": 20,
+      "mean_cut_pct": 56.76677290231832,
+      "token_weighted_cut_pct": 59,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 20,
+      "drop_ids": [],
+      "total_tokens_in": 206144,
+      "total_tokens_out": 84455
+    },
+    "longbench_narrativeqa": {
+      "n": 20,
+      "mean_cut_pct": 82.82521681568605,
+      "token_weighted_cut_pct": 84.6,
+      "answer_all_kept_rate": 0.8888888888888888,
+      "answer_drops": 1,
+      "scoreable_answers": 9,
+      "drop_ids": [
+        {
+          "id": "16cbcc8b763a701d2c65eb13cb180e3195868e65de706ea5",
+          "task": "longbench_narrativeqa",
+          "dropped": [
+            "Ruth Anvoy"
+          ]
+        }
+      ],
+      "total_tokens_in": 353329,
+      "total_tokens_out": 54556
+    },
+    "longbench_samsum": {
+      "n": 20,
+      "mean_cut_pct": 68.77223272744972,
+      "token_weighted_cut_pct": 69.2,
+      "answer_all_kept_rate": null,
+      "answer_drops": 0,
+      "scoreable_answers": 0,
+      "drop_ids": [],
+      "total_tokens_in": 189317,
+      "total_tokens_out": 58241
+    }
+  },
+  "samples": [
+    {
+      "task": "ood_fresh4_hard",
+      "id": "etcd_coreos",
+      "cut": 79.44748599836386,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15891,
+      "kept": 3266
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "etcd_raft",
+      "cut": 57.5671763891511,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15891,
+      "kept": 6743
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "spanner_google",
+      "cut": 86.27883219527932,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 18599,
+      "kept": 2552
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "spanner_trueTime",
+      "cut": 67.02510887682134,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 18599,
+      "kept": 6133
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "bloom_burton",
+      "cut": 68.85341203827922,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 22362,
+      "kept": 6965
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "bloom_false_pos",
+      "cut": 56.403720597442096,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 22362,
+      "kept": 9749
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "chord_stoica",
+      "cut": 40.922499329578976,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 18645,
+      "kept": 11015
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "jwt_jose",
+      "cut": 75.89364949771041,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 28171,
+      "kept": 6791
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "bun_jarred",
+      "cut": 80.86395873629917,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15510,
+      "kept": 2968
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "bun_zig",
+      "cut": 77.00838168923275,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15510,
+      "kept": 3566
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "rfc7807_type",
+      "cut": 62.91515663009481,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 20143,
+      "kept": 7470
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "rfc7807_title",
+      "cut": 81.48240083403664,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 20143,
+      "kept": 3730
+    },
+    {
+      "task": "ood_fresh4_hard",
+      "id": "vite_native_esm",
+      "cut": 76.87591956841588,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16312,
+      "kept": 3772
+    },
+    {
+      "task": "longbench_musique",
+      "id": "704dd451c50a536eb50a9d580b8a57aa8203bd76d1862ef6",
+      "cut": 35.474679445667654,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 15442,
+      "kept": 9964
+    },
+    {
+      "task": "longbench_musique",
+      "id": "ea32ca3702e3eedd278c8c77153712c07dbb5dd7025d8c3d",
+      "cut": 63.79788639365918,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15140,
+      "kept": 5481
+    },
+    {
+      "task": "longbench_musique",
+      "id": "6ce26ac59b2882dc391635da186779e5b8ed5a0b0354da10",
+      "cut": 49.38140464883779,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16004,
+      "kept": 8101
+    },
+    {
+      "task": "longbench_musique",
+      "id": "554fd0d8696f182e7802bf42d669102e4227ba40f8a6bd4f",
+      "cut": 50.39230574538092,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15804,
+      "kept": 7840
+    },
+    {
+      "task": "longbench_musique",
+      "id": "1ce9a8820397755fa8fd2d5add9bdb9edea86671fa14468c",
+      "cut": 54.73400052673163,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15188,
+      "kept": 6875
+    },
+    {
+      "task": "longbench_musique",
+      "id": "ccbb33282bd009f7844ad8305fadb84e7ede51932fc6a36d",
+      "cut": 53.917334978408384,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 14589,
+      "kept": 6723
+    },
+    {
+      "task": "longbench_musique",
+      "id": "a4d8d097bd76b3030a954d9943fd96cdbb51393ce75c43a5",
+      "cut": 40.794583291845065,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10043,
+      "kept": 5946
+    },
+    {
+      "task": "longbench_musique",
+      "id": "64bae1eefc192258c2e5d8ecab71b8a02fc5a3d104c0fc21",
+      "cut": 56.59756097560975,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16400,
+      "kept": 7118
+    },
+    {
+      "task": "longbench_musique",
+      "id": "0942aa56c94ac545c00849686583273efd664347084e9682",
+      "cut": 50.963992061241846,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 14108,
+      "kept": 6918
+    },
+    {
+      "task": "longbench_musique",
+      "id": "1335c327548140bd1173eba9b1270d67dd4f7aafce0560a4",
+      "cut": 52.18270799347471,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15325,
+      "kept": 7328
+    },
+    {
+      "task": "longbench_musique",
+      "id": "177dde027032c5c71bf88fd4676536c0bef7d79d43c32659",
+      "cut": 64.01391025212332,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 14953,
+      "kept": 5381
+    },
+    {
+      "task": "longbench_musique",
+      "id": "c48373896fd9da5b8e7f7565c18ffa921992f00d45147aeb",
+      "cut": 63.9493341994154,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15395,
+      "kept": 5550
+    },
+    {
+      "task": "longbench_musique",
+      "id": "c858bf26a171d617a8decbb3a67e082b577a5a1166ca15b2",
+      "cut": 73.41979725700656,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 13416,
+      "kept": 3566
+    },
+    {
+      "task": "longbench_musique",
+      "id": "037dbe8ccac208d33dfbd28d6fdc319f88b1c2c2bd4ba060",
+      "cut": 62.519901577652334,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 13818,
+      "kept": 5179
+    },
+    {
+      "task": "longbench_musique",
+      "id": "05f1867336770bf201cf9a88de60e2b9bdd893efe98d9593",
+      "cut": 49.98204667863555,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 5570,
+      "kept": 2786
+    },
+    {
+      "task": "longbench_musique",
+      "id": "d79a4697ef5b7302ea7cb8a81107a462d699843688a3050d",
+      "cut": 32.5412188772445,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 14981,
+      "kept": 10106
+    },
+    {
+      "task": "longbench_musique",
+      "id": "0da908a928c375084638f1e0ab10c329679eaacae7e4ffe0",
+      "cut": 61.74140834528785,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16033,
+      "kept": 6134
+    },
+    {
+      "task": "longbench_musique",
+      "id": "70444bcfcd30c497b730b5b408990ea2c672ec03caa5235f",
+      "cut": 27.870119829918828,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 15522,
+      "kept": 11196
+    },
+    {
+      "task": "longbench_musique",
+      "id": "5c835b4c358e5f2e8c577dbc38c4857599539968e593a322",
+      "cut": 41.25915080527086,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10245,
+      "kept": 6018
+    },
+    {
+      "task": "longbench_musique",
+      "id": "cb9b4679117faad98b982edb6bb06b9a24ec472f8542da17",
+      "cut": 66.6624597715656,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 15847,
+      "kept": 5283
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "27a3112482b43aa286477c3362da80a443743554f95cb79c",
+      "cut": 67.28472963789923,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10301,
+      "kept": 3370
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "34f16de4e2d36a78ed8275cd89abab0a7ba95dfa0fa322b5",
+      "cut": 41.41298609889144,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 11366,
+      "kept": 6659
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "7040aea54d4f2c64eeeebd9b0989f56551279e5a2cd1f362",
+      "cut": 50.46918319471103,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 9378,
+      "kept": 4645
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "f8095046bf68df4ae880082cfbaf15e913fcd4445be1bc02",
+      "cut": 57.009088405397954,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10893,
+      "kept": 4683
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "7fd54b4df7c2c6aa34ae4b05c6795684d4f80799df39f499",
+      "cut": 48.40764331210191,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 2983,
+      "kept": 1539
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "a1fe5b387666d360bf0da4bf1c6d50ca65bc532df1735db7",
+      "cut": 59.320941227033416,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 9307,
+      "kept": 3786
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "f09a263c3f20b360abf11e0b885596151d8ba21dc2128bfc",
+      "cut": 52.651548574958085,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 11333,
+      "kept": 5366
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "a79b2353fd191d8d6cd0315ed2d853333767df5b804e2334",
+      "cut": 64.34262948207171,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 8534,
+      "kept": 3043
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "f30dd5f33dcb60dd011cc0adbeaa0f51a48efb904e58b438",
+      "cut": 57.00213734783013,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10761,
+      "kept": 4627
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "d66ff6f451adf1f6a0b857c0252dc081f0aab171d8d28151",
+      "cut": 69.02856588583346,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 20619,
+      "kept": 6386
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "1fe1aa4c6f9ee5f892cf0b673fc292718bba7bbfd04ad364",
+      "cut": 66.69082125603865,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16560,
+      "kept": 5516
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "d9993993a543f83b052c9db2ad6639eb12802f0c081cd753",
+      "cut": 51.23619147816938,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 1901,
+      "kept": 927
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "0b96db37ad7998fe3829267d3b4963a8ff043520208058a8",
+      "cut": 63.61393585654973,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 16619,
+      "kept": 6047
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "99ec5bf16cc7ececd816ee3acb8cb07be56e6a95f1b1f111",
+      "cut": 54.488536967130095,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10861,
+      "kept": 4943
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "1e27ca95eda7f56134419848ef414885bc605154326981dd",
+      "cut": 45.991410164638516,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 2794,
+      "kept": 1509
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "35f27fbf447412c8d3d2e335ce07606e3df252f168c73209",
+      "cut": 57.98227675528289,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 14670,
+      "kept": 6164
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "ce2060395758c9a44ec6b049d6e4b30c3695a76f3bcb30cd",
+      "cut": 58.954510703363916,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10464,
+      "kept": 4295
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "fb56d8983b841c1ea86292021609db4d422f0616a17159dd",
+      "cut": 57.049240010922,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10987,
+      "kept": 4719
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "164603e29d5a8d36ee3589b5f47302f4a6fb74d5d6e6dbd9",
+      "cut": 63.006224544686084,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 13013,
+      "kept": 4814
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "81d1b31774563e0ed38144b248eccf295fb5d7605637708c",
+      "cut": 49.39285714285714,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 2800,
+      "kept": 1417
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "341d214a2c377691bf20e5a30b8f7979696bd19141ad9c9f",
+      "cut": 95.49126432462897,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 26615,
+      "kept": 1200
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "cb00113ac346ae33f58e2d4729f7c2bc5ef5a6e32adc193b",
+      "cut": 91.66896551724138,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 25375,
+      "kept": 2114
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "321a85aa34669657c041d72547da9f30764447d789bf0e2d",
+      "cut": 69.65735789265202,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10098,
+      "kept": 3064
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "42a2c14632d52bae9db7d4ba4ee0e76a033d95762dc7b88b",
+      "cut": 88.07684690037631,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 10098,
+      "kept": 1204
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "8317d375904e2fcba00401b32177f783d5f8d348a1ef503f",
+      "cut": 98.52446028916617,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 10098,
+      "kept": 149
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "c22368c99a8cf7d7a3a2bc96d1faeffd21403576f605519b",
+      "cut": 94.35922810489856,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 12126,
+      "kept": 684
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "077293776804b7d32e78db5ef172d5c960716006e8b446da",
+      "cut": 55.69849909285832,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 12126,
+      "kept": 5372
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "cd10cf90d7eb19a9f362b7075c408e6c24e66663e051ee57",
+      "cut": 83.15508021390374,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 10098,
+      "kept": 1701
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "acc4bde34060bc451a73e0e1e0d0bc7e1ca93695bc8112a1",
+      "cut": 90.7552491382012,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 31910,
+      "kept": 2950
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "c549a937e1ff08308e3afe359c4db27ba066adcabb4b2425",
+      "cut": 84.49197860962568,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 10098,
+      "kept": 1566
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "16cbcc8b763a701d2c65eb13cb180e3195868e65de706ea5",
+      "cut": 86.07927860229194,
+      "answer_all_kept": false,
+      "dropped": [
+        "Ruth Anvoy"
+      ],
+      "orig": 26615,
+      "kept": 3705
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "d22828536f4d6bee11bd1f15f636bddd18fa8f246ef1be6c",
+      "cut": 99.67625899280576,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 25020,
+      "kept": 81
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "1c4fffbc6acfb659de69246ce9d1e1a47a7e0df4f07c467e",
+      "cut": 60.29271613342409,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 14690,
+      "kept": 5833
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "d660c82758a6d8d265d8214e779593755f968c1f75acfb87",
+      "cut": 93.6,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 25625,
+      "kept": 1640
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "52c910fb919a865d201b4d6a723f624290e2c663d282315a",
+      "cut": 76.4555500577272,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 12126,
+      "kept": 2855
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "0bf1995158cbf08134d5dc15475c27f38b3ab5441c422419",
+      "cut": 50.280389246247736,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 12126,
+      "kept": 6029
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "887b45fe14ce901239d9ec0eee625ec5f02c410b1eb426b4",
+      "cut": 88.16546762589928,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 25020,
+      "kept": 2961
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "a4d4338ea46bcf775691966f2308ed8e1eae9d4f21581279",
+      "cut": 90.89629282027218,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 21310,
+      "kept": 1940
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "616db78bbe044951aa6dd2cf7694fa9cb2679093fa94bb25",
+      "cut": 95.42772861356931,
+      "answer_all_kept": true,
+      "dropped": [],
+      "orig": 6780,
+      "kept": 310
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "1f4e0b8679c63575a052299e5d266741fe47c6eb672ece9e",
+      "cut": 63.751724137931035,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 25375,
+      "kept": 9198
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "3ba1ef46ad45638248842e95574774b741c89955b4d87680",
+      "cut": 98.6636409480585,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 7932,
+      "kept": 106
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "2c5fa3aaf2cd3b0ecdfa08c040b2f61b55a99a76cf3e1c5b",
+      "cut": 51.4757750139224,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 5387,
+      "kept": 2614
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "838c429ae24c4723861b0f074f871f52db83f0747f772d5d",
+      "cut": 77.1690518783542,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 8944,
+      "kept": 2042
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "3023ac5d13e9d911472a3bdc65329f144dc0e35587728c96",
+      "cut": 61.03542234332425,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 3303,
+      "kept": 1287
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "c016e1f9b824428a4b555cd4e5901a69b32a03dbb6098e57",
+      "cut": 98.3134447096261,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 12570,
+      "kept": 212
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "6f9361273f0bb0f4da30c7204050eaf72782a8fdae636bb2",
+      "cut": 93.24716433658665,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 7582,
+      "kept": 512
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "725a8672b9af114882cd69d4246bcc60da8068dbbfdbc91f",
+      "cut": 90.98904375046583,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 13417,
+      "kept": 1209
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "8a17b5e513adfe5402e8fa8c3be9cda6b40c1c06a6e6ae16",
+      "cut": 28.66896758703481,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 13328,
+      "kept": 9507
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "3823413de24cda2deac90bc7e23ac98e9f2a85a97e67d7b7",
+      "cut": 37.6012084592145,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 16550,
+      "kept": 10327
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "dc28772d624fd0a04364c0d1a085079cf97ae7348b31293a",
+      "cut": 96.5853124657984,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 9137,
+      "kept": 312
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "404589ed7d8984241622aa3d84864257102da1d8a384df6c",
+      "cut": 81.59050017992084,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 13895,
+      "kept": 2558
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "08f5ae9140be52467a52dccb6ba19710a755e5eea7be4fce",
+      "cut": 79.72035214914553,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 9655,
+      "kept": 1958
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "5995658a6719fda93e3338b5bdb95ace008a41f8856f0a81",
+      "cut": 54.16073968705548,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 2812,
+      "kept": 1289
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "a628944c1cae7d72a92d89e86340c708a6741c38af83dba6",
+      "cut": 42.87414066631412,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 7564,
+      "kept": 4321
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "ee982eb6556c91f207286901273a03aeab6be45fd21c70ed",
+      "cut": 84.22799514903939,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 15667,
+      "kept": 2471
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "4d088d03f6793851554a7cc0da295d3039bb246c521eaa39",
+      "cut": 51.82567726737338,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 1698,
+      "kept": 818
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "523e73457ab272cc8f314e274da9ca017e21557f9a8c55bf",
+      "cut": 88.41761827079935,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 12260,
+      "kept": 1420
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "b481ab4fede445b9584628fbf89b9aaa800e968f15a7cb19",
+      "cut": 26.549697185607414,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 11228,
+      "kept": 8247
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "3caad29ef6681517151ef3045b86797489eae153942c0bff",
+      "cut": 82.90279627163781,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 3755,
+      "kept": 642
+    },
+    {
+      "task": "longbench_samsum",
+      "id": "a63b1ff6f29d6d2383c5551b5c7a6bd6552c15c9c95d12f2",
+      "cut": 49.42610622971583,
+      "answer_all_kept": null,
+      "dropped": [],
+      "orig": 12633,
+      "kept": 6389
+    }
+  ]
+}

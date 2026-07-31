@@ -1,0 +1,1665 @@
+{
+  "meta": {
+    "fresh5_bench": true,
+    "note": "Brand-new dataset: ood_fresh5_hard (CRDT/Wasm/Redis/GraphQL/Protobuf/Deno/RFC8259/esbuild) + LongBench hotpot/2wiki/multifield/qasper at never-used seed 6161. Primary = answer containment.",
+    "seed": 6161,
+    "per_task": 20,
+    "prior_real_bench_seed": 4242,
+    "prior_fresh4_seed": 9091,
+    "tuned_against_seeds": [
+      777,
+      2026,
+      4242,
+      9091
+    ],
+    "hard_ood_path": "/tmp/sc-heldout/ood_fresh5/hard_cases.jsonl"
+  },
+  "gates": {
+    "avg_cut_ge_55": true,
+    "token_weighted_cut_ge_55": true,
+    "always_answer_ge_98": true,
+    "pass": true
+  },
+  "overall": {
+    "n": 95,
+    "mean_cut_pct": 57.38842105263161,
+    "token_weighted_cut_pct": 61.2,
+    "answer_all_kept_rate": 1,
+    "answer_drops": 0,
+    "scoreable_answers": 64,
+    "drop_ids": [],
+    "mean_latency_ms": 6514.284210526316,
+    "total_tokens_in": 940988,
+    "total_tokens_out": 365458
+  },
+  "answer_scoreable": {
+    "n": 64,
+    "mean_cut_pct": 52.928125,
+    "token_weighted_cut_pct": 59.2,
+    "answer_all_kept_rate": 1,
+    "answer_drops": 0,
+    "scoreable_answers": 64,
+    "drop_ids": [],
+    "mean_latency_ms": 8243.109375,
+    "total_tokens_in": 744442,
+    "total_tokens_out": 303959
+  },
+  "by_task": {
+    "ood_fresh5_hard": {
+      "n": 15,
+      "mean_cut_pct": 72.07333333333332,
+      "token_weighted_cut_pct": 71.6,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 15,
+      "drop_ids": [],
+      "mean_latency_ms": 19862,
+      "total_tokens_in": 304907,
+      "total_tokens_out": 86482
+    },
+    "longbench_hotpotqa": {
+      "n": 20,
+      "mean_cut_pct": 52.17,
+      "token_weighted_cut_pct": 53.4,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 17,
+      "drop_ids": [],
+      "mean_latency_ms": 8587.6,
+      "total_tokens_in": 276888,
+      "total_tokens_out": 128979
+    },
+    "longbench_2wikimqa": {
+      "n": 20,
+      "mean_cut_pct": 32.89,
+      "token_weighted_cut_pct": 38,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 19,
+      "drop_ids": [],
+      "mean_latency_ms": 2553.3,
+      "total_tokens_in": 129149,
+      "total_tokens_out": 80054
+    },
+    "longbench_multifieldqa_en": {
+      "n": 20,
+      "mean_cut_pct": 68.7,
+      "token_weighted_cut_pct": 71.6,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 5,
+      "drop_ids": [],
+      "mean_latency_ms": 3580.2,
+      "total_tokens_in": 146441,
+      "total_tokens_out": 41655
+    },
+    "longbench_qasper": {
+      "n": 20,
+      "mean_cut_pct": 64.78,
+      "token_weighted_cut_pct": 66.2,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 8,
+      "drop_ids": [],
+      "mean_latency_ms": 1325.25,
+      "total_tokens_in": 83603,
+      "total_tokens_out": 28288
+    }
+  },
+  "samples": [
+    {
+      "task": "ood_fresh5_hard",
+      "id": "crdt_shapiro",
+      "query": "Which researcher is widely associated with formalizing conflict-free replicated data types (CRDTs)?",
+      "answers_scored": [
+        "Marc Shapiro"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 20767,
+      "kept_tokens": 8129,
+      "kv_savings_pct": 60.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 24829
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "crdt_eventual",
+      "query": "CRDTs are designed to achieve which consistency property without coordination?",
+      "answers_scored": [
+        "eventual consistency"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 20767,
+      "kept_tokens": 6729,
+      "kv_savings_pct": 67.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 21488
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "wasm_w3c",
+      "query": "Which standards body maintains the WebAssembly core specification?",
+      "answers_scored": [
+        "W3C"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25157,
+      "kept_tokens": 6144,
+      "kv_savings_pct": 75.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 32833
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "wasm_asmjs",
+      "query": "WebAssembly evolved from which earlier low-level JavaScript subset used as a compilation target?",
+      "answers_scored": [
+        "asm.js"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25157,
+      "kept_tokens": 9493,
+      "kv_savings_pct": 62.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 30435
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "redis_sanfilippo",
+      "query": "Who originally created Redis?",
+      "answers_scored": [
+        "Salvatore Sanfilippo"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 21273,
+      "kept_tokens": 3506,
+      "kv_savings_pct": 83.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 20163
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "redis_ansi_c",
+      "query": "Redis is primarily written in which programming language?",
+      "answers_scored": [
+        "ANSI C"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 21273,
+      "kept_tokens": 4035,
+      "kv_savings_pct": 81,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 19598
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "graphql_facebook",
+      "query": "Which company originally developed GraphQL before it became an open standard?",
+      "answers_scored": [
+        "Facebook"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 18246,
+      "kept_tokens": 4577,
+      "kv_savings_pct": 74.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 16648
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "graphql_2015",
+      "query": "In which year was GraphQL publicly released as an open-source project?",
+      "answers_scored": [
+        "2015"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 18246,
+      "kept_tokens": 4351,
+      "kv_savings_pct": 76.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 16162
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "protobuf_google",
+      "query": "Which company developed Protocol Buffers?",
+      "answers_scored": [
+        "Google"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 18583,
+      "kept_tokens": 2551,
+      "kv_savings_pct": 86.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 14874
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "protobuf_idl",
+      "query": "Protocol Buffers serialize structured data using what kind of schema language often abbreviated IDL?",
+      "answers_scored": [
+        "interface description language"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 18583,
+      "kept_tokens": 4382,
+      "kv_savings_pct": 76.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 16027
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "deno_ry",
+      "query": "Who created the Deno JavaScript/TypeScript runtime?",
+      "answers_scored": [
+        "Ryan Dahl"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 17635,
+      "kept_tokens": 3524,
+      "kv_savings_pct": 80,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 14198
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "deno_rust",
+      "query": "Deno's core is primarily implemented in which systems language?",
+      "answers_scored": [
+        "Rust"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 17635,
+      "kept_tokens": 6965,
+      "kv_savings_pct": 60.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 14951
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "rfc8259_json",
+      "query": "RFC 8259 is the current standard for which data interchange format?",
+      "answers_scored": [
+        "JSON"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 20701,
+      "kept_tokens": 6719,
+      "kv_savings_pct": 67.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 18628
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "rfc8949_cbor",
+      "query": "RFC 8949 specifies which binary data format often used as a compact alternative to JSON?",
+      "answers_scored": [
+        "CBOR"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25239,
+      "kept_tokens": 10980,
+      "kv_savings_pct": 56.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 26862
+    },
+    {
+      "task": "ood_fresh5_hard",
+      "id": "deno_readme_rust",
+      "query": "According to the Deno README, Deno is written in which language?",
+      "answers_scored": [
+        "Rust"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15645,
+      "kept_tokens": 4397,
+      "kv_savings_pct": 71.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10234
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "8a5d7c131d291d2c7cf2c20ea36a629f969402e0c50a8a8a",
+      "query": "What was the population in 2010 of the town where The Stelljes House is located ?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 11453,
+      "kept_tokens": 5995,
+      "kv_savings_pct": 47.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 5382
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "6e541b3b8fc7e59da0da6548a17932b403b2e865d4036982",
+      "query": "A wide receiver for the Toronto Argonauts played college football for a team that represents the University of Oklahoma, which belongs to what conference?",
+      "answers_scored": [
+        "Big 12 Conference"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14143,
+      "kept_tokens": 4984,
+      "kv_savings_pct": 64.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8944
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "8e9e0bac1908657b2f48452fe70dd4f7ab765b9633b75627",
+      "query": "When was the club formed, for which Adam  Johnson played as well as Middlesbrough and Watford ?",
+      "answers_scored": [
+        "1919"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15558,
+      "kept_tokens": 6127,
+      "kv_savings_pct": 60.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10888
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "6c64a81fa526cb96d0a191d9cbd85a7e917b5d4f03b316d7",
+      "query": "The player who laid motionless for ten minutes in the Todd Bertuzzi–Steve Moore incident was born in which year ?",
+      "answers_scored": [
+        "1978"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 12830,
+      "kept_tokens": 8477,
+      "kv_savings_pct": 33.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7650
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "c9ee71b5dc7f5a4538d7727c95f80c174d3c9819dfbeac5a",
+      "query": "The 53rd National Hockey League All-Star Game took place at the indoor arena that was completed in what year?",
+      "answers_scored": [
+        "1998"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13494,
+      "kept_tokens": 8412,
+      "kv_savings_pct": 37.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8347
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "74ae5bfc8bdac7b560ec92b71604e86654f87b8f7fcbb30a",
+      "query": "The historical Nimavar school in the Nimavar Bazaar, or bazar, is located in which country?",
+      "answers_scored": [
+        "Iran"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14480,
+      "kept_tokens": 4512,
+      "kv_savings_pct": 68.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9277
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "75f3798af3596cffefe8b932a00b1976f3f25fa0f42089fc",
+      "query": "Which name adopted by African-American activist Allen Donaldson co-found Black Power movement of the 1960s and 1970s",
+      "answers_scored": [
+        "Hakim Abdullah Jamal"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15796,
+      "kept_tokens": 7821,
+      "kv_savings_pct": 50.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 11351
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "eac05e5d0936f802e28b0c5081a2c2a1a94fe4f2c20cb2df",
+      "query": "Which person is known for playing in punk bands, Keith Morris or Rome Ramirez?",
+      "answers_scored": [
+        "Keith Morris"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13187,
+      "kept_tokens": 6343,
+      "kv_savings_pct": 51.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7245
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "b3647c02310a89ccb2822c163da3bead1ad3cd21948d4769",
+      "query": "Where is the host of the American survival skills reality show, The Island, originally from?",
+      "answers_scored": [
+        "Northern Ireland"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15584,
+      "kept_tokens": 5920,
+      "kv_savings_pct": 62,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10035
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "f2da37b927d3f8ce752b69d7149a6eb31aa738d123f8fdb6",
+      "query": "Which artist is known for his work on Marvel Team-Up and Batman: Son of the Demon?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 16131,
+      "kept_tokens": 6556,
+      "kv_savings_pct": 59.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 10197
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "232c2ba7b8bb5f22b77e5c55961d0cd0fe673d26870e157b",
+      "query": "When did the animated series Kent Scott wrote end after beginning in September of 2002 on \"Nick on CBS\"?",
+      "answers_scored": [
+        "November"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14307,
+      "kept_tokens": 7572,
+      "kv_savings_pct": 47.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8867
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "8fddd32ef1d88a5f8fde49152fc015eb80b3d60d1108d073",
+      "query": "What side-scrolling platform game had Christian Whitehead as project lead?",
+      "answers_scored": [
+        "Sonic Mania"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15213,
+      "kept_tokens": 6924,
+      "kv_savings_pct": 54.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10720
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "0879d3f078165bdc1aabca26c8526e66d3959e8ab2c6d903",
+      "query": "When was Erik Watts' father born?",
+      "answers_scored": [
+        "May 5, 1939"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 12795,
+      "kept_tokens": 8884,
+      "kv_savings_pct": 30.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7064
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "76096cce081ab5b9ef72be19076ee0a79d9e9239474e8b73",
+      "query": "When did the place in Canada where François Beaucourt (1740-1794) was mainly active acquired its present name?",
+      "answers_scored": [
+        "1763"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13820,
+      "kept_tokens": 5496,
+      "kv_savings_pct": 60.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8876
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "7bb5645d62fc946b46910757e007f59e87f52bbf8535da58",
+      "query": "The Pluralist school is said to have included what creator of the theory of atomism? ",
+      "answers_scored": [
+        "Leucippus"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14219,
+      "kept_tokens": 5193,
+      "kv_savings_pct": 63.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9198
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "a3859ad1c8ffbce9bb2952f83cb463cc7051072c38eb8d70",
+      "query": "What profession do Raj Kapoor and Mike Cahill share?",
+      "answers_scored": [
+        "director"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14274,
+      "kept_tokens": 8552,
+      "kv_savings_pct": 40.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8646
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "90caafc7fe51eee4143874971f67bb3e0107d26179c437f7",
+      "query": "Broadbent Arena and Freedom Hall are landmarks of which U.S. city?",
+      "answers_scored": [
+        "Louisville"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5468,
+      "kept_tokens": 3961,
+      "kv_savings_pct": 27.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1554
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "0a44085d7963681015a69416470b86da02135ac722d6301b",
+      "query": "Jolyon James performed the role of Moonshadow in a musical by a composer of what nationality?",
+      "answers_scored": [
+        "British"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15841,
+      "kept_tokens": 4015,
+      "kv_savings_pct": 74.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10635
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "02c6e6b95d2a200df20bea7495469c79b1d89ed560890ee3",
+      "query": "What is the population of the city at which the transmitter of WLLZ-LP was placed? ",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 13510,
+      "kept_tokens": 4148,
+      "kv_savings_pct": 69.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 7517
+    },
+    {
+      "task": "longbench_hotpotqa",
+      "id": "22a4122731366b93dd7495f9cb64b9312537fbe85797efbc",
+      "query": "Who stars in the title role of a Netflix show co-created by Robert Carlock?",
+      "answers_scored": [
+        "Ellie Kemper"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14785,
+      "kept_tokens": 9087,
+      "kv_savings_pct": 38.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9359
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "a88430cef36a0222c3c30780328ff266b16325a7ec723a97",
+      "query": "Where was the place of death of Shahnawaz Bhutto's mother?",
+      "answers_scored": [
+        "Dubai"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5674,
+      "kept_tokens": 4891,
+      "kv_savings_pct": 13.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1756
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "cc32d31bbeb3e0d8787e963cf0843ae6b22f33817eb5a587",
+      "query": "Are both villages, Rhosgoch and Qaleh-Ye Sahar, located in the same country?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 872,
+      "kept_tokens": 599,
+      "kv_savings_pct": 31.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 159
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "89530e21fb2f36eb499cea025efa9c80b10049f72945bfb6",
+      "query": "Which film has the director who was born first, Tombstone Rashomon or Waiting For The Clouds?",
+      "answers_scored": [
+        "Tombstone Rashomon"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 7518,
+      "kept_tokens": 4593,
+      "kv_savings_pct": 38.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2703
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "25b5c6893c13f6e52ddd541c03f5bd6bb7b17cfeb15d9f16",
+      "query": "Who is the spouse of the director of film Rodney Steps In?",
+      "answers_scored": [
+        "Ivy Duke"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13409,
+      "kept_tokens": 3848,
+      "kv_savings_pct": 71.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7881
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "b126cad8f81aed3c5cc29c20c25b1adc7d1f33e1c4e264c3",
+      "query": "Which film whose producer was born first, All-American Co-Ed or Lagu Kenangan?",
+      "answers_scored": [
+        "All-American Co-Ed"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 7522,
+      "kept_tokens": 4482,
+      "kv_savings_pct": 40.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2784
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "acb93469117282f2d0131e19f6210e007d681bc7a78e7b64",
+      "query": "Where did Rameshwari Nehru's husband graduate from?",
+      "answers_scored": [
+        "Oxford"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5824,
+      "kept_tokens": 3311,
+      "kv_savings_pct": 43.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1782
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "cf5321576ab8cc1b8453991abac66aa5d46155d8ffa7ee17",
+      "query": "Why did the director of film Port Of Seven Seas die?",
+      "answers_scored": [
+        "drowning"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 10531,
+      "kept_tokens": 4385,
+      "kv_savings_pct": 58.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 5246
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "cab5465c3f7663e5d72c15a32bc04c8a917dac3c03828814",
+      "query": "Where was the place of death of the composer of film Miracle Of Marcelino?",
+      "answers_scored": [
+        "Madrid"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4274,
+      "kept_tokens": 3965,
+      "kv_savings_pct": 7.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1090
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "b1034d8bbeeba5f9001f48311c182d2a20782462f0c2ed65",
+      "query": "What is the place of birth of Frank Wartenberg's wife?",
+      "answers_scored": [
+        "Prenzlau"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4822,
+      "kept_tokens": 3322,
+      "kv_savings_pct": 31.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1370
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "24a43c1b071d8bb99f51fec368dbc438cf7aea1f549ea195",
+      "query": "Which film came out first, F The Prom or The Comedians Of Comedy?",
+      "answers_scored": [
+        "The Comedians Of Comedy"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5890,
+      "kept_tokens": 4158,
+      "kv_savings_pct": 29.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1757
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "d04cc75917c9ef6b7a78b82491229023013ef3cea72bfba4",
+      "query": "What is the place of birth of Aleksey Greig's father?",
+      "answers_scored": [
+        "Inverkeithing"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5614,
+      "kept_tokens": 4359,
+      "kv_savings_pct": 22.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1844
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "60735709da9cbdd65bab0a11d1a0991ec842fe74d1ab583b",
+      "query": "Which film has the director who died first, The Piper'S Price or The Blonde From Singapore?",
+      "answers_scored": [
+        "The Piper'S Price"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5687,
+      "kept_tokens": 4188,
+      "kv_savings_pct": 26.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1759
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "9b0dc01a1388db020e5c5c428a002d099f8a35544e9b6261",
+      "query": "Which film whose director is younger, Winter Sleepers or Poveri Milionari?",
+      "answers_scored": [
+        "Winter Sleepers"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4141,
+      "kept_tokens": 3176,
+      "kv_savings_pct": 23.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1179
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "f77d9c5f3892f245b951dfd32e935473f63a4c6b565e31a9",
+      "query": "Which film was released earlier, August Underground'S Penance or Vasantha Raagam?",
+      "answers_scored": [
+        "Vasantha Raagam"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 7499,
+      "kept_tokens": 5389,
+      "kv_savings_pct": 28.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 3443
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "35ffcf04ff64965decfcd3d34ff37b35da2a92f0b64346cd",
+      "query": "Who is the paternal grandfather of Mark Getty?",
+      "answers_scored": [
+        "Jean Paul Getty"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 7538,
+      "kept_tokens": 4943,
+      "kv_savings_pct": 34.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 3319
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "884614fa7d0fe723587d2f2677d3f2143cd13ab74391bea6",
+      "query": "Where was the wife of Lou Breslow born?",
+      "answers_scored": [
+        "Dayton, Ohio"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5119,
+      "kept_tokens": 3607,
+      "kv_savings_pct": 29.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1471
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "6e7d2d0700c8ec6fc15dc188c42d8104b89935219254fdaf",
+      "query": "What is the place of birth of the director of film Clowning Around?",
+      "answers_scored": [
+        "Castlemaine, Victoria, Australia"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4182,
+      "kept_tokens": 2063,
+      "kv_savings_pct": 50.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1091
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "2d1951b62f317038d28f6ac6a2b21e9d2e7f921ea528948b",
+      "query": "Which country the performer of song I Believe In Your Sweet Love is from?",
+      "answers_scored": [
+        "United Kingdom"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 11643,
+      "kept_tokens": 4233,
+      "kv_savings_pct": 63.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 6505
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "ef73e58876b94a997d928ee13b7ac7cdb8b8aa0bac856a92",
+      "query": "Which film has the director who died later, The Great Man'S Lady or La Belle Américaine?",
+      "answers_scored": [
+        "La Belle Américaine"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5462,
+      "kept_tokens": 5344,
+      "kv_savings_pct": 2.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1988
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "24e27e943be014d4549674d581cdc20fdae92fa3d9cd256c",
+      "query": "Who is the father-in-law of Duke William Of Mecklenburg-Schwerin?",
+      "answers_scored": [
+        "Prince Albert of Prussia"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5928,
+      "kept_tokens": 5198,
+      "kv_savings_pct": 12.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1939
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "7f8fc6a04f8be9000b41098aa0f8d7fbfd42e2aa43bf7997",
+      "query": "What is the electron correlation parameter, $\\Gamma_e$?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 8432,
+      "kept_tokens": 1546,
+      "kv_savings_pct": 81.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 3169
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "751053416f74a11311a13e801634fff8fd48649d3921b368",
+      "query": "Who compiled the 88-page letter to the HHS regarding vaccine safety?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3708,
+      "kept_tokens": 1846,
+      "kv_savings_pct": 50.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1001
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "120cb783c796fbedbc76f04cf9be3318e54a63cd642c4401",
+      "query": "What is the main methodology used in the research?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 7637,
+      "kept_tokens": 1043,
+      "kv_savings_pct": 86.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 3771
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "25d54c0a145838996b56def82126f35b3fabe3e100d10fc0",
+      "query": "What are the restrictions on the use of Broadjam's servers?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 12006,
+      "kept_tokens": 4159,
+      "kv_savings_pct": 65.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 6987
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "8d72c6709ee1da38a65cdfb4f9d90e7348fd8e356c0a8165",
+      "query": "Besides the Boeing C-17, what other transport aircraft is the IAF considering for acquisition?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 7479,
+      "kept_tokens": 3007,
+      "kv_savings_pct": 59.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 2979
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "c7ad556387e8215bae3f8ccd30ba35e0093218fe48168718",
+      "query": "What are the three synthetic types of vitamin K?",
+      "answers_scored": [
+        "Vitamins K3, K4, and K5."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13034,
+      "kept_tokens": 2670,
+      "kv_savings_pct": 79.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7031
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "79ffdceb9859803e365c3de5d24c187ed06b15f04d04ae6a",
+      "query": "What factors control the reliance of artificial organisms on plasticity?",
+      "answers_scored": [
+        "Environmental fluctuation and uncertainty control the reliance of artificial organisms on plasticity."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6186,
+      "kept_tokens": 2119,
+      "kv_savings_pct": 65.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2431
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "4ad542cf320f1c01a4bce92a59628789784cf9722d7d476c",
+      "query": "How does the receptive field size affect the completion of shapes?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 5982,
+      "kept_tokens": 2745,
+      "kv_savings_pct": 54.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 2705
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "56514cd4cf8dac4f9081927e3ffaaca1ff1231198b7b16e9",
+      "query": "What is the research opportunity that is mentioned?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 9739,
+      "kept_tokens": 746,
+      "kv_savings_pct": 92.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 6177
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "46b15f1200c46251053ec3dfa806dbdf515eb34053a5e0d1",
+      "query": "When was the paper published?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3666,
+      "kept_tokens": 170,
+      "kv_savings_pct": 95.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1194
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "f9b9a553107eed5b994a9aaf07e8ccac487feaa8ff108ec6",
+      "query": "What are some potential applications of ferromagnetic semiconductors?",
+      "answers_scored": [
+        "Spin injection into non magnetic semiconductors, or electrical manipulation of carrier induced magnetism in magnetic semiconductors."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 10949,
+      "kept_tokens": 3744,
+      "kv_savings_pct": 65.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 5445
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "49d0334d26929f712de2cba070a74752f415313c08166f80",
+      "query": "What algorithm is engaged in the PLMS-PPIC method?",
+      "answers_scored": [
+        "The normalized least mean square (NLMS) algorithm."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6094,
+      "kept_tokens": 1692,
+      "kv_savings_pct": 72.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1609
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "37dfd65b9a8316b9569875b8bcfc5a8bd65e044a88b2e894",
+      "query": "What does the paper aim to solve?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 6469,
+      "kept_tokens": 1151,
+      "kv_savings_pct": 82.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 2378
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "7a503a81877d3baca86f8d7179209e4899823433ab3326f3",
+      "query": "What is the relationship between the maximum velocity and the amplitude of the blob or depletion?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 5686,
+      "kept_tokens": 2220,
+      "kv_savings_pct": 61,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1737
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "22034e095a602824678c4028e6f605919ce520270dc06089",
+      "query": "What is the scaling form for the alternative order parameter O?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 1269,
+      "kept_tokens": 615,
+      "kv_savings_pct": 51.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 252
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "18ef34b54d2ddc134e1be7cae3d6101432465011d016c77a",
+      "query": "What is the water depth in the Greater Ekofisk Area?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 8586,
+      "kept_tokens": 3319,
+      "kv_savings_pct": 61.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 3950
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "71902c8027dca26b265f12709ec21224b5abe8b9ef5750fd",
+      "query": "Where is McPherson County located?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 2787,
+      "kept_tokens": 1451,
+      "kv_savings_pct": 47.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1076
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "2f73cf12085e3fb879c775fc4851b72092a060cad5a927c6",
+      "query": "What is the purpose of an ICD?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 10637,
+      "kept_tokens": 494,
+      "kv_savings_pct": 95.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 6644
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "191c14b84f0c8cdad3297f2bee552fb089178995208d7185",
+      "query": "What are the three teams that used conflict optimization in the challenge?",
+      "answers_scored": [
+        "Lasa, Gitastrophe, and Shadoks."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4775,
+      "kept_tokens": 2688,
+      "kv_savings_pct": 43.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2176
+    },
+    {
+      "task": "longbench_multifieldqa_en",
+      "id": "bda4a6b251a601b7f7f956f298b59d8e99993845c1eaf7d6",
+      "query": "Which orders did Mufti-e-Azam-e-Hind receive Khilafat from?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 11320,
+      "kept_tokens": 4230,
+      "kv_savings_pct": 62.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 8892
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "aad6558e94d7056e2b8acd03fbdac6448c16b0bf28d1f033",
+      "query": "What does an individual model consist of?",
+      "answers_scored": [
+        "Bayesian model of garg2012unsupervised as our base monolingual model"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4367,
+      "kept_tokens": 1309,
+      "kv_savings_pct": 70,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1663
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "03e03cd498cae30eb47667209de54bfe6545647ddfe4457d",
+      "query": "What was the baseline for this task?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3672,
+      "kept_tokens": 1032,
+      "kv_savings_pct": 71.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1087
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "901f735b1582acacb606002ab77c6c7a3fe6017d38349aa2",
+      "query": "Does the paper explore extraction from electronic health records?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3584,
+      "kept_tokens": 1087,
+      "kv_savings_pct": 69.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1138
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "715229da03cdd7077f0ea02c5b4f67489abe24d42e4ece22",
+      "query": "What is a semicharacter architecture?",
+      "answers_scored": [
+        "processes a sentence of words with misspelled characters, predicting the correct words at each step"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5521,
+      "kept_tokens": 1507,
+      "kv_savings_pct": 72.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1937
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "e57ea6390f796b88ab34da666c6576609db900eb9d0d9b24",
+      "query": "On which tasks do they test their conflict method?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 2937,
+      "kept_tokens": 1830,
+      "kv_savings_pct": 37.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 802
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "ea58638e132307bb3f2c24abeb0e2d07eaf162e3e1d12b57",
+      "query": "how many humans evaluated the results?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 4656,
+      "kept_tokens": 1764,
+      "kv_savings_pct": 62.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1627
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "547c0b203cd3f5e26ebf4709ca03599db12e8d1bb08bc1ba",
+      "query": "How many sentences does the dataset contain?",
+      "answers_scored": [
+        "6946"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3730,
+      "kept_tokens": 2769,
+      "kv_savings_pct": 25.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1068
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "ac6538e9c173ba7b453d6bf62480d56eb3761b5f6f73c328",
+      "query": "How many different types of entities exist in the dataset?",
+      "answers_scored": [
+        "three"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3730,
+      "kept_tokens": 3011,
+      "kv_savings_pct": 19.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1059
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "1a1daeb5809cde7c7131d972f42ee43654a378c78d5182c8",
+      "query": "How were the human judgements assembled?",
+      "answers_scored": [
+        "adequacy, precision and ranking values"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5985,
+      "kept_tokens": 1020,
+      "kv_savings_pct": 83,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2301
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "91dd7b7a6ead4025763812d70dc51c6674b0acf31bd5a5f0",
+      "query": "How does their ensemble method work?",
+      "answers_scored": [
+        "simply averaging the predictions from the constituent single models"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4715,
+      "kept_tokens": 1837,
+      "kv_savings_pct": 61,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1646
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "591249c5522d87dcf4eeb6e1fc35bbf56a2290d23c83544d",
+      "query": "Which eight NER tasks did they evaluate on?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 4780,
+      "kept_tokens": 1193,
+      "kv_savings_pct": 75,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1412
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "e73ea6012e4dfc66d353142915ef35e7ea2c315e1566adfe",
+      "query": "How big is Augmented LibriSpeech dataset?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3222,
+      "kept_tokens": 915,
+      "kv_savings_pct": 71.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 838
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "06feabc1e5ca23dbfd79cbb2ea42b436c85bf6ac6a8d4b14",
+      "query": "what accents are present in the corpus?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 4734,
+      "kept_tokens": 800,
+      "kv_savings_pct": 83.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1485
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "6f949074854fa472b5be66cc1c3cf9d2c3dfe301bd437515",
+      "query": "How do they define robustness of a model?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 4900,
+      "kept_tokens": 1259,
+      "kv_savings_pct": 74.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1456
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "c92d96ed55bc5dcd92f963d3c5d26e52661b74e71090f24a",
+      "query": "What are the source and target domains?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 5931,
+      "kept_tokens": 1819,
+      "kv_savings_pct": 69.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 2138
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "aaaf5a6e22afc0f84ee63ab9e8dfe9484462ef105aa44ec6",
+      "query": "What language do they explore?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3055,
+      "kept_tokens": 1191,
+      "kv_savings_pct": 61,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 814
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "0012658ce252037bf12bb47de21ea785b1ee2731e5bd809f",
+      "query": "How larger are the training sets of these versions of ELMo compared to the previous ones?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 4031,
+      "kept_tokens": 1627,
+      "kv_savings_pct": 59.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1257
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "d999910bed46747299b4c315cc345dc978d979252f65d39e",
+      "query": "Which models/frameworks do they compare to?",
+      "answers_scored": [
+        "MLP"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3669,
+      "kept_tokens": 504,
+      "kv_savings_pct": 86.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 988
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "51b9066a5f2845e2fdf0d1dcde6833f70ae49ed01aa306db",
+      "query": "what language does this paper focus on?",
+      "answers_scored": [
+        "English",
+        "Simple English"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 2709,
+      "kept_tokens": 872,
+      "kv_savings_pct": 67.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 712
+    },
+    {
+      "task": "longbench_qasper",
+      "id": "3ac3eef636db11635a21a61804cb28e92c546a5686dd1e12",
+      "query": "How is the ground truth for fake news established?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 3675,
+      "kept_tokens": 942,
+      "kv_savings_pct": 74.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1077
+    }
+  ]
+}

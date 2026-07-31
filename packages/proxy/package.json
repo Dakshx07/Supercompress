@@ -1,0 +1,60 @@
+{
+  "name": "supercompress-proxy",
+  "version": "0.5.6",
+  "description": "SuperCompress — MCP-first coding-agent plugin that compresses large context before inference. Optional local API proxy.",
+  "keywords": [
+    "supercompress",
+    "prompt-compression",
+    "mcp",
+    "cursor",
+    "claude-code",
+    "codex",
+    "freebuff",
+    "opencode",
+    "token-compression",
+    "llm-cost"
+  ],
+  "homepage": "https://supercompress.dev/docs/coding-agents",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Supercompress/Supercompress.git",
+    "directory": "packages/proxy"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "bin": {
+    "supercompress": "bin/supercompress.js",
+    "supercompress-mcp": "src/mcp.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "LICENSE",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test/run-all.js",
+    "test:smoke": "node test/smoke.js",
+    "test:review": "node test/review.js",
+    "test:dual": "node test/dual-launch.js",
+    "test:compress": "node test/compress-deep.js",
+    "test:launch": "node test/launch-ready.js",
+    "test:bugs": "node test/bug-hunt.js",
+    "test:all": "node test/run-all.js",
+    "setup": "node bin/supercompress.js setup",
+    "start": "node bin/supercompress.js start",
+    "stop": "node bin/supercompress.js stop",
+    "status": "node bin/supercompress.js status",
+    "postinstall": "node bin/install.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^4.21.0",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

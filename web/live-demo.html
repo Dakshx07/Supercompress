@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperCompress — Live API Demo</title>
+  <meta name="description" content="A live, production API demonstration of SuperCompress." />
+  <meta property="og:title" content="SuperCompress — Live API Demo" />
+  <meta property="og:url" content="https://supercompress.dev/live-demo" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
+  <meta name="twitter:title" content="SuperCompress — Live API Demo" />
+  <meta name="twitter:description" content="Try SuperCompress in real time with production API calls. See token savings, latency, and answer-critical retention." />
+  <meta name="twitter:site" content="@supercompress" />
+  <meta name="keywords" content="LLM compression demo, token compression API, live API demo, prompt compression test, SuperCompress API, AI cost reduction demo" />
+  <link rel="canonical" href="https://supercompress.dev/live-demo" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+<link rel="stylesheet" href="assets/css/supercompress.css?v=106" />
+  <link rel="stylesheet" href="assets/css/live-demo.css?v=1" />
+  <!-- Preconnect hints for faster external resource loading -->
+  <link rel="preconnect" href="https://github.com" />
+  <link rel="dns-prefetch" href="https://github.com" />
+  <link rel="preconnect" href="https://news.ycombinator.com" />
+  <link rel="dns-prefetch" href="https://news.ycombinator.com" />
+  <link rel="preconnect" href="https://twitter.com" />
+  <link rel="dns-prefetch" href="https://twitter.com" />
+  <!-- Vercel Web Analytics -->
+  <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://supercompress.dev/"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Live Demo",
+      "item": "https://supercompress.dev/live-demo"
+    }]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SuperCompress",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, macOS, Windows",
+    "description": "Try SuperCompress in real time with production API calls. See token savings, latency, and answer-critical retention for LLM prompt compression.",
+    "url": "https://supercompress.dev/live-demo",
+    "sameAs": "https://github.com/Supercompress/Supercompress",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Arjun Shah"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+<body class="live-demo-body">
+  <header class="demo-topbar">
+    <a href="/" class="demo-brand" aria-label="SuperCompress home">
+      <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
+      <span>Super<em>Compress</em></span>
+    </a>
+    <div class="demo-api-state">
+      <span class="state-dot" id="api-dot"></span>
+      <span id="api-state">Production API ready</span>
+    </div>
+  </header>
+
+  <main class="demo-shell">
+    <section class="demo-intro">
+      <div>
+        <span class="demo-kicker">Live production request</span>
+        <h1>Find the signal inside a noisy agent memory.</h1>
+      </div>
+      <p>The context below contains a buried incident root cause, rollback command, and customer impact. SuperCompress must keep them while removing the operational noise.</p>
+    </section>
+
+    <section class="demo-command">
+      <div class="key-control">
+        <label for="api-key">SuperCompress API key</label>
+        <div class="key-input-wrap">
+          <input id="api-key" type="password" placeholder="sc_live_..." autocomplete="off" spellcheck="false" />
+          <button type="button" class="icon-button" id="toggle-key" title="Show or hide API key" aria-label="Show API key">◉</button>
+        </div>
+        <p>Kept in this tab only. Sent directly to the production API.</p>
+      </div>
+
+      <div class="scenario-control">
+        <span class="control-label">Scenario</span>
+        <div class="scenario-tabs" role="tablist" aria-label="Demo scenarios">
+          <button type="button" class="is-active" data-scenario="incident">Incident</button>
+          <button type="button" data-scenario="security">Security</button>
+          <button type="button" data-scenario="research">Research</button>
+        </div>
+      </div>
+
+      <div class="budget-control">
+        <label for="budget">Context retained <strong id="budget-value">24%</strong></label>
+        <input id="budget" type="range" min="10" max="60" value="24" />
+      </div>
+
+      <button type="button" class="run-button" id="run-demo">
+        <span>Run live compression</span>
+        <b>→</b>
+      </button>
+    </section>
+
+    <section class="demo-workbench">
+      <div class="workbench-main">
+        <div class="query-strip">
+          <span>Question sent with context</span>
+          <input id="query" type="text" />
+        </div>
+
+        <div class="context-head">
+          <div>
+            <span class="section-index">01</span>
+            <h2>Agent memory</h2>
+          </div>
+          <div class="context-counts">
+            <span><strong id="line-count">0</strong> lines</span>
+            <span><strong id="char-count">0</strong> characters</span>
+          </div>
+        </div>
+
+        <div class="context-view" id="context-view" aria-label="Original context"></div>
+      </div>
+
+      <aside class="telemetry">
+        <div class="telemetry-head">
+          <span class="section-index">02</span>
+          <h2>Run telemetry</h2>
+        </div>
+
+        <div class="telemetry-empty" id="telemetry-empty">
+          <div class="empty-pulse"></div>
+          <strong>Awaiting a live request</strong>
+          <p>Add your API key and run the scenario. No result is precomputed.</p>
+        </div>
+
+        <div class="telemetry-results" id="telemetry-results" hidden>
+          <div class="hero-saving">
+            <span>Prompt removed</span>
+            <strong id="saving-pct">—</strong>
+            <div class="saving-track"><i id="saving-fill"></i></div>
+          </div>
+
+          <dl class="metric-list">
+            <div><dt>Tokens</dt><dd><span id="tokens-before">—</span> → <strong id="tokens-after">—</strong></dd></div>
+            <div><dt>Tokens avoided</dt><dd id="tokens-saved">—</dd></div>
+            <div><dt>Production latency</dt><dd id="request-latency">—</dd></div>
+            <div><dt>Policy</dt><dd id="policy-name">—</dd></div>
+          </dl>
+
+          <div class="scale-block">
+            <label for="daily-runs">At <strong id="daily-runs-label">1,000,000</strong> runs per day</label>
+            <input id="daily-runs" type="range" min="1000" max="10000000" step="1000" value="1000000" />
+            <div class="scale-metrics">
+              <div><strong id="scale-tokens">—</strong><span>tokens avoided</span></div>
+              <div><strong id="scale-kwh">—</strong><span>kWh avoided*</span></div>
+              <div><strong id="scale-co2">—</strong><span>kg CO₂ avoided*</span></div>
+            </div>
+            <p>*Illustrative using documented SuperCompress assumptions.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="result-stage" id="result-stage" hidden>
+      <div class="result-heading">
+        <div>
+          <span class="section-index">03</span>
+          <h2>What survived</h2>
+        </div>
+        <p id="retention-summary"></p>
+      </div>
+
+      <div class="retention-map" id="retention-map" aria-label="Line retention map"></div>
+
+      <div class="result-grid">
+        <article class="answer-proof">
+          <div class="proof-head">
+            <span>Answer-critical evidence</span>
+            <strong id="proof-status">Checking...</strong>
+          </div>
+          <div id="proof-lines"></div>
+        </article>
+
+        <article class="compressed-output">
+          <div class="proof-head">
+            <span>Compressed context from API</span>
+            <button type="button" id="copy-output">Copy</button>
+          </div>
+          <pre id="compressed-output"></pre>
+        </article>
+      </div>
+    </section>
+
+    <div class="demo-error" id="demo-error" role="alert" hidden></div>
+  </main>
+
+  <script src="assets/js/live-demo.js?v=1"></script>
+  <!-- GitHub Stars CTA -->
+  <div style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100;">
+    <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+              background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(12px);
+              border: 1px solid rgba(255,255,255,0.1); border-radius: 40px;
+              color: #fff; font-family: system-ui, sans-serif; font-size: 14px;
+              text-decoration: none; font-weight: 500;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+              transition: all 0.2s ease;">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Star on GitHub
+      <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 20px; font-size: 12px;">★</span>
+    </a>
+  </div>
+  <!-- Social Share -->
+  <div style="display: flex; justify-content: center; gap: 12px; margin: 40px 0;">
+    <a href="https://twitter.com/intent/tweet?text=SuperCompress%20-%2065%25%20fewer%20tokens%2C%20100%25%20oracle%20recall.&url=https://supercompress.dev/live-demo"
+       target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1d9bf0; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      Share on X
+    </a>
+    <a href="https://news.ycombinator.com/submitlink?u=https://supercompress.dev/live-demo&t=SuperCompress%20-%20Live%20API%20Demo"
+       target="_blank" rel="noopener"
+       style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #f0652f; color: #fff; border-radius: 20px; text-decoration: none; font-size: 13px; font-family: system-ui;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Share on HN
+    </a>
+  </div>
+</body>
+</html>

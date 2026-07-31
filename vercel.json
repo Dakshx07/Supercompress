@@ -1,0 +1,478 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --omit=optional --ignore-scripts --no-audit --no-fund",
+  "buildCommand": "node scripts/generate-firebase-config.js 2>&1 || echo 'warn: firebase config skipped' && cp web/assets/js/compress-engine.js api/_lib/ 2>&1 || true && cp web/assets/data/model.json api/_lib/ 2>&1 || true && echo \"static site + serverless API\"",
+  "outputDirectory": "web",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/cut-llm-costs",
+      "destination": "/reduce-llm-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-llm-cost",
+      "destination": "/reduce-llm-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-token-cost",
+      "destination": "/reduce-llm-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-token-costs",
+      "destination": "/reduce-llm-costs",
+      "permanent": true
+    },
+    {
+      "source": "/assets/img/og-share.png",
+      "destination": "/assets/img/og-share-light.png",
+      "permanent": false
+    },
+    {
+      "source": "/favicon-v4.ico",
+      "destination": "/favicon-chevron.ico",
+      "permanent": false
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon-chevron.ico",
+      "permanent": false
+    },
+    {
+      "source": "/assets/img/og-image-chevron.png",
+      "destination": "/assets/img/og-share-light.png",
+      "permanent": false
+    },
+    {
+      "source": "/assets/img/og-image-v6.png",
+      "destination": "/assets/img/og-share.png",
+      "permanent": false
+    },
+    {
+      "source": "/assets/img/og-image-v5.png",
+      "destination": "/assets/img/og-share.png",
+      "permanent": false
+    },
+    {
+      "source": "/assets/img/og-image-v4.png",
+      "destination": "/assets/img/og-share.png",
+      "permanent": false
+    },
+    {
+      "source": "/assets/img/og-image.png",
+      "destination": "/assets/img/og-share.png",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "internal.supercompress.dev"
+        }
+      ],
+      "destination": "/internal",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "arjun.supercompress.dev"
+        }
+      ],
+      "destination": "/founder",
+      "permanent": false
+    },
+    {
+      "source": "/landing",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/web",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/web/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/web/:path*",
+      "destination": "/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/compress",
+      "destination": "/api/v1/compress"
+    },
+    {
+      "source": "/api/compress",
+      "destination": "/api/v1/compress"
+    },
+    {
+      "source": "/v1/compress",
+      "destination": "/api/v1/compress"
+    },
+    {
+      "source": "/retrieve",
+      "destination": "/api/retrieve"
+    },
+    {
+      "source": "/api/retrieve",
+      "destination": "/api/retrieve"
+    },
+    {
+      "source": "/api/billing/webhook",
+      "destination": "/api/billing-webhook"
+    },
+    {
+      "source": "/api/auth-status",
+      "destination": "/api/account?op=auth-status"
+    },
+    {
+      "source": "/api/connect-device",
+      "destination": "/api/account?op=connect-device"
+    },
+    {
+      "source": "/api/usage",
+      "destination": "/api/account?op=usage"
+    },
+    {
+      "source": "/api/aiscore",
+      "destination": "/api/health?op=aiscore"
+    },
+    {
+      "source": "/api/welcome",
+      "destination": "/api/account?op=welcome"
+    },
+    {
+      "source": "/api/welcome/pending",
+      "destination": "/api/account?op=welcome-pending"
+    },
+    {
+      "source": "/api/welcome/mark",
+      "destination": "/api/account?op=welcome-mark"
+    },
+    {
+      "source": "/api/welcome/drain",
+      "destination": "/api/account?op=welcome-drain"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/playground",
+      "destination": "/playground.html"
+    },
+    {
+      "source": "/benchmarks",
+      "destination": "/benchmarks.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/changelog",
+      "destination": "/changelog.html"
+    },
+    {
+      "source": "/ai-search",
+      "destination": "/ai-search.html"
+    },
+    {
+      "source": "/aiscore",
+      "destination": "/aiscore.html"
+    },
+    {
+      "source": "/llms.txt",
+      "destination": "/llms.txt"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/llms-full.txt"
+    },
+    {
+      "source": "/ai-search.json",
+      "destination": "/ai-search.json"
+    },
+    {
+      "source": "/live-demo",
+      "destination": "/live-demo.html"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/compare",
+      "destination": "/compare.html"
+    },
+    {
+      "source": "/token-compression",
+      "destination": "/token-compression.html"
+    },
+    {
+      "source": "/research",
+      "destination": "/research.html"
+    },
+    {
+      "source": "/affiliates",
+      "destination": "/affiliates.html"
+    },
+    {
+      "source": "/affiliate-creator-kit",
+      "destination": "/affiliate-creator-kit.html"
+    },
+    {
+      "source": "/launch-kit",
+      "destination": "/launch-kit.html"
+    },
+    {
+      "source": "/founder",
+      "destination": "/founder.html"
+    },
+    {
+      "source": "/prompt-compression",
+      "destination": "/prompt-compression.html"
+    },
+    {
+      "source": "/llm-token-compression",
+      "destination": "/llm-token-compression.html"
+    },
+    {
+      "source": "/context-compression",
+      "destination": "/context-compression.html"
+    },
+    {
+      "source": "/reduce-openai-costs",
+      "destination": "/reduce-openai-costs.html"
+    },
+    {
+      "source": "/llm-cost-optimization",
+      "destination": "/llm-cost-optimization.html"
+    },
+    {
+      "source": "/supercompress-vs-truncation",
+      "destination": "/supercompress-vs-truncation.html"
+    },
+    {
+      "source": "/supercompress-vs-summarization",
+      "destination": "/supercompress-vs-summarization.html"
+    },
+    {
+      "source": "/open-source-token-compression",
+      "destination": "/open-source-token-compression.html"
+    },
+    {
+      "source": "/firecrawl-context-compression",
+      "destination": "/firecrawl-context-compression.html"
+    },
+    {
+      "source": "/agent-memory-compression",
+      "destination": "/agent-memory-compression.html"
+    },
+    {
+      "source": "/when-to-use-compression",
+      "destination": "/when-to-use-compression.html"
+    },
+    {
+      "source": "/what-is-prompt-compression",
+      "destination": "/what-is-prompt-compression.html"
+    },
+    {
+      "source": "/how-prompt-compression-works",
+      "destination": "/how-prompt-compression-works.html"
+    },
+    {
+      "source": "/supercompress-vs-headroom",
+      "destination": "/supercompress-vs-headroom.html"
+    },
+    {
+      "source": "/prompt-compression-guide",
+      "destination": "/prompt-compression-guide.html"
+    },
+    {
+      "source": "/supercompress-vs-alternatives",
+      "destination": "/supercompress-vs-alternatives.html"
+    },
+    {
+      "source": "/supercompress-architecture",
+      "destination": "/supercompress-architecture.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/assets/img/favicon.svg",
+      "destination": "/assets/img/favicon.svg"
+    },
+    {
+      "source": "/assets/img/favicon-48.png",
+      "destination": "/assets/img/favicon-48.png"
+    },
+    {
+      "source": "/assets/img/icon-192.png",
+      "destination": "/assets/img/icon-192.png"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "web/assets/**"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/account?op=welcome-drain",
+      "schedule": "0 16 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/favicon(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/img/og-(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow, max-snippet:-1"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/llms-full.txt",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow, max-snippet:-1"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/ai-search.json",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow, max-snippet:-1"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/ai-search",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow, max-snippet:-1, max-image-preview:large"
+        }
+      ]
+    },
+    {
+      "source": "/assets/video/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Accept-Ranges",
+          "value": "bytes"
+        }
+      ]
+    },
+    {
+      "source": "/assets/img/icon-192.png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    }
+  ]
+}

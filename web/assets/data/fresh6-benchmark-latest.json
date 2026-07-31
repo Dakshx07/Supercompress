@@ -1,0 +1,1869 @@
+{
+  "meta": {
+    "fresh6_bench": true,
+    "note": "COLD honest run: ood_fresh6_hard (Raft/Paxos/QUIC/Tailscale/Nix/Zig/RFC9000/8446/sqlite/uv) + musique/trivia/narrative/2wiki at seed 3377. No engine edits during this run.",
+    "seed": 3377,
+    "per_task": 20,
+    "prior_real_bench_seed": 4242,
+    "prior_fresh4_seed": 9091,
+    "prior_fresh5_seed": 6161,
+    "tuned_against_seeds": [
+      777,
+      2026,
+      4242,
+      9091,
+      6161
+    ],
+    "cold_run": true,
+    "hard_ood_path": "/tmp/sc-heldout/ood_fresh6/hard_cases.jsonl"
+  },
+  "gates": {
+    "avg_cut_ge_55": true,
+    "token_weighted_cut_ge_55": true,
+    "always_answer_ge_98": false,
+    "pass": false
+  },
+  "overall": {
+    "n": 91,
+    "mean_cut_pct": 57.01758241758241,
+    "token_weighted_cut_pct": 68.5,
+    "answer_all_kept_rate": 0.8888888888888888,
+    "answer_drops": 8,
+    "scoreable_answers": 72,
+    "drop_ids": [
+      {
+        "id": "ab8516f170dcda1b95db028a8c4f8ee112c157548f800484",
+        "task": "longbench_musique",
+        "dropped": [
+          "Fred O'Bannion"
+        ],
+        "query": "Who did the person portraying Batman in the Justice League movie play in Dazed and Confused?"
+      },
+      {
+        "id": "2e723619f6cb5b2fe9cffb3e419841f96bbfd79a13f07f18",
+        "task": "longbench_musique",
+        "dropped": [
+          "Nicholas Bacon",
+          "Sir Nicholas Bacon"
+        ],
+        "query": "Who is the father of the artist who painted Head I?"
+      },
+      {
+        "id": "0b0b3547496ed078cb19ec901a35f071b7b3cf138fdf2e60",
+        "task": "longbench_musique",
+        "dropped": [
+          "National Institute of Dramatic Art",
+          "NIDA"
+        ],
+        "query": "What institute did the actor playing the voice of John Smith in Pocahontas attend?"
+      },
+      {
+        "id": "e5d8a267444a8532a875af8cfb8b07e6f6d02d6e85148540",
+        "task": "longbench_musique",
+        "dropped": [
+          "average lifespan at 9.4 years"
+        ],
+        "query": "What is the life expectancy of the type of retriever named after the body of water the Patuxent River turns into?"
+      },
+      {
+        "id": "163a438b614948528acdb5901ad522af7911b4e43c7a656a",
+        "task": "longbench_musique",
+        "dropped": [
+          "Francisco Guterres"
+        ],
+        "query": "Kiwil's birth country participated in a Commission of Truth and Friendship. Who is the president of the other country that participated?"
+      },
+      {
+        "id": "7a9091fd0314d17f4fb7683cc0a078b04501e3fbc1f64b42",
+        "task": "longbench_musique",
+        "dropped": [
+          "Cabarrus County"
+        ],
+        "query": "What county shares a border with the other county, that contains the city, that is the birthplace of the performer of Never Gonna Fall in Love Again?"
+      },
+      {
+        "id": "5188d3c87c6fead7f796c62c3f1bd13ea8576bab724ea06d",
+        "task": "longbench_musique",
+        "dropped": [
+          "24:00"
+        ],
+        "query": "At what local time does the country where Fuser and Alberto meet the indigenous couple traveling to look for work change their clocks for DST?"
+      },
+      {
+        "id": "1d554e7ae21ed7b5d142b57bcdab110cf6cea6f5256a58ee",
+        "task": "longbench_2wikimqa",
+        "dropped": [
+          "Parkinson"
+        ],
+        "query": "What is the cause of death of director of film I Will, I Will... For Now?"
+      }
+    ],
+    "mean_latency_ms": 21182.076923076922,
+    "total_tokens_in": 1457407,
+    "total_tokens_out": 459084
+  },
+  "answer_scoreable": {
+    "n": 72,
+    "mean_cut_pct": 52.49166666666666,
+    "token_weighted_cut_pct": 63.6,
+    "answer_all_kept_rate": 0.8888888888888888,
+    "answer_drops": 8,
+    "scoreable_answers": 72,
+    "drop_ids": [
+      {
+        "id": "ab8516f170dcda1b95db028a8c4f8ee112c157548f800484",
+        "task": "longbench_musique",
+        "dropped": [
+          "Fred O'Bannion"
+        ],
+        "query": "Who did the person portraying Batman in the Justice League movie play in Dazed and Confused?"
+      },
+      {
+        "id": "2e723619f6cb5b2fe9cffb3e419841f96bbfd79a13f07f18",
+        "task": "longbench_musique",
+        "dropped": [
+          "Nicholas Bacon",
+          "Sir Nicholas Bacon"
+        ],
+        "query": "Who is the father of the artist who painted Head I?"
+      },
+      {
+        "id": "0b0b3547496ed078cb19ec901a35f071b7b3cf138fdf2e60",
+        "task": "longbench_musique",
+        "dropped": [
+          "National Institute of Dramatic Art",
+          "NIDA"
+        ],
+        "query": "What institute did the actor playing the voice of John Smith in Pocahontas attend?"
+      },
+      {
+        "id": "e5d8a267444a8532a875af8cfb8b07e6f6d02d6e85148540",
+        "task": "longbench_musique",
+        "dropped": [
+          "average lifespan at 9.4 years"
+        ],
+        "query": "What is the life expectancy of the type of retriever named after the body of water the Patuxent River turns into?"
+      },
+      {
+        "id": "163a438b614948528acdb5901ad522af7911b4e43c7a656a",
+        "task": "longbench_musique",
+        "dropped": [
+          "Francisco Guterres"
+        ],
+        "query": "Kiwil's birth country participated in a Commission of Truth and Friendship. Who is the president of the other country that participated?"
+      },
+      {
+        "id": "7a9091fd0314d17f4fb7683cc0a078b04501e3fbc1f64b42",
+        "task": "longbench_musique",
+        "dropped": [
+          "Cabarrus County"
+        ],
+        "query": "What county shares a border with the other county, that contains the city, that is the birthplace of the performer of Never Gonna Fall in Love Again?"
+      },
+      {
+        "id": "5188d3c87c6fead7f796c62c3f1bd13ea8576bab724ea06d",
+        "task": "longbench_musique",
+        "dropped": [
+          "24:00"
+        ],
+        "query": "At what local time does the country where Fuser and Alberto meet the indigenous couple traveling to look for work change their clocks for DST?"
+      },
+      {
+        "id": "1d554e7ae21ed7b5d142b57bcdab110cf6cea6f5256a58ee",
+        "task": "longbench_2wikimqa",
+        "dropped": [
+          "Parkinson"
+        ],
+        "query": "What is the cause of death of director of film I Will, I Will... For Now?"
+      }
+    ],
+    "mean_latency_ms": 16351.875,
+    "total_tokens_in": 1040578,
+    "total_tokens_out": 378962
+  },
+  "by_task": {
+    "ood_fresh6_hard": {
+      "n": 11,
+      "mean_cut_pct": 74.63636363636364,
+      "token_weighted_cut_pct": 74.6,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 11,
+      "drop_ids": [],
+      "mean_latency_ms": 34041.181818181816,
+      "total_tokens_in": 299665,
+      "total_tokens_out": 76024
+    },
+    "longbench_musique": {
+      "n": 20,
+      "mean_cut_pct": 55.870000000000005,
+      "token_weighted_cut_pct": 55.9,
+      "answer_all_kept_rate": 0.6111111111111112,
+      "answer_drops": 7,
+      "scoreable_answers": 18,
+      "drop_ids": [
+        {
+          "id": "ab8516f170dcda1b95db028a8c4f8ee112c157548f800484",
+          "task": "longbench_musique",
+          "dropped": [
+            "Fred O'Bannion"
+          ],
+          "query": "Who did the person portraying Batman in the Justice League movie play in Dazed and Confused?"
+        },
+        {
+          "id": "2e723619f6cb5b2fe9cffb3e419841f96bbfd79a13f07f18",
+          "task": "longbench_musique",
+          "dropped": [
+            "Nicholas Bacon",
+            "Sir Nicholas Bacon"
+          ],
+          "query": "Who is the father of the artist who painted Head I?"
+        },
+        {
+          "id": "0b0b3547496ed078cb19ec901a35f071b7b3cf138fdf2e60",
+          "task": "longbench_musique",
+          "dropped": [
+            "National Institute of Dramatic Art",
+            "NIDA"
+          ],
+          "query": "What institute did the actor playing the voice of John Smith in Pocahontas attend?"
+        },
+        {
+          "id": "e5d8a267444a8532a875af8cfb8b07e6f6d02d6e85148540",
+          "task": "longbench_musique",
+          "dropped": [
+            "average lifespan at 9.4 years"
+          ],
+          "query": "What is the life expectancy of the type of retriever named after the body of water the Patuxent River turns into?"
+        },
+        {
+          "id": "163a438b614948528acdb5901ad522af7911b4e43c7a656a",
+          "task": "longbench_musique",
+          "dropped": [
+            "Francisco Guterres"
+          ],
+          "query": "Kiwil's birth country participated in a Commission of Truth and Friendship. Who is the president of the other country that participated?"
+        },
+        {
+          "id": "7a9091fd0314d17f4fb7683cc0a078b04501e3fbc1f64b42",
+          "task": "longbench_musique",
+          "dropped": [
+            "Cabarrus County"
+          ],
+          "query": "What county shares a border with the other county, that contains the city, that is the birthplace of the performer of Never Gonna Fall in Love Again?"
+        },
+        {
+          "id": "5188d3c87c6fead7f796c62c3f1bd13ea8576bab724ea06d",
+          "task": "longbench_musique",
+          "dropped": [
+            "24:00"
+          ],
+          "query": "At what local time does the country where Fuser and Alberto meet the indigenous couple traveling to look for work change their clocks for DST?"
+        }
+      ],
+      "mean_latency_ms": 12107.15,
+      "total_tokens_in": 302611,
+      "total_tokens_out": 133479
+    },
+    "longbench_triviaqa": {
+      "n": 20,
+      "mean_cut_pct": 56.45,
+      "token_weighted_cut_pct": 57.7,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 20,
+      "drop_ids": [],
+      "mean_latency_ms": 9733.25,
+      "total_tokens_in": 215414,
+      "total_tokens_out": 91035
+    },
+    "longbench_narrativeqa": {
+      "n": 20,
+      "mean_cut_pct": 83.45,
+      "token_weighted_cut_pct": 84.6,
+      "answer_all_kept_rate": 1,
+      "answer_drops": 0,
+      "scoreable_answers": 5,
+      "drop_ids": [],
+      "mean_latency_ms": 52150.3,
+      "total_tokens_in": 536754,
+      "total_tokens_out": 82825
+    },
+    "longbench_2wikimqa": {
+      "n": 20,
+      "mean_cut_pct": 22.610000000000003,
+      "token_weighted_cut_pct": 26.5,
+      "answer_all_kept_rate": 0.9444444444444444,
+      "answer_drops": 1,
+      "scoreable_answers": 18,
+      "drop_ids": [
+        {
+          "id": "1d554e7ae21ed7b5d142b57bcdab110cf6cea6f5256a58ee",
+          "task": "longbench_2wikimqa",
+          "dropped": [
+            "Parkinson"
+          ],
+          "query": "What is the cause of death of director of film I Will, I Will... For Now?"
+        }
+      ],
+      "mean_latency_ms": 3665.1,
+      "total_tokens_in": 102963,
+      "total_tokens_out": 75721
+    }
+  },
+  "samples": [
+    {
+      "task": "ood_fresh6_hard",
+      "id": "raft_ongaro",
+      "query": "Who co-authored the Raft consensus algorithm paper with John Ousterhout?",
+      "answers_scored": [
+        "Diego Ongaro"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 28093,
+      "kept_tokens": 4605,
+      "kv_savings_pct": 83.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 34264
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "raft_leader_election",
+      "query": "In Raft, what is the name of the process by which a new leader is chosen after a failure?",
+      "answers_scored": [
+        "leader election"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 28093,
+      "kept_tokens": 10816,
+      "kv_savings_pct": 61.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 37232
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "paxos_lamport",
+      "query": "Who introduced the Paxos family of consensus protocols?",
+      "answers_scored": [
+        "Leslie Lamport"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 30869,
+      "kept_tokens": 5896,
+      "kv_savings_pct": 80.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 37971
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "quic_multiplex",
+      "query": "QUIC multiplexes streams over a single connection using which underlying transport protocol?",
+      "answers_scored": [
+        "UDP"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 27060,
+      "kept_tokens": 9136,
+      "kv_savings_pct": 66.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 41562
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "quic_google",
+      "query": "Which company originally designed QUIC before it was standardized at the IETF?",
+      "answers_scored": [
+        "Google"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 27060,
+      "kept_tokens": 6762,
+      "kv_savings_pct": 75,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 36589
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "tailscale_wireguard",
+      "query": "Tailscale builds its mesh VPN on top of which open-source VPN protocol?",
+      "answers_scored": [
+        "WireGuard"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25285,
+      "kept_tokens": 9245,
+      "kv_savings_pct": 63.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 30939
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "nix_dolstra",
+      "query": "Who created the Nix package manager?",
+      "answers_scored": [
+        "Eelco Dolstra"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25120,
+      "kept_tokens": 2723,
+      "kv_savings_pct": 89.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 24572
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "zig_kelley",
+      "query": "Who created the Zig programming language?",
+      "answers_scored": [
+        "Andrew Kelley"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25472,
+      "kept_tokens": 5047,
+      "kv_savings_pct": 80.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 24375
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "rfc9000_quic",
+      "query": "RFC 9000 specifies which transport protocol?",
+      "answers_scored": [
+        "QUIC"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 27272,
+      "kept_tokens": 7463,
+      "kv_savings_pct": 72.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 29708
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "rfc8446_tls13",
+      "query": "RFC 8446 is the standards-track specification for which version of TLS?",
+      "answers_scored": [
+        "TLS 1.3"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 29073,
+      "kept_tokens": 8187,
+      "kv_savings_pct": 71.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 29914
+    },
+    {
+      "task": "ood_fresh6_hard",
+      "id": "uv_astral",
+      "query": "Which company or org develops the uv Python package manager according to its README?",
+      "answers_scored": [
+        "Astral"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 26268,
+      "kept_tokens": 6144,
+      "kv_savings_pct": 76.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 47327
+    },
+    {
+      "task": "longbench_musique",
+      "id": "334f6b3c862e350efb163f95dd0e7f59e2928309909f66e7",
+      "query": "What did M. King Hubbert's employer announce it was in the process of doing in April 2010?",
+      "answers_scored": [
+        "trying to find a potential buyer for all of its operations in Finland",
+        "Finland"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15928,
+      "kept_tokens": 6100,
+      "kv_savings_pct": 61.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 16174
+    },
+    {
+      "task": "longbench_musique",
+      "id": "8bfb0eda3aaa2bad57532c81e874d3a974843ffd3ef0778c",
+      "query": "How many times did plague occur in the place where Bajazet's composer was born?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 14933,
+      "kept_tokens": 6594,
+      "kv_savings_pct": 55.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 14626
+    },
+    {
+      "task": "longbench_musique",
+      "id": "ab8516f170dcda1b95db028a8c4f8ee112c157548f800484",
+      "query": "Who did the person portraying Batman in the Justice League movie play in Dazed and Confused?",
+      "answers_scored": [
+        "Fred O'Bannion"
+      ],
+      "dropped_answers": [
+        "Fred O'Bannion"
+      ],
+      "original_tokens": 14904,
+      "kept_tokens": 5496,
+      "kv_savings_pct": 63.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 12226
+    },
+    {
+      "task": "longbench_musique",
+      "id": "d1ff18285ee3c6148bb4f8466a3d65d965432b694aba3ac7",
+      "query": "Who is the federal leader of the political party Ken Epp belongs to?",
+      "answers_scored": [
+        "Andrew Scheer"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 16165,
+      "kept_tokens": 6682,
+      "kv_savings_pct": 58.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9325
+    },
+    {
+      "task": "longbench_musique",
+      "id": "f6564f948dc28ef7be445d610eb42c1a6a6042d47e62e7a6",
+      "query": "A participant of the Battle of Brechin is an instance of?",
+      "answers_scored": [
+        "Scottish clan"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15195,
+      "kept_tokens": 6446,
+      "kv_savings_pct": 57.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8803
+    },
+    {
+      "task": "longbench_musique",
+      "id": "8cad76dd1dfee0d4847e99f55e46c401a1087fde2aee2cc8",
+      "query": "Who did the person considered the founder of three major monotheistic religions marry after the death of Sarah?",
+      "answers_scored": [
+        "Keturah"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14861,
+      "kept_tokens": 13662,
+      "kv_savings_pct": 8.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9082
+    },
+    {
+      "task": "longbench_musique",
+      "id": "e9a0c409564baa2cadde3aa638d789031755b0ca9b72c63b",
+      "query": "Who is the child of the Italian navigator who sailed for England and explored the eastern coast of the continent Francisco Bojado's birthplace is located?",
+      "answers_scored": [
+        "Sebastian Cabot"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15129,
+      "kept_tokens": 6724,
+      "kv_savings_pct": 55.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9540
+    },
+    {
+      "task": "longbench_musique",
+      "id": "2e723619f6cb5b2fe9cffb3e419841f96bbfd79a13f07f18",
+      "query": "Who is the father of the artist who painted Head I?",
+      "answers_scored": [
+        "Nicholas Bacon",
+        "Sir Nicholas Bacon"
+      ],
+      "dropped_answers": [
+        "Nicholas Bacon",
+        "Sir Nicholas Bacon"
+      ],
+      "original_tokens": 14727,
+      "kept_tokens": 5058,
+      "kv_savings_pct": 65.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 9231
+    },
+    {
+      "task": "longbench_musique",
+      "id": "0b0b3547496ed078cb19ec901a35f071b7b3cf138fdf2e60",
+      "query": "What institute did the actor playing the voice of John Smith in Pocahontas attend?",
+      "answers_scored": [
+        "National Institute of Dramatic Art",
+        "NIDA"
+      ],
+      "dropped_answers": [
+        "National Institute of Dramatic Art",
+        "NIDA"
+      ],
+      "original_tokens": 14908,
+      "kept_tokens": 7165,
+      "kv_savings_pct": 51.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 9575
+    },
+    {
+      "task": "longbench_musique",
+      "id": "e5d8a267444a8532a875af8cfb8b07e6f6d02d6e85148540",
+      "query": "What is the life expectancy of the type of retriever named after the body of water the Patuxent River turns into?",
+      "answers_scored": [
+        "average lifespan at 9.4 years"
+      ],
+      "dropped_answers": [
+        "average lifespan at 9.4 years"
+      ],
+      "original_tokens": 13925,
+      "kept_tokens": 7284,
+      "kv_savings_pct": 47.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 8013
+    },
+    {
+      "task": "longbench_musique",
+      "id": "163a438b614948528acdb5901ad522af7911b4e43c7a656a",
+      "query": "Kiwil's birth country participated in a Commission of Truth and Friendship. Who is the president of the other country that participated?",
+      "answers_scored": [
+        "Francisco Guterres"
+      ],
+      "dropped_answers": [
+        "Francisco Guterres"
+      ],
+      "original_tokens": 14461,
+      "kept_tokens": 2406,
+      "kv_savings_pct": 83.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 9008
+    },
+    {
+      "task": "longbench_musique",
+      "id": "6cbb382cf679c0cf091fbf0d3c6d9638bffbc8ea039ca8b2",
+      "query": "Why was Common Sense, by the same author as Rights of Man, an important work?",
+      "answers_scored": [
+        "Great Britain"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15556,
+      "kept_tokens": 3933,
+      "kv_savings_pct": 74.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 11519
+    },
+    {
+      "task": "longbench_musique",
+      "id": "ccbb33282bd009f7844ad8305fadb84e7ede51932fc6a36d",
+      "query": "What is the competition that the 1965 Federation Cup is part of named after?",
+      "answers_scored": [
+        "International Tennis Federation",
+        "ITF"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14589,
+      "kept_tokens": 6967,
+      "kv_savings_pct": 52.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9770
+    },
+    {
+      "task": "longbench_musique",
+      "id": "fa5051512fcaa4d026335b0dc206addf60f317d85cc8998b",
+      "query": "What is the experimental satellite being forerunner to communication satellite of INSAT-4CR's manufacturer called?",
+      "answers_scored": [
+        "ATS-6"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14977,
+      "kept_tokens": 6471,
+      "kv_savings_pct": 56.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 12937
+    },
+    {
+      "task": "longbench_musique",
+      "id": "458b3f8687920863190957c08123f885c60989f59bf40681",
+      "query": "What is the mascot of the school that owns Goss Stadium at Coleman Field?",
+      "answers_scored": [
+        "Benny Beaver"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15375,
+      "kept_tokens": 7998,
+      "kv_savings_pct": 48,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 14548
+    },
+    {
+      "task": "longbench_musique",
+      "id": "7a9091fd0314d17f4fb7683cc0a078b04501e3fbc1f64b42",
+      "query": "What county shares a border with the other county, that contains the city, that is the birthplace of the performer of Never Gonna Fall in Love Again?",
+      "answers_scored": [
+        "Cabarrus County"
+      ],
+      "dropped_answers": [
+        "Cabarrus County"
+      ],
+      "original_tokens": 15676,
+      "kept_tokens": 6719,
+      "kv_savings_pct": 57.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 17480
+    },
+    {
+      "task": "longbench_musique",
+      "id": "b129c8e6a0b184509c1a36a6b8b5703c924ee965727e79bc",
+      "query": "Who is the spouse of the actor who played hannibal smith in the a team?",
+      "answers_scored": [
+        "Sherry Boucher"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15842,
+      "kept_tokens": 8042,
+      "kv_savings_pct": 49.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 15857
+    },
+    {
+      "task": "longbench_musique",
+      "id": "d1dd79fae1af699056a39a08906166201387b89c3f596266",
+      "query": "There is a state A where Storm of the Century was filmed based on the book by the author who wrote a short story featuring the author of This Is My God. What is the population of s",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 15652,
+      "kept_tokens": 8040,
+      "kv_savings_pct": 48.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 15518
+    },
+    {
+      "task": "longbench_musique",
+      "id": "5188d3c87c6fead7f796c62c3f1bd13ea8576bab724ea06d",
+      "query": "At what local time does the country where Fuser and Alberto meet the indigenous couple traveling to look for work change their clocks for DST?",
+      "answers_scored": [
+        "24:00"
+      ],
+      "dropped_answers": [
+        "24:00"
+      ],
+      "original_tokens": 14730,
+      "kept_tokens": 6155,
+      "kv_savings_pct": 58.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 14499
+    },
+    {
+      "task": "longbench_musique",
+      "id": "1f4b2eebc578880d3f401476be8e933f743e77a865a31902",
+      "query": "What is the name of the famous bridge located in the birthplace of the composer of Nulla in mundo pax sincera?",
+      "answers_scored": [
+        "Rialto Bridge",
+        "Ponte di Rialto"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15078,
+      "kept_tokens": 5537,
+      "kv_savings_pct": 63.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 14412
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "bf51b235b793fb709fb21256c339420b1cb169f246bccddc",
+      "query": "What was Blondie's last UK No 1 of the 80s?",
+      "answers_scored": [
+        "Rapture"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 2651,
+      "kept_tokens": 1598,
+      "kv_savings_pct": 39.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 867
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "335faa3607a752e54d19653c46d4426af77d4c19d12fea34",
+      "query": "The Siege Perilous was a vacant seat at what?",
+      "answers_scored": [
+        "The Round Table",
+        "Round Table",
+        "Round table"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 1793,
+      "kept_tokens": 181,
+      "kv_savings_pct": 89.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 501
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "5235bfba2fb55ace2307f7385436aaabbf3d8ebeab5fe1bd",
+      "query": "What is the surname of the father and son who rode Grand National winners, L'Escargot in 1975 and Bobbyjo in 1999?",
+      "answers_scored": [
+        "Carberry"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 17377,
+      "kept_tokens": 7511,
+      "kv_savings_pct": 56.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 20086
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "eeb929241c373434d0e56d6ad29f80da4f1453c40961ad65",
+      "query": "Who on TV is the Naked Chef",
+      "answers_scored": [
+        "Naked Chef",
+        "Naked chef"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 11387,
+      "kept_tokens": 3966,
+      "kv_savings_pct": 65.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10002
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "60abe33b118134872d84707dce259ae03ea1d4c488976321",
+      "query": "Who is the only black man to win a singles title at Wimbledon?",
+      "answers_scored": [
+        "Arthur ash",
+        "Arthur ashe",
+        "Arthur Ashe"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6671,
+      "kept_tokens": 3290,
+      "kv_savings_pct": 50.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 3506
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "149c4c5390701fdbd5d652a6fa1890cab83ca1cd1d915301",
+      "query": "Which member of Girls Aloud was born in Northern Ireland?",
+      "answers_scored": [
+        "Nadine Elizabeth Louise Coyle",
+        "NADINE COYLE",
+        "Nadine Coyle"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4407,
+      "kept_tokens": 2242,
+      "kv_savings_pct": 49.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2015
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "d6b9e82e303b1a66609c967bdd1afb0b12afd18642788e18",
+      "query": "What is the name of the character played by actor Nicholas Lyndhurst in the British television series ‘Goodnight Sweetheart’?",
+      "answers_scored": [
+        "Gary sparrow",
+        "Gary Sparrow"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 9239,
+      "kept_tokens": 4371,
+      "kv_savings_pct": 52.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 5812
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "a88d0b62ef9bb4ea0f4f99a18db0cb27f83cba1f63fb2f76",
+      "query": "What does a costermonger sell?",
+      "answers_scored": [
+        "Fruit"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3283,
+      "kept_tokens": 1597,
+      "kv_savings_pct": 51.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1488
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "c6cb57b58768f3f5c663a13d6c14ce7d8ab9f0b5d7ac0dce",
+      "query": "Which ball sport is played on a court 18 metres long by 9 metres wide?",
+      "answers_scored": [
+        "VolleyBall",
+        "Volleyball",
+        "VOLLEYBALL"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15468,
+      "kept_tokens": 5769,
+      "kv_savings_pct": 62.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 16861
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "cba83c70bf0e7e4ad50bf9e33c6da3112a47955236fd7fa6",
+      "query": "The ship Andrea Gail features in which 1997 book and 2000 film?",
+      "answers_scored": [
+        "The Perfect Storm",
+        "Perfect Storm"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 15395,
+      "kept_tokens": 4793,
+      "kv_savings_pct": 68.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 17636
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "f68e9d16249aee321a9b7d9ff837f01acf66e1b120b723d6",
+      "query": "Said to be the birthplace of the rules of Association Football, Parker’s Piece is in which English city?",
+      "answers_scored": [
+        "Cambridge",
+        "Cambridge, England"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6120,
+      "kept_tokens": 3519,
+      "kv_savings_pct": 42.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2967
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "555d1d29a3db29dcae674d770d245705507b785b6586b608",
+      "query": "Which mime artist is associated with the character Bip?",
+      "answers_scored": [
+        "Bip the clown",
+        "Marcel Marceau"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13847,
+      "kept_tokens": 5272,
+      "kv_savings_pct": 61.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 10818
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "dcca7628cb52bc1fae4a02748ec7ce16530b7bfdb5c48048",
+      "query": "eing a mischievous boy roaming around local Barrytown and ends with his father departing from the family, forcing the boy to take up adult responsibilities in his now single-parent",
+      "answers_scored": [
+        "Roddy Doyle"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 10807,
+      "kept_tokens": 6554,
+      "kv_savings_pct": 39.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 7881
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "22457dbffc15c77d0a1e81105bbb235069900d99ee11725f",
+      "query": "How many symphonies did Jean Sibelius compose?",
+      "answers_scored": [
+        "Seven",
+        "seven"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 12797,
+      "kept_tokens": 6026,
+      "kv_savings_pct": 52.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 11046
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "9a111c24a76a681180d6d1b5c21643f471fac26326b0c4e5",
+      "query": "The Limpopo River separates Zimbabwe and Botswana from what country?",
+      "answers_scored": [
+        "South africa",
+        "South African",
+        "South Africa"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 12415,
+      "kept_tokens": 5458,
+      "kv_savings_pct": 56,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 17253
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "6967e76c5603d5d218c6aa2ca5af0c03cf3b8bcdeeac1c8d",
+      "query": "What is the name for a female peacock?",
+      "answers_scored": [
+        "Peacock"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 11294,
+      "kept_tokens": 4971,
+      "kv_savings_pct": 56,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8756
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "d66ff6f451adf1f6a0b857c0252dc081f0aab171d8d28151",
+      "query": "ng  thirty-five Jackson Pollock paintings and nine watercolours and drawings from  1938-1956.\n \nSign Up!\nKeep up to date with the latest news and views on abstract art by signing u",
+      "answers_scored": [
+        "Jack the Dripper",
+        "Lavender Mist",
+        "Jackson pollock",
+        "Jackson Pollock"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 20619,
+      "kept_tokens": 6386,
+      "kv_savings_pct": 69,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 27076
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "1561a2d83c6647ccf04c593c3ab6ebe9b06da5b36d18abd5",
+      "query": "Which disease of the central nervous system is named after the Englishman who wrote 'An Essay on the Shaking Palsy'?",
+      "answers_scored": [
+        "Parkinson’s Disease"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 11762,
+      "kept_tokens": 6904,
+      "kv_savings_pct": 41.3,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 8320
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "4fb8758ef61482e37d00a79376cc99b31c8c80b1020f5aa9",
+      "query": " De Mille's last feature and most extravagant blockbuster is full of the absurdities and vulgarities one expects, but it isn't boring for a minute. – Jonathan Rosenbaum, Chicago Re",
+      "answers_scored": [
+        "Charlton heston",
+        "Charlton Heston"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 14952,
+      "kept_tokens": 4057,
+      "kv_savings_pct": 72.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 12275
+    },
+    {
+      "task": "longbench_triviaqa",
+      "id": "255eb907c17273056618289de06e5d623139756db17c82a7",
+      "query": "The English cities of Gloucester and Worcester are on which river?",
+      "answers_scored": [
+        "River Severn",
+        "Severn"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13130,
+      "kept_tokens": 6570,
+      "kv_savings_pct": 50,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 9499
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "cb33b635d4a123fa9708b209bbfa323f19af169d0b71bb2f",
+      "query": "Who is Eliza's favorite?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 25382,
+      "kept_tokens": 385,
+      "kv_savings_pct": 98.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 33372
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "e39f9c371b47fb74a202d1f30bc46e806791d0ee81b1b2d4",
+      "query": "Who does Socrates compare going against the law to?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 7905,
+      "kept_tokens": 3841,
+      "kv_savings_pct": 51.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 3761
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "dd97ebb3408847191356780310676099e897a13ba1b1b4d0",
+      "query": "Who does Don Vincenzo Coccotti work for? ",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 43822,
+      "kept_tokens": 7220,
+      "kv_savings_pct": 83.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 76516
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "e76cb4d216f09e3bab6d769ae770429fe10498e6a2ca9aad",
+      "query": "Where does Virgil die?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 43822,
+      "kept_tokens": 1064,
+      "kv_savings_pct": 97.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 69114
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "a813ddeac39b98eaa48da96b448ec147298ac8b1f370f212",
+      "query": "When does Reiko realize the curse is still unbroken?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 25020,
+      "kept_tokens": 1905,
+      "kv_savings_pct": 92.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 43825
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "3aeebc5be470ddd2eafefee76cf25d8e6b08cbd669adc9e4",
+      "query": "What is the name of the character who is from New York?",
+      "answers_scored": [
+        "Violet Ray."
+      ],
+      "dropped_answers": [],
+      "original_tokens": 17019,
+      "kept_tokens": 3883,
+      "kv_savings_pct": 77.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 18726
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "04f150c4bf11012af442b15c455ff708641861c80bd7e7dc",
+      "query": "Who defends Lazarus during his murder trial?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 11065,
+      "kept_tokens": 1049,
+      "kv_savings_pct": 90.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 10705
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "9b448b0d8f056d1ddebb9503e4560a913dc529309759b358",
+      "query": "Who encourages the farmer to marry the girl he falls in love with?",
+      "answers_scored": [
+        "Bill"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 40251,
+      "kept_tokens": 5241,
+      "kv_savings_pct": 87,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 88664
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "b097807317fd6df3e69b46d4332b558f2d6c7f1f893770a6",
+      "query": "Which descriptions of the future world does Soames provide upon his return?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 14690,
+      "kept_tokens": 1199,
+      "kv_savings_pct": 91.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 18387
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "414ea192da69d6665e5ad41f59b34c6e1a8b5a59fa0703e5",
+      "query": "What ghost emerged from a painting at Dana's workplace?",
+      "answers_scored": [
+        "Vigo"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 30297,
+      "kept_tokens": 4950,
+      "kv_savings_pct": 83.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 79995
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "38169ee3afb1356b30f468b13f180aa30364be96506f31ba",
+      "query": "Who kills the farmer with a screwdriver?",
+      "answers_scored": [
+        "Bill"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 40251,
+      "kept_tokens": 533,
+      "kv_savings_pct": 98.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 83501
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "989c68a5afa115a48dd9edac8b946a517fae775b6062b3be",
+      "query": "What hidden message does Reiko find within the video?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 25020,
+      "kept_tokens": 3721,
+      "kv_savings_pct": 85.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 79005
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "1f4e0b8679c63575a052299e5d266741fe47c6eb672ece9e",
+      "query": "Prior to her brother's death, how did Mary spend most of her time outside of the home? ",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 25382,
+      "kept_tokens": 9295,
+      "kv_savings_pct": 63.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 58162
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "f833f7b0219b25a96177a2aa6c9b30afadcb6d3fc95235f9",
+      "query": "Where did Falder work after he got out of prison?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 29628,
+      "kept_tokens": 12596,
+      "kv_savings_pct": 57.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 88071
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "8afafdee3d1ecc8c8c3ed128add65835b825bc8958b760a2",
+      "query": "When the Ghostbusters go to the museum on New Years' Eve, what song are the people singing?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 30297,
+      "kept_tokens": 6463,
+      "kv_savings_pct": 78.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 80187
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "2647b0dec2c7dcf97dede643e97d1e4235093b77165c692d",
+      "query": "How did Soames's presence in the future affect others? ",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 14690,
+      "kept_tokens": 1758,
+      "kv_savings_pct": 88,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 13805
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "df6c6350671baab25c635bfa495eea90c69a7d201b5fe460",
+      "query": "Where did Bill work when he lived in Chicago?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 40251,
+      "kept_tokens": 10526,
+      "kv_savings_pct": 73.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 73885
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "7b71f8fab58b267e1a174412725a0d0df25f260d596d9c70",
+      "query": "What gang did Rodgers and the other humans fight while he was at the camp?",
+      "answers_scored": [
+        "The Hans"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 25632,
+      "kept_tokens": 4972,
+      "kv_savings_pct": 80.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 53478
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "7e1df407b7018ef82e2ade488c601066798bbe67a39a6da4",
+      "query": "What does Elder Childers argue?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 21310,
+      "kept_tokens": 2143,
+      "kv_savings_pct": 89.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 32405
+    },
+    {
+      "task": "longbench_narrativeqa",
+      "id": "d22828536f4d6bee11bd1f15f636bddd18fa8f246ef1be6c",
+      "query": "What is Reiko's job?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 25020,
+      "kept_tokens": 81,
+      "kv_savings_pct": 99.7,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 37442
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "a49e29926d7019e6cbaf6b0610453eda22fa1ce9043f5829",
+      "query": "Where did Catherine Of Taranto, Countess Of Copertino's mother die?",
+      "answers_scored": [
+        "Lecce"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4828,
+      "kept_tokens": 4768,
+      "kv_savings_pct": 1.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2785
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "a3c88e70534d79b432d32c0b53d0d181c957b353f658dc95",
+      "query": "What nationality is the performer of song You Can?",
+      "answers_scored": [
+        "Sweden"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6900,
+      "kept_tokens": 3604,
+      "kv_savings_pct": 47.8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 4376
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "49035ecce6e78a355307dd6a1ddb11a87cab76090d655d2f",
+      "query": "Which film has the director who was born first, The Longshots or Station For Two?",
+      "answers_scored": [
+        "Station For Two"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 13792,
+      "kept_tokens": 5793,
+      "kv_savings_pct": 58,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 17033
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "ef73e58876b94a997d928ee13b7ac7cdb8b8aa0bac856a92",
+      "query": "Which film has the director who died later, The Great Man'S Lady or La Belle Américaine?",
+      "answers_scored": [
+        "La Belle Américaine"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5462,
+      "kept_tokens": 5344,
+      "kv_savings_pct": 2.2,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 3017
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "3723ec96e3b1af88c73edaa0a5e87f20194d9d212a67b615",
+      "query": "Which magazine was established first, Rock Street Journal or De As?",
+      "answers_scored": [
+        "De As"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3272,
+      "kept_tokens": 2587,
+      "kv_savings_pct": 20.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1362
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "c1d354f1d1855b21eb3c3cd204d5030080ef9e3c7e4b0195",
+      "query": "Which film has the director born later, From Corleone To Brooklyn or Durango Valley Raiders?",
+      "answers_scored": [
+        "From Corleone To Brooklyn"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5447,
+      "kept_tokens": 4007,
+      "kv_savings_pct": 26.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2979
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "b1034d8bbeeba5f9001f48311c182d2a20782462f0c2ed65",
+      "query": "What is the place of birth of Frank Wartenberg's wife?",
+      "answers_scored": [
+        "Prenzlau"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4822,
+      "kept_tokens": 3322,
+      "kv_savings_pct": 31.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2804
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "63df7238a0005c6bffc122ca97570a95eb1d3711abaee205",
+      "query": "Do Nick Varner and Carl Duser share the same nationality?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 2051,
+      "kept_tokens": 1807,
+      "kv_savings_pct": 11.9,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 1015
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "fcc4a49fbe72f1b8ffef144e2e9d85bfc8897ba2864fd521",
+      "query": "Which film has the director who is older, Space Probe Taurus or Tom Mix In Arabia?",
+      "answers_scored": [
+        "Tom Mix In Arabia"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5511,
+      "kept_tokens": 4383,
+      "kv_savings_pct": 20.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2907
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "44b7f326c7b3c430968c237ee4017425d03eef586d5d6cb7",
+      "query": "Who is Pyotr Karatygin's sibling-in-law?",
+      "answers_scored": [
+        "Alexandra Kolosova"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4019,
+      "kept_tokens": 2628,
+      "kv_savings_pct": 34.6,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1798
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "1d554e7ae21ed7b5d142b57bcdab110cf6cea6f5256a58ee",
+      "query": "What is the cause of death of director of film I Will, I Will... For Now?",
+      "answers_scored": [
+        "Parkinson"
+      ],
+      "dropped_answers": [
+        "Parkinson"
+      ],
+      "original_tokens": 6234,
+      "kept_tokens": 3270,
+      "kv_savings_pct": 47.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": false,
+      "answer_any_kept": false,
+      "answer_kept_frac": 0,
+      "latency_ms": 4237
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "3816f7d8e90a5497a1c0e415bf25218037c690e8e4d0d016",
+      "query": "Which country Dorothea Of Denmark, Duchess Of Mecklenburg's father is from?",
+      "answers_scored": [
+        "Norway"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 5105,
+      "kept_tokens": 4695,
+      "kv_savings_pct": 8,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2854
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "cf56ec8180c3c7622a439e68704fc1ff73770f2e8ee2926e",
+      "query": "Which film came out first, Una Prostituta Al Servizio Del Pubblico E In Regola Con Le Leggi Dello Stato or The Bag Man?",
+      "answers_scored": [
+        "Una Prostituta Al Servizio Del Pubblico E In Regola Con Le Leggi Dello Stato"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3538,
+      "kept_tokens": 2528,
+      "kv_savings_pct": 28.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1756
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "2df722c08f52cbf987c84019f7f2e5455cd29992738441cc",
+      "query": "Are both mountains, Yana Urqu (Q'Umirqucha) and Puka Rumi, located in the same country?",
+      "answers_scored": [],
+      "dropped_answers": [],
+      "original_tokens": 889,
+      "kept_tokens": 435,
+      "kv_savings_pct": 51.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": null,
+      "answer_any_kept": null,
+      "answer_kept_frac": null,
+      "latency_ms": 433
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "40de6f6c353c080845a8ea644039e9ba83cd481d3745395b",
+      "query": "Who is Archibald Acheson, 4Th Earl Of Gosford's paternal grandfather?",
+      "answers_scored": [
+        "Archibald Acheson, 2nd Earl of Gosford"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 6280,
+      "kept_tokens": 4395,
+      "kv_savings_pct": 30,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 3940
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "59e42b2cab6da2436fae05e25c49f6f4b4893b07bb48e3c1",
+      "query": "Who is the maternal grandfather of Marie Louise, Duchess Of Parma?",
+      "answers_scored": [
+        "Ferdinand I of the Two Sicilies"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 11516,
+      "kept_tokens": 9389,
+      "kv_savings_pct": 18.5,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 12479
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "5421c1e591296d64636a7e99fbfe98dddfed0f83d2053380",
+      "query": "Who is the mother of the director of film Dalida (2017 Film)?",
+      "answers_scored": [
+        "Marie Laforêt"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4162,
+      "kept_tokens": 4116,
+      "kv_savings_pct": 1.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2217
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "93ef40c0bfa088c2a2dd3302976a950cba3e8d97767f65ce",
+      "query": "Which film has the director who died earlier, Mayor Muthanna or The Market Of Souls?",
+      "answers_scored": [
+        "The Market Of Souls"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 3100,
+      "kept_tokens": 3025,
+      "kv_savings_pct": 2.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 1843
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "90f7f51f0c27f041e730cf8893f79f3f40fcb0aab1820a4d",
+      "query": "Who is Renaud Ii, Count Of Soissons's uncle?",
+      "answers_scored": [
+        "Guy II, Count of Soissons"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 1823,
+      "kept_tokens": 1798,
+      "kv_savings_pct": 1.4,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 804
+    },
+    {
+      "task": "longbench_2wikimqa",
+      "id": "2a0554b724822b6c611539e39b44381f752acdecce4868ad",
+      "query": "Who was born first, Antoine Casavant or Abdul Ali Lalu?",
+      "answers_scored": [
+        "Antoine Casavant"
+      ],
+      "dropped_answers": [],
+      "original_tokens": 4212,
+      "kept_tokens": 3827,
+      "kv_savings_pct": 9.1,
+      "important_kept_pct": 1,
+      "answer_all_kept": true,
+      "answer_any_kept": true,
+      "answer_kept_frac": 1,
+      "latency_ms": 2663
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "supercompress",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "deploy:prod": "bash scripts/deploy-prod.sh",
+    "launch:check": "bash scripts/hard-launch-check.sh",
+    "release:check": "bash scripts/release-check.sh",
+    "mcp": "node mcp/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "firebase-admin": "^13.10.0",
+    "openfork": "^1.17.36",
+    "stripe": "^22.3.0",
+    "supercompress-proxy": "^0.4.0"
+  }
+}
