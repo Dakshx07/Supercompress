@@ -33,7 +33,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://supercompress.dev"
-Documentation = "https://arjunkshah-supercompress-55.mintlify.app/"
+Documentation = "https://www.supercompress.dev/docs/"
 Repository = "https://github.com/Supercompress/Supercompress"
 Issues = "https://github.com/Supercompress/Supercompress/issues"
 
