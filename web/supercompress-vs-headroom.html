@@ -94,7 +94,7 @@
           <tr><td>Install size</td><td><strong>~200KB</strong></td><td>~500MB+ (model weights + ONNX runtime)</td><td class="win">SuperCompress</td></tr>
           <tr><td>Hosted API</td><td><strong>Yes</strong> — free tier included</td><td>No — local-only</td><td class="win">SuperCompress</td></tr>
           <tr><td>License</td><td><strong>MIT</strong></td><td>Apache 2.0</td><td class="win">Tie — both permissive</td></tr>
-          <tr><td>GitLab CI / CI</td><td><strong>Yes</strong> — CI pipeline integration</td><td>No</td><td class="win">SuperCompress</td></tr>
+          <tr><td>CI / pipelines</td><td><strong>Yes</strong> — CI pipeline integration</td><td>No</td><td class="win">SuperCompress</td></tr>
         </tbody>
       </table>
     </section>
@@ -128,7 +128,7 @@
           <tr><td>Docker / K8s</td><td><strong>✓</strong> ~150MB image</td><td><strong>✓</strong> ~1GB+ image with ONNX and model weights</td></tr>
           <tr><td>PyPI install</td><td><strong>✓</strong> pip install supercompress</td><td><strong>✓</strong> pip install headroom-ai[all] (~500MB download)</td></tr>
           <tr><td>Hosted API</td><td><strong>✓</strong> supercompress.dev with free tier</td><td>✗ Local-only</td></tr>
-          <tr><td>CI/CD pipelines</td><td><strong>✓</strong> GitLab CI built-in</td><td>✗ Manual setup required</td></tr>
+          <tr><td>CI/CD pipelines</td><td><strong>✓</strong> Built-in CI checks</td><td>✗ Manual setup required</td></tr>
         </tbody>
       </table>
     </section>
@@ -141,7 +141,7 @@
         <li><strong>You need query-aware compression</strong> — the answer line must be kept for the specific question being asked, not just the content type.</li>
         <li><strong>You deploy to serverless / edge</strong> — Lambda, Cloudflare Workers, Vercel Edge Functions. SuperCompress fits where Headroom's 165M+ model does not.</li>
         <li><strong>You want a hosted API option</strong> — use the API when you don't want to run anything locally, or the local library when you do.</li>
-        <li><strong>You need CI/CD integration</strong> — the GitLab CI checks prompt costs on every PR.</li>
+        <li><strong>You need CI/CD integration</strong> — pipeline checks can flag prompt-token waste on every PR.</li>
         <li><strong>You want MIT license</strong> — slightly more permissive for commercial embedding.</li>
       </ul>
 

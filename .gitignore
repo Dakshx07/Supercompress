@@ -101,3 +101,7 @@ launch-video/
 # Local staging for org profile README
 .github-org-profile/
 .vercel.supercompress-final.bak/
+
+# Demo build output
+examples/yc-demo/out/
+scripts/cleanup-auth-stubs.js

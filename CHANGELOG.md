@@ -13,8 +13,15 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
-- Public GitHub org repository; site links point to GitHub.
-- Changelog page + release workflow.
+---
+
+## [0.5.7] — 2026-07-31
+
+### Repository & site
+
+- Public source of truth on [github.com/Supercompress/Supercompress](https://github.com/Supercompress/Supercompress).
+- Product site, docs, and package metadata link to GitHub; GitLab kept as a private CI mirror.
+- Changelog page at [/changelog](https://www.supercompress.dev/changelog) mirrored to GitHub Releases.
 
 ---
 

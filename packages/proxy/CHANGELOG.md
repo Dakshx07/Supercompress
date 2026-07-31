@@ -1,17 +1,15 @@
 # Changelog
 
+Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
+
 ## 0.5.6 — 2026-07-31
 
 - Every-message compress threshold lowered (compress prompts ≥40 chars; tiny ones still write inbox).
 
 ## 0.5.5 — 2026-07-31
 
-- **Every-message auto-compress**: Cursor `beforeSubmitPrompt` writes `~/.supercompress/inbox/latest.md` on every submit; Claude Code + Codex `UserPromptSubmit` inject compressed digests; `postToolUse` threshold lowered to 800 chars.
-- Cursor always-on rule forces Read of inbox digest first every turn.
-
-## Unreleased
-
-- (rolled into 0.5.5)
+- **Every-message auto-compress**: IDE `beforeSubmitPrompt` writes `~/.supercompress/inbox/latest.md` on every submit; Claude Code + Codex `UserPromptSubmit` inject compressed digests; `postToolUse` threshold lowered to 800 chars.
+- Always-on agent rule forces Read of inbox digest first every turn.
 
 ## 0.5.4 — 2026-07-28
 
@@ -35,3 +33,4 @@
 
 - MCP-first coding-agent plugin (`compress_context`, `connect_account`, `usage_summary`).
 - Optional localhost API proxy via `supercompress setup --proxy`.
+- Hard launch of SuperCompress coding agent integrations (Cursor, Claude Code, Codex, and more).

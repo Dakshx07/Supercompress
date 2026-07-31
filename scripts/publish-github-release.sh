@@ -17,13 +17,14 @@ pat = rf"(?ms)^## \[{re.escape(ver)}\][^\n]*\n(.*?)(?=^## |\Z)"
 m = re.search(pat, text)
 if not m:
     raise SystemExit(f"No CHANGELOG section for [{ver}]")
-print(f"## SuperCompress {ver}\n\n{m.group(1).strip()}\n\n---\nFull changelog: https://www.supercompress.dev/changelog\n")
+body = m.group(1).strip().rstrip('-').rstrip()
+print(f"## SuperCompress {ver}\n\n{body}\n\nFull changelog: https://www.supercompress.dev/changelog\n")
 PY
 if ! git rev-parse "$TAG" >/dev/null 2>&1; then
   git tag -a "$TAG" HEAD -m "SuperCompress $VERSION"
 fi
 git push github "$TAG" 2>/dev/null || git push origin "$TAG"
 gh release create "$TAG" --repo "$REPO" --title "SuperCompress $VERSION" --notes-file "$NOTES_FILE" \
-  || gh release edit "$TAG" --repo "$REPO" --notes-file "$NOTES_FILE"
+  || gh release edit "$TAG" --repo "$REPO" --notes-file "$NOTES_FILE" --title "SuperCompress $VERSION"
 rm -f "$NOTES_FILE"
 echo "✓ https://github.com/${REPO}/releases/tag/${TAG}"

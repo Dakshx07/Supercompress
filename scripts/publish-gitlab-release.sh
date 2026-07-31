@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Private GitLab mirror only (CI). Public releases use publish-github-release.sh
 # Publish a SuperCompress GitLab release from CHANGELOG.md
 #
 # Usage:

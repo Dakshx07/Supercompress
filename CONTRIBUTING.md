@@ -52,7 +52,7 @@ Please keep marketing ops, outreach lists, SEO page farms, and private planning 
 
 ## Reporting bugs
 
-Use the GitHub Issues tracker with:
+Open an issue on [github.com/Supercompress/Supercompress/issues](https://github.com/Supercompress/Supercompress/issues) with:
 
 - Expected vs actual behavior
 - Minimal reproduction (context + query)

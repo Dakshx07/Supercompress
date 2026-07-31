@@ -104,4 +104,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
-Built by [Arjun Shah](https://github.com/arjunkshah) · [supercompress.dev](https://www.supercompress.dev)
+Built by [Arjun Shah](https://github.com/arjunkshah12345-hash) · [supercompress.dev](https://www.supercompress.dev)
