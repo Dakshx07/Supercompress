@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.7",
-  "description": "SuperCompress \u2014 MCP-first coding-agent plugin that compresses large context before inference. Optional local API proxy.",
+  "version": "0.5.8",
+  "description": "SuperCompress \u2014 MCP-first coding-agent plugin. Every submit with context auto-compresses (Headroom-parity); tiny asks skip. Optional local API proxy.",
   "keywords": [
     "supercompress",
     "prompt-compression",
@@ -20,7 +20,7 @@
     "url": "git+https://github.com/Supercompress/Supercompress.git",
     "directory": "packages/proxy"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "type": "commonjs",
   "main": "src/server.js",
   "bin": {

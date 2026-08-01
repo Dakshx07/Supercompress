@@ -19,7 +19,7 @@
     "url": "git+https://github.com/Supercompress/Supercompress.git",
     "directory": "packages/supercompress-cli"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "type": "commonjs",
   "bin": {
     "supercompress": "bin/supercompress.js"

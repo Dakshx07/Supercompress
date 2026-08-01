@@ -15,15 +15,15 @@
   <a href="https://www.supercompress.dev">Website</a> ·
   <a href="https://www.supercompress.dev/playground">Playground</a> ·
   <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
-  <a href="https://www.supercompress.dev/docs/">Docs</a> ·
-  <a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a> ·
+  <a href="https://docs.supercompress.dev">Docs</a> ·
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> ·
   <a href="./CHANGELOG.md">Changelog</a>
 </p>
 
 <p align="center">
   <a href="https://pypi.org/project/supercompress/"><img src="https://img.shields.io/pypi/v/supercompress?style=flat&logo=python&logoColor=white&label=PyPI" alt="PyPI" /></a>
   <a href="https://www.npmjs.com/package/supercompress-proxy"><img src="https://img.shields.io/npm/v/supercompress-proxy?style=flat&logo=npm&logoColor=white&label=npm" alt="npm" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Non--Commercial-3da639?style=flat" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3da639?style=flat" alt="MIT License" /></a>
   <a href="https://github.com/Supercompress/Supercompress"><img src="https://img.shields.io/badge/GitHub-Supercompress-181717?style=flat&logo=github&logoColor=white" alt="GitHub" /></a>
 </p>
 
@@ -54,10 +54,6 @@ SuperCompress is a compression layer in front of inference:
 
 The **query is never compressed** — only the surrounding context.
 
-<p align="center">
-  <img src="https://www.supercompress.dev/assets/img/compression-viz.svg" alt="Context in → SuperCompress → smaller prompt out" width="720" />
-</p>
-
 ### Two products, one engine
 
 | | **Coding-agent plugin** | **API / Python** |
@@ -67,13 +63,7 @@ The **query is never compressed** — only the surrounding context.
 | **What you get** | MCP `compress_context` on big dumps | Compress before every model call |
 | **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
 
-<p align="center">
-  <a href="https://www.supercompress.dev/docs/coding-agents">
-    <img src="https://www.supercompress.dev/assets/video/plugin-launch-poster.jpg" alt="SuperCompress coding-agent plugin" width="720" />
-  </a>
-  <br />
-  <sub>Coding-agent plugin — one setup, compress tool dumps before they burn tokens</sub>
-</p>
+Docs: [coding agents](https://docs.supercompress.dev/coding-agents) · [API quickstart](https://docs.supercompress.dev/quickstart)
 
 ---
 
@@ -82,7 +72,7 @@ The **query is never compressed** — only the surrounding context.
 We measure **whether the answer survives**, not vibes.
 
 <p align="center">
-  <img src="https://www.supercompress.dev/assets/img/chart-oracle-recall.svg" alt="Oracle recall at fixed 35% budget: SuperCompress 100% vs truncation 24.8%" width="840" />
+  <img src="https://www.supercompress.dev/assets/img/chart-oracle-recall.svg" alt="Oracle recall at fixed 35% budget: SuperCompress 100% vs truncation 24.8%" width="720" />
 </p>
 
 **Same keep-budget (35% of tokens kept). Who still has the answer?**
@@ -94,10 +84,6 @@ We measure **whether the answer survives**, not vibes.
 | H2O | **97.9%** |
 | **SuperCompress** | **100%** |
 
-<p align="center">
-  <img src="https://www.supercompress.dev/assets/img/chart-adaptive-savings.svg" alt="Compiler mode token savings by workload" width="840" />
-</p>
-
 ### Headline numbers
 
 | Metric | Result | Notes |
@@ -108,7 +94,7 @@ We measure **whether the answer survives**, not vibes.
 | **Mean token cut** (real suite) | **~67%** | Token-weighted ~74% |
 | **Important lines kept** (compiler) | **100%** | Across bundled long-context presets |
 
-Full methodology and charts: **[supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks)**
+Full methodology: **[supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks)**
 
 ---
 
@@ -121,7 +107,7 @@ npm install -g supercompress-proxy
 npx supercompress setup
 ```
 
-Links your account, detects agents, installs MCP. Docs: [coding agents](https://www.supercompress.dev/docs/coding-agents)
+Links your account, detects agents, installs MCP. Docs: [coding agents](https://docs.supercompress.dev/coding-agents)
 
 ### Python / HTTP
 
@@ -171,13 +157,13 @@ More: [vs truncation](https://www.supercompress.dev/supercompress-vs-truncation)
   &nbsp;
   <a href="https://www.supercompress.dev/dashboard"><img src="https://img.shields.io/badge/Get_an_API_key-111827?style=for-the-badge" alt="Dashboard" /></a>
   &nbsp;
-  <a href="https://www.supercompress.dev/docs/coding-agents"><img src="https://img.shields.io/badge/Install_for_agents-059669?style=for-the-badge" alt="Agents" /></a>
+  <a href="https://docs.supercompress.dev/coding-agents"><img src="https://img.shields.io/badge/Install_for_agents-059669?style=for-the-badge" alt="Agents" /></a>
 </p>
 
 <p align="center">
   <sub>
     <a href="https://www.supercompress.dev">supercompress.dev</a> ·
-    <a href="./LICENSE">Non-commercial license</a> ·
+    <a href="./LICENSE">MIT License</a> ·
     built by <a href="https://github.com/arjunkshah12345-hash">Arjun Shah</a>
   </sub>
 </p>
