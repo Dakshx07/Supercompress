@@ -105,7 +105,10 @@ async function proxyCompress(req, res) {
   const original = data.original_tokens ?? 0;
   const kept = data.kept_tokens ?? 0;
   const saved = data.tokens_saved ?? Math.max(0, original - kept);
-  const kv = data.tokens_saved_pct ?? (original ? (saved / original) * 100 : 0);
+  const tokensSavedPct =
+    data.tokens_saved_pct ??
+    data.kv_savings_pct ??
+    (original ? (saved / original) * 100 : 0);
   const inLines = context.split("\n").length;
   const outLines = compressed ? compressed.split("\n").length : 0;
 
@@ -145,7 +148,7 @@ async function proxyCompress(req, res) {
       token_savings_pct:
         original > 0 ? Math.round((1 - kept / original) * 10000) / 100 : 0,
       tokens_saved: saved,
-      tokens_saved_pct: kv,
+      tokens_saved_pct: tokensSavedPct,
       query_terms: terms,
       evidence_lines,
       endpoint: API_URL,

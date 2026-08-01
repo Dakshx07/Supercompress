@@ -203,6 +203,13 @@ async function compress(messages, agentName) {
 
   const result = await response.json();
   const compressedText = result.compressed_text || "";
+  const originalTokens = result.original_tokens || wordCount;
+  const keptTokens = result.kept_tokens || compressedText.split(/\s+/).length;
+  const tokensSaved = result.tokens_saved ?? Math.max(0, originalTokens - keptTokens);
+  const tokensSavedPct =
+    result.tokens_saved_pct ??
+    result.kv_savings_pct ??
+    (originalTokens > 0 ? Math.round((tokensSaved / originalTokens) * 100) : 0);
 
   // Never forward an empty compression result — that would wipe agent context.
   // This can happen on highly repetitive dumps where the policy drops everything.
@@ -231,7 +238,7 @@ async function compress(messages, agentName) {
   // Add compressed context as a system message
   compressedMessages.push({
     role: "system",
-    content: `[Compressed context — ${result.tokens_saved || 0} tokens saved (~${Math.round(result.tokens_saved_pct || 0)}%)]\n\n${compressedText}`,
+    content: `[Compressed context — ${tokensSaved} tokens saved (~${Math.round(tokensSavedPct)}%)]\n\n${compressedText}`,
   });
 
   // Add the last user message (query) unchanged
@@ -240,17 +247,12 @@ async function compress(messages, agentName) {
     compressedMessages.push(lastUserMsg);
   }
 
-  const originalTokens = result.original_tokens || wordCount;
-  const keptTokens = result.kept_tokens || compressedText.split(/\s+/).length;
-  const tokensSaved = result.tokens_saved || (originalTokens - keptTokens);
-  const savingsPct = result.tokens_saved_pct || (originalTokens > 0 ? Math.round((tokensSaved / originalTokens) * 100) : 0);
-
   return {
     messages: compressedMessages,
     original_tokens: originalTokens,
     compressed_tokens: keptTokens,
     tokens_saved: tokensSaved,
-    savings_pct: savingsPct,
+    savings_pct: tokensSavedPct,
   };
 }
 

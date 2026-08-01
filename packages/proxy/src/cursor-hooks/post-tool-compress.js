@@ -121,11 +121,13 @@ process.stdin.on("end", async () => {
     const pct =
       body.tokens_saved_pct != null
         ? Math.round(body.tokens_saved_pct)
-        : body.savings_pct != null
-          ? body.savings_pct
-          : inTok > 0
-            ? Math.round((saved / inTok) * 100)
-            : 0;
+        : body.kv_savings_pct != null
+          ? Math.round(body.kv_savings_pct)
+          : body.savings_pct != null
+            ? body.savings_pct
+            : inTok > 0
+              ? Math.round((saved / inTok) * 100)
+              : 0;
 
     const additional_context = [
       `[SuperCompress auto] Compressed ${toolName || "tool"} output (~${inTok}→${outTok} tok, −${pct}%).`,

@@ -40,13 +40,13 @@ def main() -> None:
     for name, result in cmp.items():
         print(f"── {name} ({result.policy_name})")
         print(f"   tokens: {result.original_tokens} → {result.kept_tokens}")
-        print(f"   KV savings: {result.tokens_saved_pct:.1f}%")
+        print(f"   Token savings: {result.tokens_saved_pct:.1f}%")
         print()
 
     compressed, stats = compress_for_turn(blocks, query)
     print("── compress_for_turn()")
     print(f"   policy: {stats.policy_name}")
-    print(f"   KV savings: {stats.tokens_saved_pct:.1f}%")
+    print(f"   Token savings: {stats.tokens_saved_pct:.1f}%")
     print(f"   preview: {compressed[:200].replace(chr(10), ' ')}…")
 
 

@@ -2,6 +2,11 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## Unreleased
+
+- Prefer `tokens_saved_pct` for prompt-token savings while accepting the deprecated `kv_savings_pct` response alias.
+- Correct the package README license statement: SuperCompress is MIT licensed and permits commercial use.
+
 ## 0.5.8 — 2026-08-02
 
 - **Headroom-parity every-submit compress**: Cursor `beforeSubmitPrompt` + Claude/Codex `UserPromptSubmit` compress context on every message that has real context; tiny asks (~&lt;400 chars / ~100 words) skip — same floor as the proxy.

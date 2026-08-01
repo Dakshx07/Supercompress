@@ -42,7 +42,9 @@ interface CompressResponse {
   compressed_text: string;
   original_tokens: number;
   kept_tokens: number;
-  tokens_saved_pct: number;
+  tokens_saved_pct?: number;
+  /** @deprecated Use tokens_saved_pct. */
+  kv_savings_pct?: number;
   policy_name: string;
 }
 
@@ -119,17 +121,19 @@ export class SuperCompressAI {
 
     this.totalOriginalTokens += compressed.original_tokens;
     this.totalKeptTokens += compressed.kept_tokens;
+    const tokensSavedPct =
+      compressed.tokens_saved_pct ?? compressed.kv_savings_pct ?? 0;
 
     if (this.verbose) {
       console.log(
         `SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok ` +
-        `(${compressed.tokens_saved_pct.toFixed(1)}%% saved)`
+        `(${tokensSavedPct.toFixed(1)}%% saved)`
       );
     }
 
     // Rebuild messages with compressed context
     const compressedContent = [
-      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${compressed.tokens_saved_pct.toFixed(1)}%% saved]`,
+      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${tokensSavedPct.toFixed(1)}%% saved]`,
       "",
       compressed.compressed_text,
       "",

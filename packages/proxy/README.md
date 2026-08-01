@@ -116,4 +116,4 @@ The MCP server / optional proxy run on your machine. Provider API keys never lea
 
 ## License
 
-Non-commercial. See [LICENSE](LICENSE).
+MIT. Commercial use is permitted. See [LICENSE](LICENSE).

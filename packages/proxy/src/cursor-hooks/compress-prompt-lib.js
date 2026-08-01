@@ -145,9 +145,11 @@ async function compressContext(context, query, codingAgent) {
     const pct =
       body.tokens_saved_pct != null
         ? Math.round(body.tokens_saved_pct)
-        : inTok > 0
-          ? Math.round(((inTok - outTok) / inTok) * 100)
-          : 0;
+        : body.kv_savings_pct != null
+          ? Math.round(body.kv_savings_pct)
+          : inTok > 0
+            ? Math.round(((inTok - outTok) / inTok) * 100)
+            : 0;
     return {
       compressed,
       original_tokens: inTok,
