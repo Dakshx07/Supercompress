@@ -887,24 +887,29 @@ function writeCursorRule() {
   const filePath = path.join(dir, "supercompress.mdc");
   const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
   const body = `---
-description: SuperCompress ALWAYS ON — every chat, every message
+description: SuperCompress ALWAYS ON — compress CONTEXT, never the user ask
 alwaysApply: true
 ---
 
-# SuperCompress (always on · every message)
+# SuperCompress (always on · context only)
 
-**Non-negotiable.** SuperCompress runs on every user turn in this session.
+**Non-negotiable.** Compress bulky **context** before it burns tokens. Never compress the user's ask / query.
 
-## First action every turn
+## What to compress
 
-1. If \`${inboxPath}\` exists, **Read it immediately** and treat it as the compressed user prompt/context digest (written by the SuperCompress beforeSubmitPrompt hook).
-2. Otherwise, if the user pasted / you are about to load bulky text (>~2–3k tokens), call MCP \`compress_context\` with \`context\`=<dump> and \`query\`=<user task>.
-3. Prefer the digest over raw dumps for reasoning.
+- Tool dumps (Read / Shell / Grep / Task / search / diffs / logs)
+- Pasted files, RAG chunks, long history, scrapes
+- Anything that is *not* the current user question
 
-## Also compress
+## What NOT to compress
 
-- Large Read / Shell / Grep / Task outputs (hooks also auto-inject digests)
-- Logs, diffs, tickets, long history, web scrapes
+- The user's current question / instructions (the query)
+
+## First action when context is large
+
+1. If \`${inboxPath}\` exists, **Read it** — compressed context digest (ask is separate / unchanged).
+2. Else call MCP \`compress_context\` with \`context\`=<dump> and \`query\`=<user ask>. Prefer the digest over the raw dump.
+3. Hooks also auto-compress large tool outputs (\`postToolUse\`).
 
 ## Defaults
 
@@ -1111,13 +1116,13 @@ function writeAgentInstructionFiles() {
   const written = [];
   const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
   const body = [
-    "# SuperCompress (always on)",
+    "# SuperCompress (always on · context only)",
     "",
-    "Before spending tokens on large dumps (files, search, logs, diffs, long history):",
+    "Compress bulky **context** (tool dumps, files, logs, diffs, history). Never compress the user's ask/query.",
     "",
-    "1. If `" + inboxPath + "` exists, Read it first — it is the compressed digest for this turn.",
-    "2. Otherwise call MCP `compress_context` with `context`=<dump> and `query`=<current task>.",
-    "3. Prefer the compressed result for reasoning. Keep normal login — no provider API-key mode required.",
+    "1. If `" + inboxPath + "` exists, Read it — compressed context digest (ask is unchanged).",
+    "2. Otherwise call MCP `compress_context` with `context`=<dump> and `query`=<user ask>.",
+    "3. Prefer the digest over raw dumps. Keep normal login — no provider API-key mode required.",
     "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
     "",
   ].join("\n");

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Shared: compress a prompt string via SuperCompress API.
- * Used by Cursor beforeSubmitPrompt + Claude/Codex UserPromptSubmit.
+ * Shared helpers: compress CONTEXT (never the user ask / query).
+ * Used by Cursor attachment hooks + Claude/Codex pasted-context hooks.
  */
 const fs = require("fs");
 const os = require("os");
@@ -36,23 +36,51 @@ function loadApiKey() {
   }
 }
 
-function writeInbox(prompt, compressed, meta) {
+/**
+ * Split a long user paste into ask (query) + context.
+ * Short messages → all ask, empty context.
+ * Long messages → first non-empty paragraph / ~400 chars as ask, rest as context.
+ */
+function splitAskAndContext(text) {
+  const raw = String(text || "");
+  if (raw.trim().length < 800) {
+    return { ask: raw.trim(), context: "" };
+  }
+  const parts = raw.split(/\n\s*\n/);
+  if (parts.length >= 2 && parts[0].trim().length <= 500) {
+    return {
+      ask: parts[0].trim(),
+      context: parts.slice(1).join("\n\n").trim(),
+    };
+  }
+  // Single blob: keep a short head as ask, compress the rest
+  const head = raw.slice(0, 400);
+  const nl = head.lastIndexOf("\n");
+  const cut = nl > 80 ? nl : 400;
+  return {
+    ask: raw.slice(0, cut).trim() || "Compress the following context for the coding task.",
+    context: raw.slice(cut).trim(),
+  };
+}
+
+function writeInbox(query, compressed, meta, extra = {}) {
   fs.mkdirSync(INBOX_DIR, { recursive: true });
   const latestMd = path.join(INBOX_DIR, "latest.md");
   const latestJson = path.join(INBOX_DIR, "latest.json");
   const body = [
-    "# SuperCompress prompt digest",
+    "# SuperCompress context digest",
     "",
     `Saved: ${new Date().toISOString()}`,
     meta ? `Stats: ${meta}` : "",
+    extra.kind ? `Kind: ${extra.kind}` : "",
     "",
-    "## Compressed",
+    "## User ask (never compressed)",
+    "",
+    query || "(none)",
+    "",
+    "## Compressed context",
     "",
     compressed || "(empty)",
-    "",
-    "## Original prompt (truncated)",
-    "",
-    String(prompt || "").slice(0, 4000),
     "",
   ].join("\n");
   fs.writeFileSync(latestMd, body);
@@ -61,9 +89,10 @@ function writeInbox(prompt, compressed, meta) {
     JSON.stringify(
       {
         saved_at: new Date().toISOString(),
+        query,
         compressed,
-        prompt_preview: String(prompt || "").slice(0, 2000),
         meta,
+        ...extra,
       },
       null,
       2
@@ -72,17 +101,18 @@ function writeInbox(prompt, compressed, meta) {
   return latestMd;
 }
 
-async function compressPrompt(prompt, codingAgent) {
-  const text = String(prompt || "").trim();
-  if (!text) return { compressed: "", skipped: "empty" };
-  // Every message: only skip empty. Tiny prompts still write through + meter when useful.
-  if (text.length < 40) {
-    return { compressed: text, skipped: "too_small", original_tokens: Math.ceil(text.length / 4) };
+/** Compress context against a query. Query is never sent as compressible context. */
+async function compressContext(context, query, codingAgent) {
+  const ctx = String(context || "").trim();
+  const q = String(query || "").trim() || "Compress this context for the coding task.";
+  if (!ctx) return { compressed: "", skipped: "empty" };
+  if (ctx.length < 40) {
+    return { compressed: ctx, skipped: "too_small", original_tokens: Math.ceil(ctx.length / 4) };
   }
   const apiKey = loadApiKey();
-  if (!apiKey) return { compressed: text, skipped: "no_key" };
+  if (!apiKey) return { compressed: ctx, skipped: "no_key" };
 
-  const clipped = text.length > 160000 ? text.slice(0, 160000) : text;
+  const clipped = ctx.length > 160000 ? ctx.slice(0, 160000) : ctx;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 14000);
   try {
@@ -94,19 +124,19 @@ async function compressPrompt(prompt, codingAgent) {
       },
       body: JSON.stringify({
         context: clipped,
-        query: "Compress this user prompt / attached context for the coding agent. Keep the ask, constraints, paths, and facts.",
+        query: q,
         mode: "compiler",
         coding_agent: codingAgent || "Cursor",
       }),
       signal: controller.signal,
     });
-    if (!res.ok) return { compressed: text, skipped: `http_${res.status}` };
+    if (!res.ok) return { compressed: ctx, skipped: `http_${res.status}` };
     const body = await res.json();
     const compressed =
       body.compressed_text ||
       body.compressed_context ||
       body.compressed ||
-      text;
+      ctx;
     const inTok = body.original_tokens || Math.round(clipped.length / 4);
     const outTok = body.kept_tokens || body.compressed_tokens || Math.round(compressed.length / 4);
     const pct =
@@ -122,22 +152,34 @@ async function compressPrompt(prompt, codingAgent) {
       savings_pct: pct,
     };
   } catch (err) {
-    return { compressed: text, skipped: err.message || "error" };
+    return { compressed: ctx, skipped: err.message || "error" };
   } finally {
     clearTimeout(timer);
   }
 }
 
-module.exports = { compressPrompt, writeInbox, loadApiKey, INBOX_DIR };
+// Back-compat alias (old name) — still means context compress
+async function compressPrompt(context, codingAgent) {
+  return compressContext(context, "Compress this context for the coding agent.", codingAgent);
+}
+
+module.exports = {
+  compressContext,
+  compressPrompt,
+  writeInbox,
+  loadApiKey,
+  splitAskAndContext,
+  INBOX_DIR,
+};
 
 if (require.main === module) {
-  // CLI: node compress-prompt-lib.js "prompt text"
-  const prompt = process.argv.slice(2).join(" ") || "";
-  compressPrompt(prompt, "cli").then((r) => {
+  const text = process.argv.slice(2).join(" ") || "";
+  const { ask, context } = splitAskAndContext(text);
+  compressContext(context || text, ask || "cli", "cli").then((r) => {
     const meta = r.skipped
       ? `skipped=${r.skipped}`
       : `${r.original_tokens}→${r.compressed_tokens} (−${r.savings_pct}%)`;
-    const p = writeInbox(prompt, r.compressed, meta);
-    process.stdout.write(JSON.stringify({ ...r, inbox: p }) + "\n");
+    const p = writeInbox(ask, r.compressed, meta);
+    process.stdout.write(JSON.stringify({ ...r, ask, inbox: p }) + "\n");
   });
 }

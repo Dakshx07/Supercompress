@@ -128,8 +128,8 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
   }
   console.log(`  ✓ Cursor rule written: ${auto.rulePath}`);
   console.log(`  ✓ Cursor hooks written: ${auto.hooks.hooksPath}`);
-  console.log("    → beforeSubmitPrompt → ~/.supercompress/inbox/ every message");
-  console.log("    → postToolUse auto-compresses large tool dumps");
+  console.log("    → beforeSubmitPrompt compresses attached context only (never the user ask)");
+  console.log("    → postToolUse auto-compresses large tool dumps (main savings path)");
   if (auto.agentHooks.installed.length) {
     console.log(`  ✓ Prompt/tool hooks: ${auto.agentHooks.installed.join(", ")}`);
   }

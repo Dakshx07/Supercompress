@@ -107,8 +107,8 @@ async function main() {
       }
       console.log(`  ✓ Cursor rule written: ${result.rulePath}`);
       console.log(`  ✓ Cursor hooks written: ${result.hooks.hooksPath}`);
-      console.log("    → beforeSubmitPrompt → ~/.supercompress/inbox/ every message");
-      console.log("    → postToolUse auto-compresses large tool dumps");
+      console.log("    → beforeSubmitPrompt compresses attached context only (never the user ask)");
+      console.log("    → postToolUse auto-compresses large tool dumps (main savings path)");
       if (result.agentHooks.installed.length) {
         console.log(`  ✓ Prompt/tool hooks: ${result.agentHooks.installed.join(", ")}`);
       }
