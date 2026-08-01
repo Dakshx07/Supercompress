@@ -1,226 +1,183 @@
-<div align="center">
+<p align="center">
+  <a href="https://www.supercompress.dev">
+    <img src="https://www.supercompress.dev/assets/img/og-share-light.png" alt="SuperCompress — cut LLM context waste" width="840" />
+  </a>
+</p>
 
-<img src="https://www.supercompress.dev/assets/img/logo-chevrons.png" alt="SuperCompress" width="56" height="56" />
+<h1 align="center">SuperCompress</h1>
 
-# SuperCompress
+<p align="center">
+  <strong>Query-aware context compression for LLMs and coding agents.</strong><br />
+  Keep the evidence. Drop the filler. Pay for fewer input tokens.
+</p>
 
-### Stop paying your model to reread junk.
+<p align="center">
+  <a href="https://www.supercompress.dev">Website</a> ·
+  <a href="https://www.supercompress.dev/playground">Playground</a> ·
+  <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
+  <a href="https://www.supercompress.dev/docs/">Docs</a> ·
+  <a href="https://www.supercompress.dev/docs/coding-agents">Coding agents</a> ·
+  <a href="./CHANGELOG.md">Changelog</a>
+</p>
 
-Query-aware context compression for LLM apps and coding agents.  
-Keep the evidence. Drop the filler. Cut ~**65%** of input tokens.
-
-[Website](https://www.supercompress.dev) · [Playground](https://www.supercompress.dev/playground) · [Docs](https://www.supercompress.dev/docs/) · [Benchmarks](https://www.supercompress.dev/benchmarks) · [Changelog](./CHANGELOG.md)
-
-[![PyPI](https://img.shields.io/pypi/v/supercompress?style=flat&logo=python&logoColor=white)](https://pypi.org/project/supercompress/)
-[![npm](https://img.shields.io/npm/v/supercompress-proxy?style=flat&logo=npm&logoColor=white)](https://www.npmjs.com/package/supercompress-proxy)
-[![License](https://img.shields.io/badge/license-Non--Commercial-3da639?style=flat)](LICENSE)
-[![GitHub](https://img.shields.io/badge/GitHub-Supercompress-181717?style=flat&logo=github&logoColor=white)](https://github.com/Supercompress/Supercompress)
-
-</div>
-
----
-
-## The problem in one picture
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  YOUR PROMPT                                                │
-│                                                             │
-│  query     "Why did checkout fail?"          ← tiny, critical │
-│  context   12k tokens of logs, RAG, chat, JSON  ← mostly noise │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-              Model rereads ALL of it. You pay for ALL of it.
-```
-
-That waste compounds every turn. Agents make it worse — tool dumps, file reads, search results stack up until half the bill is context you already know is irrelevant.
-
-**Truncation** deletes the middle and hopes the answer wasn’t there.  
-**Summarization** rewrites evidence into softer prose and loses IDs, stack traces, exact errors.  
-**Smaller models** still eat the same bloated prompt.
-
-You don’t need a different model. You need a smaller prompt that still has the answer.
+<p align="center">
+  <a href="https://pypi.org/project/supercompress/"><img src="https://img.shields.io/pypi/v/supercompress?style=flat&logo=python&logoColor=white&label=PyPI" alt="PyPI" /></a>
+  <a href="https://www.npmjs.com/package/supercompress-proxy"><img src="https://img.shields.io/npm/v/supercompress-proxy?style=flat&logo=npm&logoColor=white&label=npm" alt="npm" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Non--Commercial-3da639?style=flat" alt="License" /></a>
+  <a href="https://github.com/Supercompress/Supercompress"><img src="https://img.shields.io/badge/GitHub-Supercompress-181717?style=flat&logo=github&logoColor=white" alt="GitHub" /></a>
+</p>
 
 ---
 
-## What SuperCompress does
+## Why it exists
 
-It sits **in front of** the model call:
+Every LLM call ships a pile of context: RAG chunks, chat history, tool dumps, logs, JSON. Most of it is irrelevant to the *current* question — but the model still reads it, and you still pay for it.
 
-```text
-  long context + query
-           │
-           ▼
-    ┌──────────────┐
-    │ SuperCompress │  score blocks against THIS query
-    └──────────────┘
-           │
-           ▼
-  smaller prompt + token stats  →  your LLM
-```
+| Usual “fix” | What actually happens |
+|---|---|
+| **Truncate** | Deletes the middle. The answer is often in the middle. |
+| **Summarize** | Rewrites evidence. IDs, stack traces, and exact errors get soft. |
+| **Hope** | Ship the full dump. Watch the bill climb. |
 
-1. Split context into blocks (not one blind chop)  
-2. Detect what you’re looking at — text, code, JSON, logs, traces  
-3. Score each block against the **current query**  
-4. Keep entities, errors, definitions, nearby deps  
-5. Drop boilerplate, duplicates, filler  
-6. Hand back original wording (selection, not rewrite)
-
-The **query is never compressed**. Only the surrounding context.
-
-| | Truncate | Summarize | **SuperCompress** |
-|---|---|---|---|
-| Cuts tokens | yes | yes | **yes** |
-| Keeps original evidence | sometimes | no | **yes** |
-| Uses the question | no | weak | **yes** |
-| Auditable kept lines | partial | no | **yes** |
-
-Public benchmarks (same keep-budget quality tests): SuperCompress holds **answer-critical lines** where blind truncation often does not. Details: [benchmarks](https://www.supercompress.dev/benchmarks).
+**SuperCompress** compresses context **against the query**. It keeps answer-critical lines in their original wording and drops the rest — typically **~65% fewer input tokens**.
 
 ---
 
-## Two ways in
+## Product
 
-<table>
-<tr>
-<td width="50%" valign="top">
+SuperCompress is a compression layer in front of inference:
 
-### Coding agents
-**One command. Works with your normal login.**
+1. Takes a long **context** + the current **query**
+2. Segments and scores blocks by relevance to that query
+3. Keeps entities, errors, definitions, nearby dependencies
+4. Returns a smaller prompt + token stats
+
+The **query is never compressed** — only the surrounding context.
+
+<p align="center">
+  <img src="https://www.supercompress.dev/assets/img/compression-viz.svg" alt="Context in → SuperCompress → smaller prompt out" width="720" />
+</p>
+
+### Two products, one engine
+
+| | **Coding-agent plugin** | **API / Python** |
+|---|---|---|
+| **For** | Cursor, Claude Code, Codex, and 40+ agents | Apps, RAG, agents, backends |
+| **Install** | `npm i -g supercompress-proxy && npx supercompress setup` | `pip install supercompress` |
+| **What you get** | MCP `compress_context` on big dumps | Compress before every model call |
+| **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
+
+<p align="center">
+  <a href="https://www.supercompress.dev/docs/coding-agents">
+    <img src="https://www.supercompress.dev/assets/video/plugin-launch-poster.jpg" alt="SuperCompress coding-agent plugin" width="720" />
+  </a>
+  <br />
+  <sub>Coding-agent plugin — one setup, compress tool dumps before they burn tokens</sub>
+</p>
+
+---
+
+## Benchmarks & stats
+
+We measure **whether the answer survives**, not vibes.
+
+<p align="center">
+  <img src="https://www.supercompress.dev/assets/img/chart-oracle-recall.svg" alt="Oracle recall at fixed 35% budget: SuperCompress 100% vs truncation 24.8%" width="840" />
+</p>
+
+**Same keep-budget (35% of tokens kept). Who still has the answer?**
+
+| Method | Answer-critical kept |
+|---|---:|
+| FIFO / truncation | **24.8%** |
+| Summarization | **60.5%** |
+| H2O | **97.9%** |
+| **SuperCompress** | **100%** |
+
+<p align="center">
+  <img src="https://www.supercompress.dev/assets/img/chart-adaptive-savings.svg" alt="Compiler mode token savings by workload" width="840" />
+</p>
+
+### Headline numbers
+
+| Metric | Result | Notes |
+|---|---:|---|
+| **Oracle recall** (fixed budget) | **100%** | Public 8-seed suite vs ~25% truncation |
+| **Compiler-mode savings** | **~62%** avg | Maximize cut while keeping critical lines |
+| **Real / OOD answer retention** | **100%** (66/66) | LongBench + hard haystacks |
+| **Mean token cut** (real suite) | **~67%** | Token-weighted ~74% |
+| **Important lines kept** (compiler) | **100%** | Across bundled long-context presets |
+
+Full methodology and charts: **[supercompress.dev/benchmarks](https://www.supercompress.dev/benchmarks)**
+
+---
+
+## Try it
+
+### Coding agents (recommended)
 
 ```bash
 npm install -g supercompress-proxy
 npx supercompress setup
 ```
 
-Detects Cursor, Claude Code, Codex, FreeBuff, OpenCode, Gemini CLI, and more. Registers MCP tools so big dumps get compressed before they burn tokens.
+Links your account, detects agents, installs MCP. Docs: [coding agents](https://www.supercompress.dev/docs/coding-agents)
 
-[Coding agents guide →](https://www.supercompress.dev/docs/coding-agents)
-
-</td>
-<td width="50%" valign="top">
-
-### Apps & APIs
-**Compress right before inference.**
+### Python / HTTP
 
 ```bash
 pip install supercompress
-export SUPERCOMPRESS_API_KEY=sc_live_...
+export SUPERCOMPRESS_API_KEY=sc_live_YOUR_KEY
 ```
-
-Get a key: [dashboard](https://www.supercompress.dev/dashboard)
-
-[API reference →](https://www.supercompress.dev/docs/api-reference)
-
-</td>
-</tr>
-</table>
-
----
-
-## Quick start (Python)
 
 ```python
 from supercompress.client import SuperCompress
 
-sc = SuperCompress()  # reads SUPERCOMPRESS_API_KEY
-
+sc = SuperCompress()
 result = sc.compress(
-    context=long_context,          # logs, RAG, history, tool output…
+    context=long_context,
     query="What failed and how do we fix it?",
 )
-
-print(result.compressed_text)
 print(f"{result.original_tokens} → {result.kept_tokens} tokens")
+print(result.compressed_text)
 ```
-
-### HTTP
 
 ```bash
 curl -X POST https://www.supercompress.dev/api/v1/compress \
   -H "X-API-Key: $SUPERCOMPRESS_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "context": "...huge dump...",
-    "query": "What failed?"
-  }'
+  -d '{"context":"...","query":"What failed?"}'
 ```
 
-### Prefer to feel it first?
-
-Paste a messy context into the [playground](https://www.supercompress.dev/playground) — no integration required.
+Or paste a dump into the **[playground](https://www.supercompress.dev/playground)** — no integration required.
 
 ---
 
-## What it is good at
+## How it compares
 
-- RAG / retrieval dumps that drown the question  
-- Long chat / agent memory that grows every turn  
-- Logs, traces, support tickets, JSON payloads  
-- Coding-agent tool output (files, search, diffs)  
-- Any path where **input tokens** dominate cost
+| | Truncate | Summarize | **SuperCompress** |
+|---|:---:|:---:|:---:|
+| Cuts tokens | ✓ | ✓ | ✓ |
+| Uses the query | ✗ | weak | ✓ |
+| Keeps original evidence | sometimes | ✗ | ✓ |
+| Auditable kept lines | partial | ✗ | ✓ |
 
-## What it is not
-
-- Not a summarizer — it **selects** source text, it doesn’t invent prose  
-- Not magic on already-tiny prompts — if the context is small, skip it  
-- Not a reason to delete compliance-required verbatim payloads — if you must send every byte, don’t compress
+More: [vs truncation](https://www.supercompress.dev/supercompress-vs-truncation) · [vs summarization](https://www.supercompress.dev/supercompress-vs-summarization) · [vs alternatives](https://www.supercompress.dev/supercompress-vs-alternatives)
 
 ---
 
-## MCP tools (coding agents)
+<p align="center">
+  <a href="https://www.supercompress.dev/playground"><img src="https://img.shields.io/badge/Try_the_playground-2563EB?style=for-the-badge" alt="Playground" /></a>
+  &nbsp;
+  <a href="https://www.supercompress.dev/dashboard"><img src="https://img.shields.io/badge/Get_an_API_key-111827?style=for-the-badge" alt="Dashboard" /></a>
+  &nbsp;
+  <a href="https://www.supercompress.dev/docs/coding-agents"><img src="https://img.shields.io/badge/Install_for_agents-059669?style=for-the-badge" alt="Agents" /></a>
+</p>
 
-| Tool | Job |
-|------|-----|
-| `compress_context` | Shrink a bulky dump for the current task |
-| `connect_account` | Link this install to your SuperCompress account |
-| `usage_summary` | See savings for the connected account |
-
-```bash
-npx supercompress setup     # account + detect + install
-npx supercompress agents    # what’s on this machine
-npx supercompress plugin    # refresh MCP registrations
-```
-
----
-
-## Repo map
-
-| Path | Purpose |
-|------|---------|
-| `supercompress/` | Python package |
-| `api/` | Hosted compress API |
-| `web/` | Site + docs |
-| `packages/proxy` | Coding-agent plugin (`supercompress-proxy`) |
-| `integrations/` · `examples/` | Drop-in wrappers |
-
----
-
-## Develop locally
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e .
-
-cd web && python -m http.server 8080
-```
-
-Contributions: [CONTRIBUTING.md](./CONTRIBUTING.md) · Security: [SECURITY.md](./SECURITY.md)
-
----
-
-## License
-
-[Non-commercial license](./LICENSE) — personal, research, and evaluation use are welcome.  
-Commercial / monetized use needs a separate license.
-
----
-
-<div align="center">
-
-**Keep the model. Cut the wasted context.**
-
-[supercompress.dev](https://www.supercompress.dev) · built by [Arjun Shah](https://github.com/arjunkshah12345-hash)
-
-</div>
+<p align="center">
+  <sub>
+    <a href="https://www.supercompress.dev">supercompress.dev</a> ·
+    <a href="./LICENSE">Non-commercial license</a> ·
+    built by <a href="https://github.com/arjunkshah12345-hash">Arjun Shah</a>
+  </sub>
+</p>
