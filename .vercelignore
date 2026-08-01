@@ -34,3 +34,8 @@ web/assets/video/supercompress-halftone.mp4
 web/assets/video/supercompress-kail-launch.mp4
 web/assets/video/supercompress-launch.mp4
 web/assets/video/supercompress-lovable.mp4
+models
+models/**
+launch-video/**
+video
+video/**
