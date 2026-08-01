@@ -84,7 +84,7 @@ Use the website **Projection calculator** (`#impact`) to adjust volume.
 
 1. State assumptions clearly — do not claim live metering unless you have it.
 2. Compare **quality + savings** together (truncation can save tokens but drop answers).
-3. SuperCompress targets **edge-CPU policy + measurable KV reduction** — not datacenter-wide carbon accounting.
+3. SuperCompress targets **edge-CPU policy + measurable prompt-token reduction before inference** — not in-KV compression or datacenter-wide carbon accounting.
 
 ## Neural reranker (hosted input quality)
 

@@ -276,7 +276,7 @@ impact = sustainability_from_tokens_saved(saved)
 <span class="kw">print</span>(impact.co2_kg_avoided)
 <span class="kw">print</span>(impact.watt_hours_saved)
 <span class="kw">print</span>(impact.assumptions.to_dict())</code></pre>
-        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), 55% KV share of prefill. See <a href="/environment">Environment & CO₂</a> for the full methodology.</p>
+        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), and <code>context_share_of_prefill</code> set to 55%. This estimates the prefill work avoided by removing prompt tokens before inference; SuperCompress does not read or write the model’s KV cache. See <a href="/environment">Environment & CO₂</a> for the full methodology.</p>
 
         <h2 id="errors">Error handling</h2>
         <h3>Python errors</h3>
