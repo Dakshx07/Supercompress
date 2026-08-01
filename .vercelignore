@@ -17,7 +17,6 @@ launch-video
 launchvideoforwebsite
 outreach
 git-hooks
-*.mp4
 *.mov
 .vercel.supercompress-final.bak
 packages/**/node_modules
@@ -25,3 +24,13 @@ packages/**/dist
 .venv
 venv
 *.log
+# Large local videos (keep launch-post.mp4 deployable)
+web/assets/video/coding-agent-launch.mp4
+web/assets/video/demo.mp4
+web/assets/video/launch.mp4
+web/assets/video/plugin-launch.mp4
+web/assets/video/supercompress-atelier.mp4
+web/assets/video/supercompress-halftone.mp4
+web/assets/video/supercompress-kail-launch.mp4
+web/assets/video/supercompress-launch.mp4
+web/assets/video/supercompress-lovable.mp4

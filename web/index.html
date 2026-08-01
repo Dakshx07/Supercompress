@@ -7,7 +7,7 @@
   <title>SuperCompress - Cut Your LLM API Costs by 65%</title>
   <meta name="description" content="SuperCompress is open-source prompt compression that cuts LLM token costs by ~65%. Reduce input tokens before OpenAI, Claude, Gemini, RAG, chatbot, and agent calls while preserving answer-critical evidence." />
   <meta property="og:title" content="SuperCompress - Cut Your LLM API Costs by 65%" />
-  <meta property="og:description" content="Reduce LLM API costs by ~65% while preserving answer-critical evidence. Open source, CPU-only, ~5K parameters." />
+  <meta property="og:description" content="Reduce LLM API costs by ~65% while preserving answer-critical evidence. Query-aware neural compression for chat, RAG, and coding agents." />
   <meta property="og:url" content="https://supercompress.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="en_US" />
@@ -17,7 +17,7 @@
   <meta property="og:image:height" content="1080" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="SuperCompress - Cut Your LLM API Costs by 65%" />
-  <meta name="twitter:description" content="Open-source prompt compression that cuts LLM token costs by ~65%. CPU-only, ~5K parameters, preserves answer-critical evidence." />
+  <meta name="twitter:description" content="Open-source prompt compression that cuts LLM token costs by ~65%. Query-aware neural ranking, preserves answer-critical evidence." />
   <meta name="twitter:site" content="@supercompress" />
   <meta name="keywords" content="prompt compression for AI apps, LLM token compression, consumer AI apps, chatbot cost reduction, RAG context compression, AI support automation, copilot prompt optimization, OpenAI cost reduction" />
   <meta name="ai-purpose" content="SuperCompress is open-source prompt compression for AI apps, reducing oversized LLM inputs before inference." />
@@ -35,10 +35,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="preload" href="/assets/video/launch-post-poster.jpg" as="image" fetchpriority="high" />
-  <link rel="preload" href="/assets/video/launch-post.mp4" as="video" type="video/mp4" />
-  <link rel="stylesheet" href="/assets/css/landing-motion.css?v=2" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=2" />
+  <link rel="preload" href="/assets/video/launch-post-poster.jpg?v=4" as="image" fetchpriority="high" />
+  <link rel="preload" href="/assets/video/launch-post.mp4?v=4" as="video" type="video/mp4" />
+  <link rel="stylesheet" href="/assets/css/landing-motion.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=3" />
 
 
 <!-- Preconnect hints for faster external resource loading -->
@@ -146,10 +146,10 @@
     "@type": "VideoObject",
     "name": "SuperCompress Launch Video — LLM Token Compression",
     "description": "SuperCompress reduces input tokens before LLM inference for chatbots, AI search, support agents, copilots, RAG, and agent workflows.",
-    "thumbnailUrl": "https://supercompress.dev/assets/video/launch-post-poster.jpg",
+    "thumbnailUrl": "https://supercompress.dev/assets/video/launch-post-poster.jpg?v=4",
     "uploadDate": "2026-07-24",
     "duration": "PT46S",
-    "contentUrl": "https://supercompress.dev/assets/video/launch-post.mp4",
+    "contentUrl": "https://supercompress.dev/assets/video/launch-post.mp4?v=4",
     "publisher": {
       "@type": "Organization",
       "name": "SuperCompress"
@@ -198,7 +198,7 @@
         "name": "Does SuperCompress require a GPU?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. SuperCompress runs entirely on CPU with a tiny ~5K parameter policy. It compresses context before GPU inference with ~60ms latency."
+          "text": "No. SuperCompress runs entirely on CPU with a tiny neural parameter policy. It compresses context before GPU inference with ~60ms latency."
         }
       },
       {
@@ -289,8 +289,8 @@
           <div class="hero-frame is-live" id="launch-video-frame">
             <canvas class="dither-canvas micro-dither hero-dither" data-dither="compress" aria-hidden="true"></canvas>
             <div class="hero-frame-embed">
-              <img class="hero-frame-poster" src="/assets/video/launch-post-poster.jpg" alt="SuperCompress launch video preview" width="1280" height="720" loading="eager" fetchpriority="high" />
-              <video class="hero-frame-video" src="/assets/video/launch-post.mp4" autoplay muted loop playsinline preload="auto" poster="/assets/video/launch-post-poster.jpg"></video>
+              <img class="hero-frame-poster" src="/assets/video/launch-post-poster.jpg?v=4" alt="SuperCompress launch video preview" width="1280" height="720" loading="eager" fetchpriority="high" />
+              <video class="hero-frame-video" src="/assets/video/launch-post.mp4?v=4" autoplay muted loop playsinline preload="auto" poster="/assets/video/launch-post-poster.jpg?v=4"></video>
             </div>
             <div class="launch-video-unmute">
               <button type="button" class="launch-video-sound" id="launch-video-sound" aria-label="Unmute launch video">Unmute</button>
@@ -743,7 +743,7 @@
 
   <script src="/assets/js/vendor/gsap/gsap.min.js"></script>
   <script src="/assets/js/vendor/gsap/ScrollTrigger.min.js"></script>
-<script src="/assets/js/landing-app.js?v=2"></script>
+<script src="/assets/js/landing-app.js?v=3"></script>
 
 </body>
 </html>
