@@ -117,31 +117,31 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
     }
   }
 
-  const mcpConfigured = detector.configureMcp();
-  const rulePath = detector.writeCursorRule();
-  const hooks = detector.writeCursorHooks();
-  const agentHooks = detector.writeAgentPromptHooks();
-  const cleared = detector.clearProxyOverrides();
-  config.configured_agents = mcpConfigured;
+  const auto = detector.installAutoPlugin();
+  config.configured_agents = auto.mcpConfigured;
   saveConfig(config);
 
-  if (mcpConfigured.length) {
-    console.log(`  ✓ MCP plugin installed for: ${mcpConfigured.join(", ")}`);
+  if (auto.mcpConfigured.length) {
+    console.log(`  ✓ MCP plugin installed for: ${auto.mcpConfigured.join(", ")}`);
   } else {
     console.log("  ○ No MCP-capable agent configs found to update.");
   }
-  console.log(`  ✓ Cursor rule written: ${rulePath}`);
-  console.log(`  ✓ Cursor hooks written: ${hooks.hooksPath}`);
-  console.log("    → beforeSubmitPrompt compresses EVERY user message → ~/.supercompress/inbox/");
+  console.log(`  ✓ Cursor rule written: ${auto.rulePath}`);
+  console.log(`  ✓ Cursor hooks written: ${auto.hooks.hooksPath}`);
+  console.log("    → beforeSubmitPrompt → ~/.supercompress/inbox/ every message");
   console.log("    → postToolUse auto-compresses large tool dumps");
-  if (agentHooks.installed.length) {
-    console.log(`  ✓ Every-message prompt hooks: ${agentHooks.installed.join(", ")}`);
+  if (auto.agentHooks.installed.length) {
+    console.log(`  ✓ Prompt/tool hooks: ${auto.agentHooks.installed.join(", ")}`);
   }
-  if (cleared.length) {
-    console.log(`  ✓ Cleared provider API-key proxy overrides: ${cleared.join(", ")}`);
+  if (auto.instructions.length) {
+    console.log(`  ✓ Always-on instructions: ${auto.instructions.join(", ")}`);
+  }
+  if (auto.cleared.length) {
+    console.log(`  ✓ Cleared provider API-key proxy overrides: ${auto.cleared.join(", ")}`);
   }
   console.log("  → Works with Cursor / Claude / Codex login — no provider API-key mode.");
   console.log("  → Restart agents so hooks reload.");
+  console.log("  → Full-traffic auto (Headroom-style): `supercompress wrap claude`");
 
   if (!wantProxy) {
     console.log("");
@@ -150,11 +150,11 @@ module.exports = async function setup({ CONFIG_DIR, CONFIG_PATH, PID_PATH, LOG_P
     console.log("  └─────────────────────────────────────────────┘");
     console.log("");
     console.log("  Next steps:");
-    console.log("    1. Restart your coding agent so MCP reloads");
-    console.log("    2. Ask it to compress large context (tool: compress_context)");
+    console.log("    1. Restart your coding agent so MCP/hooks reload");
+    console.log("    2. Or run `supercompress wrap claude` for proxy auto-compress");
     console.log("");
     console.log("  Tip: `supercompress plugin` re-runs detect + install anytime.");
-    console.log("  Tip: `supercompress setup --proxy` only if you want localhost API proxy mode.");
+    console.log("  Tip: `supercompress setup --proxy` only if you want durable base-URL rewrite.");
     console.log("");
     return;
   }

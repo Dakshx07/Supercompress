@@ -15,13 +15,21 @@ Public page: https://www.supercompress.dev/changelog
 
 ---
 
-## [0.5.7] — 2026-07-31
+## [0.5.7] — 2026-08-01
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Auto across agents:** `supercompress plugin` / `setup` installs MCP on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, Goose, Crush, Amp, Zed, Copilot, Roo, Cline, …).
+- **Claude Code + Codex:** `UserPromptSubmit` + `PostToolUse` hooks for every-message + large tool-dump auto-compress.
+- **Cursor:** every-message inbox + broader `postToolUse` matchers; always-on rule kept.
+- **Always-on instructions** written for Claude / Codex / Aider / Goose / OpenCode when present.
+- **`supercompress wrap <agent>`** — Headroom-style proxy launch (`claude`, `codex`, `aider`, `opencode`, `gemini`, …) so *all traffic* is auto-compressed.
 
 ### Repository & site
 
 - Public source of truth on [github.com/Supercompress/Supercompress](https://github.com/Supercompress/Supercompress).
 - Product site, docs, and package metadata link to GitHub; GitLab kept as a private CI mirror.
-- Changelog page at [/changelog](https://www.supercompress.dev/changelog) mirrored to GitHub Releases.
+- Changelog page + shared landing footer across site pages.
 
 ---
 

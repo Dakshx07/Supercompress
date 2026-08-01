@@ -20,9 +20,12 @@
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-  <link rel="stylesheet" href="/assets/css/supercompress.css?v=105" />
+  <link rel="stylesheet" href="/assets/css/supercompress.css?v=116" />
+  <link rel="stylesheet" href="/assets/css/sc-sm.css?v=4" />
   <style>
-    .cl-page { padding-bottom: 96px; }
+    /* Changelog uses sc-nav chrome from sc-sm + df-footer from supercompress.css */
+    body { background: var(--bg, #fff); }
+    .cl-page { padding-bottom: 96px; padding-top: var(--nav-h, 64px); }
     .cl-hero {
       max-width: var(--max-w);
       margin: 0 auto;
@@ -200,15 +203,20 @@
       <article class="cl-entry" id="v0.5.7">
         <div class="cl-meta">
           <a class="cl-ver" href="#v0.5.7">0.5.7</a>
-          <span class="cl-date">2026-07-31</span>
-          <span class="cl-badge">site</span>
+          <span class="cl-date">2026-08-01</span>
+          <span class="cl-badge">proxy</span>
         </div>
         <div class="cl-body">
+          <h3>Coding agent plugin</h3>
+          <ul>
+            <li><strong>Auto across agents:</strong> MCP installed on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, and more).</li>
+            <li>Claude Code + Codex: every-message + <code>PostToolUse</code> tool-dump compression.</li>
+            <li>Always-on instruction files when those agents are present.</li>
+            <li><code>supercompress wrap &lt;agent&gt;</code> — Headroom-style full-traffic proxy auto-compress.</li>
+          </ul>
           <h3>Repository &amp; site</h3>
           <ul>
-            <li>Public source of truth on <a href="https://github.com/Supercompress/Supercompress">github.com/Supercompress/Supercompress</a>.</li>
-            <li>Product site, docs, and package metadata link to GitHub; GitLab kept as a private CI mirror.</li>
-            <li>Changelog page mirrored to GitHub Releases.</li>
+            <li>Public GitHub source of truth; shared landing footer across site pages.</li>
           </ul>
         </div>
       </article>
@@ -323,17 +331,69 @@
     </p>
   </main>
 
-  <footer class="sc-footer">
-    <div class="edge sc-footer-inner">
-      <a class="sc-brand" href="/"><img src="/assets/img/logo-chevrons.png" alt="" width="20" height="20" /><span>supercompress</span></a>
-      <p>Keep the model. Cut the wasted context.</p>
-      <nav class="sc-footer-links">
-        <a href="/docs/">docs</a>
-        <a href="/changelog">changelog</a>
-        <a href="/benchmarks">benchmarks</a>
-        <a href="https://github.com/Supercompress/Supercompress/releases" target="_blank" rel="noopener">releases</a>
-      </nav>
+  <!-- SITE_FOOTER_START -->
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · coding agent plugin.</p>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Navigation</p>
+          <ul>
+            <li><a href="/benchmarks">Benchmarks</a></li>
+            <li><a href="/#agents">Agents</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/docs/">Docs</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Resources</p>
+          <ul>
+            <li><a href="/playground">Playground</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/token-compression">Token compression guide</a></li>
+            <li><a href="/benchmarks">Benchmarks</a></li>
+            <li><a href="/docs/coding-agents">Coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">SEO Guides</p>
+          <ul>
+            <li><a href="/prompt-compression">Prompt compression</a></li>
+            <li><a href="/token-compression">LLM token compression</a></li>
+            <li><a href="/context-compression">Context compression</a></li>
+            <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="/docs/">Documentation</a></li>
+            <li><a href="/docs/quickstart">Quickstart</a></li>
+            <li><a href="/docs/api-reference">API reference</a></li>
+            <li><a href="/docs/coding-agents">Coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Social</p>
+          <ul>
+            <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </footer>
+    <p class="df-footer-copy">© SuperCompress · Non-commercial license</p>
+  </div>
+</footer>
+<!-- SITE_FOOTER_END -->
 </body>
 </html>

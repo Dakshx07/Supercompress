@@ -46,17 +46,29 @@ process.stdin.on("end", async () => {
   const empty = () => process.stdout.write("{}");
   try {
     const input = JSON.parse(raw || "{}");
-    const toolName = String(input.tool_name || input.toolName || "");
+    const toolName = String(
+      input.tool_name ||
+        input.toolName ||
+        input.tool ||
+        (input.tool_input && input.tool_input.name) ||
+        ""
+    );
     // Skip our own MCP compress calls to avoid loops
-    if (/compress_context|connect_account|usage_summary/i.test(toolName)) {
+    if (/compress_context|connect_account|usage_summary|headroom_/i.test(toolName)) {
       return empty();
     }
 
+    // Cursor: tool_output · Claude Code PostToolUse: tool_response · others: result/output
     let text = extractText(input.tool_output);
-    if (!text && typeof input.tool_output === "undefined" && input.result != null) {
-      text = extractText(input.result);
-    }
+    if (!text) text = extractText(input.tool_response);
+    if (!text) text = extractText(input.result);
+    if (!text) text = extractText(input.output);
+    if (!text) text = extractText(input.response);
     if (text.length < MIN_CHARS) return empty();
+
+    const agentHint =
+      process.env.SUPERCOMPRESS_AGENT_NAME ||
+      (input.session_id || input.cwd ? "Claude Code" : "Cursor");
 
     const apiKey = loadApiKey();
     if (!apiKey) return empty();
@@ -80,7 +92,7 @@ process.stdin.on("end", async () => {
           context: clipped,
           query,
           mode: "compiler",
-          coding_agent: "Cursor",
+          coding_agent: agentHint,
         }),
         signal: controller.signal,
       });

@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.6",
-  "description": "SuperCompress — MCP-first coding-agent plugin that compresses large context before inference. Optional local API proxy.",
+  "version": "0.5.7",
+  "description": "SuperCompress \u2014 MCP-first coding-agent plugin that compresses large context before inference. Optional local API proxy.",
   "keywords": [
     "supercompress",
     "prompt-compression",

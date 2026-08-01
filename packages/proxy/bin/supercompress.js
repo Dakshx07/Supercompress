@@ -54,7 +54,8 @@ function printHelp() {
   console.log("");
   console.log("  Commands:");
   console.log("  setup       One-time setup — account link, auto-detect agents, MCP plugin, optional proxy");
-  console.log("  plugin      Detect coding agents and install the SuperCompress MCP plugin (subscription-safe)");
+  console.log("  plugin      Auto-install MCP + hooks + agent instructions for every detected agent");
+  console.log("  wrap        Headroom-style: start proxy + launch agent (claude|codex|aider|…) with auto-compress");
   console.log("  connect     Link this install to your SuperCompress account");
   console.log("  start       Start the proxy server (if not running)");
   console.log("  stop        Stop the proxy server");
@@ -65,6 +66,7 @@ function printHelp() {
   console.log("");
   console.log("Examples:");
   console.log("  supercompress plugin");
+  console.log("  supercompress wrap claude");
   console.log("  supercompress setup");
   console.log("  supercompress status");
 }
@@ -93,33 +95,44 @@ async function main() {
       break;
     case "plugin": {
       const detector = require("../src/detector");
-      const found = detector.detectAll();
-      console.log(`  Detected ${found.length} coding agent(s):`);
-      for (const agent of found) {
+      const result = detector.installAutoPlugin();
+      console.log(`  Detected ${result.found.length} coding agent(s):`);
+      for (const agent of result.found) {
         console.log(`    ✓ ${agent.name}`);
       }
-      const mcpConfigured = detector.configureMcp();
-      const rulePath = detector.writeCursorRule();
-      const hooks = detector.writeCursorHooks();
-      const agentHooks = detector.writeAgentPromptHooks();
-      const cleared = detector.clearProxyOverrides();
-      if (mcpConfigured.length) {
-        console.log(`  ✓ MCP plugin installed for: ${mcpConfigured.join(", ")}`);
+      if (result.mcpConfigured.length) {
+        console.log(`  ✓ MCP plugin installed for: ${result.mcpConfigured.join(", ")}`);
       } else {
         console.log("  ○ No MCP-capable agent configs found to update.");
       }
-      console.log(`  ✓ Cursor rule written: ${rulePath}`);
-      console.log(`  ✓ Cursor hooks written: ${hooks.hooksPath}`);
-      console.log("    → beforeSubmitPrompt compresses EVERY user message → ~/.supercompress/inbox/");
+      console.log(`  ✓ Cursor rule written: ${result.rulePath}`);
+      console.log(`  ✓ Cursor hooks written: ${result.hooks.hooksPath}`);
+      console.log("    → beforeSubmitPrompt → ~/.supercompress/inbox/ every message");
       console.log("    → postToolUse auto-compresses large tool dumps");
-      console.log("    → sessionStart injects every-message policy");
-      if (agentHooks.installed.length) {
-        console.log(`  ✓ Every-message prompt hooks: ${agentHooks.installed.join(", ")}`);
+      if (result.agentHooks.installed.length) {
+        console.log(`  ✓ Prompt/tool hooks: ${result.agentHooks.installed.join(", ")}`);
       }
-      if (cleared.length) {
-        console.log(`  ✓ Cleared provider API-key proxy overrides: ${cleared.join(", ")}`);
+      if (result.instructions.length) {
+        console.log(`  ✓ Always-on instructions: ${result.instructions.join(", ")}`);
       }
-      console.log("  → Restart Cursor / Claude / Codex so hooks reload.");
+      if (result.cleared.length) {
+        console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
+      }
+      console.log("  → Restart agents so MCP/hooks reload.");
+      console.log("  → For Headroom-style full-traffic auto: `supercompress wrap claude` (or codex|aider|…)");
+      break;
+    }
+    case "wrap": {
+      const agent = process.argv[3];
+      const passthrough = process.argv.slice(4);
+      if (passthrough[0] === "--") passthrough.shift();
+      await require("../src/wrap").wrap(agent, passthrough, {
+        CONFIG_DIR,
+        CONFIG_PATH,
+        loadConfig,
+        startServer,
+        isHealthy,
+      });
       break;
     }
     case "setup":

@@ -2,6 +2,13 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## 0.5.7 — 2026-08-01
+
+- Auto MCP install across detected agents (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, Goose, Crush, Amp, Zed, Copilot, Roo, Cline, …).
+- Claude Code + Codex: `UserPromptSubmit` + `PostToolUse` hooks for every-message and tool-dump compression.
+- Always-on instruction files (CLAUDE.md / AGENTS.md / …) when those agents are present.
+- New `supercompress wrap <agent>` — Headroom-style proxy wrap for full-traffic auto-compress.
+
 ## 0.5.6 — 2026-07-31
 
 - Every-message compress threshold lowered (compress prompts ≥40 chars; tiny ones still write inbox).

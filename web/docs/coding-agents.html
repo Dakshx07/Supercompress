@@ -63,15 +63,17 @@
       </nav>
 
       <div class="docs-content">
-        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.2</p>
+        <p class="doc-kicker df-reveal">Coding agent plugin · v0.5.7</p>
         <h1 class="df-reveal">One install. Every agent. Fewer tokens.</h1>
-        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> to connect your account, detect coding agents, and install an MCP plugin that compresses large dumps before they burn tokens — Cursor, Claude Code, Codex, FreeBuff, OpenCode, and more. Keep your normal login. No provider API-key mode required.</p>
+        <p class="doc-lead df-reveal" style="--reveal-delay:80ms">Run <code>supercompress setup</code> to connect your account, detect coding agents, and auto-install MCP + hooks so large dumps get compressed before they burn tokens — Cursor, Claude Code, Codex, FreeBuff, OpenCode, Windsurf, Continue, Gemini, and more. Keep your normal login. Or use <code>supercompress wrap claude</code> for Headroom-style full-traffic auto-compress.</p>
 
         <div class="doc-callout doc-callout--tip">
           <span class="doc-callout-label">Install in 30 seconds</span>
           <pre style="margin:10px 0 0"><code><span class="kw">npm install</span> -g supercompress-proxy
-<span class="kw">supercompress</span> setup</code></pre>
-          <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> links your SuperCompress account, detects agents, and installs the MCP plugin. Re-run anytime with <code>supercompress plugin</code>.</p>
+<span class="kw">supercompress</span> setup
+<span class="cm"># full-traffic auto (optional):</span>
+<span class="kw">supercompress</span> wrap claude</code></pre>
+          <p style="margin-top:10px;margin-bottom:0">npm install alone does not rewrite agent configs. <code>setup</code> / <code>plugin</code> links your account, installs MCP on every detected host, and adds Cursor/Claude/Codex hooks. Re-run anytime with <code>supercompress plugin</code>.</p>
         </div>
 
         <div class="ca-stat-row df-reveal" style="--reveal-delay:120ms" aria-label="Highlights">
@@ -96,13 +98,17 @@
         </div>
 
         <h2 id="how-it-works">How it works</h2>
-        <p>Default path is <strong>MCP-first</strong>. Your agent keeps its normal Cursor / Claude / Codex / FreeBuff / OpenCode login. When context gets huge — file dumps, search results, logs, diffs — the agent calls <code>compress_context</code>. SuperCompress returns a smaller, evidence-preserving version metered to your plan.</p>
-        <pre><code><span class="cm"># Default — subscription / login safe</span>
-<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span>
-                 <span class="cm">MCP tool</span>              <span class="cm">~65% fewer tokens</span>
+        <p>Three layers, best together:</p>
+        <ol>
+          <li><strong>Hooks</strong> (Cursor / Claude Code / Codex) — every user message + large tool dumps auto-compress.</li>
+          <li><strong>MCP</strong> on every detected agent — <code>compress_context</code> for big dumps (subscription / login safe).</li>
+          <li><strong>Wrap</strong> — <code>supercompress wrap claude</code> starts the local proxy and launches the agent so <em>all</em> traffic is compressed (Headroom-style).</li>
+        </ol>
+        <pre><code><span class="cm"># Default — subscription / login safe (MCP + hooks)</span>
+<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="fn">hooks / compress_context</span> ──<span class="op">→</span> <span class="kw">SuperCompress API</span>
 
-<span class="cm"># Optional — only if you want localhost base-URL proxy mode</span>
-<span class="kw">Coding agent</span> ──<span class="op">→</span> <span class="str">localhost:8080/v1</span> ──<span class="op">→</span> <span class="kw">provider API</span></code></pre>
+<span class="cm"># Full-traffic auto</span>
+<span class="kw">supercompress wrap claude</span> ──<span class="op">→</span> <span class="str">localhost:8080</span> ──<span class="op">→</span> <span class="kw">provider</span></code></pre>
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Privacy</span>
@@ -112,7 +118,7 @@
         <h2 id="install">Install</h2>
         <pre><code><span class="kw">npm install</span> -g supercompress-proxy
 <span class="kw">supercompress</span> --version
-<span class="cm"># → 0.5.2</span></code></pre>
+<span class="cm"># → 0.5.7</span></code></pre>
         <p>Or one-shot without a global install:</p>
         <pre><code><span class="kw">npm install</span> supercompress-proxy
 <span class="kw">npm exec</span> supercompress setup</code></pre>
@@ -189,46 +195,70 @@
         </div>
       </div>
 
-      <footer class="df-footer" style="margin-top:-2px">
-        <div class="df-footer-inner">
-          <div class="df-footer-grid">
-            <div class="df-footer-brand">
-              <p class="df-footer-heading">SuperCompress</p>
-              <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · coding agent plugin.</p>
-              <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
-            </div>
-            <div class="df-footer-links">
-              <div>
-                <p class="df-footer-heading">Navigation</p>
-                <ul>
-                  <li><a href="/#impact">Savings</a></li>
-                  <li><a href="/#demo">Demo</a></li>
-                  <li><a href="/#coding-agents">Coding agents</a></li>
-                  <li><a href="/dashboard">Dashboard</a></li>
-                </ul>
-              </div>
-              <div>
-                <p class="df-footer-heading">Documentation</p>
-                <ul>
-                  <li><a href="/docs/">Documentation</a></li>
-                  <li><a href="/docs/coding-agents">Coding Agents</a></li>
-                  <li><a href="/docs/api-reference">API reference</a></li>
-                  <li><a href="/docs/quickstart">Quickstart</a></li>
-                </ul>
-              </div>
-              <div>
-                <p class="df-footer-heading">Social</p>
-                <ul>
-                  <li><a href="https://github.com/Supercompress/Supercompress">GitHub</a></li>
-                  <li><a href="https://www.npmjs.com/package/supercompress-proxy">npm</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <p class="df-footer-copy">© SuperCompress · MIT License</p>
+      <!-- SITE_FOOTER_START -->
+<footer class="df-footer">
+  <div class="df-footer-inner">
+    <div class="df-footer-grid">
+      <div class="df-footer-brand">
+        <a href="/" class="df-footer-lockup">
+          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+          <p class="df-footer-heading">Super<em>Compress</em></p>
+        </a>
+        <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · coding agent plugin.</p>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+      </div>
+      <div class="df-footer-links">
+        <div>
+          <p class="df-footer-heading">Navigation</p>
+          <ul>
+            <li><a href="/benchmarks">Benchmarks</a></li>
+            <li><a href="/#agents">Agents</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/docs/">Docs</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+          </ul>
         </div>
-        <div class="df-footer-watermark" aria-hidden="true"><p>SuperCompress</p></div>
-      </footer>
+        <div>
+          <p class="df-footer-heading">Resources</p>
+          <ul>
+            <li><a href="/playground">Playground</a></li>
+            <li><a href="/changelog">Changelog</a></li>
+            <li><a href="/token-compression">Token compression guide</a></li>
+            <li><a href="/benchmarks">Benchmarks</a></li>
+            <li><a href="/docs/coding-agents">Coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">SEO Guides</p>
+          <ul>
+            <li><a href="/prompt-compression">Prompt compression</a></li>
+            <li><a href="/token-compression">LLM token compression</a></li>
+            <li><a href="/context-compression">Context compression</a></li>
+            <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Documentation</p>
+          <ul>
+            <li><a href="/docs/">Documentation</a></li>
+            <li><a href="/docs/quickstart">Quickstart</a></li>
+            <li><a href="/docs/api-reference">API reference</a></li>
+            <li><a href="/docs/coding-agents">Coding agents</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="df-footer-heading">Social</p>
+          <ul>
+            <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="df-footer-copy">© SuperCompress · Non-commercial license</p>
+  </div>
+</footer>
+<!-- SITE_FOOTER_END -->
     </div>
   </div>
 

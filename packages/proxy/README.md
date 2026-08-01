@@ -5,9 +5,24 @@
 ```bash
 npm install -g supercompress-proxy
 supercompress setup
+# or just:
+supercompress plugin
 ```
 
-Install alone does **not** rewrite agent configs. `supercompress setup` (or `supercompress plugin`) is the opt-in step that detects agents and registers the MCP plugin.
+`setup` / `plugin` auto-detects agents and installs:
+- **MCP** on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, …)
+- **Hooks** for Cursor / Claude Code / Codex (every message + large tool dumps)
+- **Instruction files** so other agents still prefer `compress_context`
+
+### Full-traffic auto (Headroom-style)
+
+```bash
+supercompress wrap claude    # starts proxy + launches Claude with ANTHROPIC_BASE_URL
+supercompress wrap codex
+supercompress wrap aider
+```
+
+Install alone does **not** rewrite agent configs. `supercompress setup` (or `supercompress plugin`) is the opt-in step.
 
 Re-run detect anytime:
 

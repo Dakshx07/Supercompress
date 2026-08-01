@@ -177,26 +177,70 @@ function writeOpenCodeMcp(filePath) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 }
 
-function configureMcp() {
-  const configured = [];
-  for (const [name, filePath] of [
-    ["Cursor", path.join(HOME, ".cursor", "mcp.json")],
-    ["Gemini CLI", path.join(HOME, ".gemini", "settings.json")],
-    ["Claude Code", path.join(HOME, ".claude.json")],
-    // FreeBuff / Codebuff global MCP (https://codebuff.com/docs/tips/mcp-servers)
-    ["FreeBuff", path.join(HOME, ".agents", "mcp.json")],
-  ]) {
-    const claudeInstalled = name === "Claude Code" &&
-      (fs.existsSync(path.join(HOME, ".claude")) || commandExists("claude"));
-    const freebuffInstalled = name === "FreeBuff" && (
+function shouldWriteMcpTarget(name, filePath, detect) {
+  if (typeof detect === "function") return detect();
+  if (fs.existsSync(filePath)) return true;
+  const dir = path.dirname(filePath);
+  if (dir !== HOME && fs.existsSync(dir)) return true;
+  if (name === "Claude Code") {
+    return fs.existsSync(path.join(HOME, ".claude")) || commandExists("claude");
+  }
+  if (name === "FreeBuff") {
+    return (
       commandExists("freebuff") ||
       commandExists("codebuff") ||
       fs.existsSync(path.join(HOME, ".config", "manicode")) ||
       fs.existsSync(path.join(HOME, ".agents"))
     );
-    const agentDirectoryExists = path.dirname(filePath) !== HOME && fs.existsSync(path.dirname(filePath));
-    if (!fs.existsSync(filePath) && !claudeInstalled && !freebuffInstalled && !agentDirectoryExists) continue;
-    try { writeMcpJson(filePath); configured.push(name); } catch (err) {
+  }
+  return false;
+}
+
+function configureMcp() {
+  const configured = [];
+
+  // Standard mcpServers JSON (Cursor-style) — write for every detected host.
+  const mcpJsonTargets = [
+    ["Cursor", path.join(HOME, ".cursor", "mcp.json"), () =>
+      commandExists("cursor") || appExists("Cursor") || fs.existsSync(path.join(HOME, ".cursor"))],
+    ["Gemini CLI", path.join(HOME, ".gemini", "settings.json"), () =>
+      commandExists("gemini") || fs.existsSync(path.join(HOME, ".gemini"))],
+    ["Claude Code", path.join(HOME, ".claude.json"), () =>
+      commandExists("claude") || fs.existsSync(path.join(HOME, ".claude"))],
+    ["FreeBuff", path.join(HOME, ".agents", "mcp.json"), null],
+    ["Windsurf", path.join(HOME, ".codeium", "windsurf", "mcp_config.json"), () =>
+      commandExists("windsurf") || appExists("Windsurf") || fs.existsSync(path.join(HOME, ".codeium", "windsurf"))],
+    ["Windsurf (alt)", path.join(HOME, ".windsurf", "mcp.json"), () =>
+      fs.existsSync(path.join(HOME, ".windsurf"))],
+    ["Continue", path.join(HOME, ".continue", "config.json"), () =>
+      fs.existsSync(path.join(HOME, ".continue"))],
+    ["Goose", path.join(HOME, ".config", "goose", "config.yaml"), () =>
+      commandExists("goose") || fs.existsSync(path.join(HOME, ".config", "goose"))],
+    ["Crush", path.join(HOME, ".config", "crush", "mcp.json"), () =>
+      commandExists("crush") || fs.existsSync(path.join(HOME, ".config", "crush"))],
+    ["Amp", path.join(HOME, ".amp", "mcp.json"), () =>
+      commandExists("amp") || fs.existsSync(path.join(HOME, ".amp"))],
+    ["Zed AI", path.join(HOME, ".config", "zed", "settings.json"), () =>
+      commandExists("zed") || fs.existsSync(path.join(HOME, ".config", "zed"))],
+    ["VS Code Copilot", path.join(HOME, ".copilot", "mcp.json"), () =>
+      commandExists("copilot") || commandExists("github-copilot") || fs.existsSync(path.join(HOME, ".copilot"))],
+    ["Roo Code", path.join(HOME, ".roo", "mcp.json"), () =>
+      commandExists("roo") || fs.existsSync(path.join(HOME, ".roo"))],
+    ["Cline", path.join(HOME, ".cline", "mcp.json"), () =>
+      fs.existsSync(path.join(HOME, ".cline"))],
+  ];
+
+  for (const [name, filePath, detect] of mcpJsonTargets) {
+    if (!shouldWriteMcpTarget(name, filePath, detect)) continue;
+    try {
+      // Goose uses YAML — skip JSON writer (instructions via wrap + AGENTS.md)
+      if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
+        continue;
+      }
+      backupFile(filePath);
+      writeMcpJson(filePath);
+      configured.push(name);
+    } catch (err) {
       console.error(`  ✗ Failed to configure ${name} MCP: ${err.message}`);
     }
   }
@@ -213,6 +257,7 @@ function configureMcp() {
   if (openCodeInstalled) {
     const target = openCodePaths.find((p) => fs.existsSync(p)) || openCodePaths[0];
     try {
+      backupFile(target);
       writeOpenCodeMcp(target);
       configured.push("OpenCode");
     } catch (err) {
@@ -224,6 +269,7 @@ function configureMcp() {
   if (fs.existsSync(codexPath) || commandExists("codex")) {
     try {
       fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+      backupFile(codexPath);
       let raw = fs.existsSync(codexPath) ? fs.readFileSync(codexPath, "utf8") : "";
       const block =
         `[mcp_servers.supercompress]\n` +
@@ -934,14 +980,14 @@ function writeCursorHooks() {
   };
 
   ensureHook("sessionStart", { command: sessionCmd, timeout: 10 });
+  // Cursor beforeSubmitPrompt — no matcher (fires on every user submit)
   ensureHook("beforeSubmitPrompt", {
     command: beforeCmd,
-    matcher: "UserPromptSubmit",
     timeout: 20,
   });
   ensureHook("postToolUse", {
     command: postCmd,
-    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*",
+    matcher: "Read|Shell|Grep|Task|AwaitShell|WebFetch|WebSearch|MCP:.*|Edit|Write|Glob",
     timeout: 20,
   });
 
@@ -949,82 +995,202 @@ function writeCursorHooks() {
   return { hooksPath, hooksDir };
 }
 
-/**
- * Install Claude Code + Codex UserPromptSubmit hooks for every-message inject.
- */
-function writeAgentPromptHooks() {
+function syncHookScripts() {
   const hooksDir = path.join(HOME, ".cursor", "hooks", "supercompress");
   fs.mkdirSync(hooksDir, { recursive: true });
-  const src = path.join(__dirname, "cursor-hooks", "user-prompt-submit.js");
-  const dest = path.join(hooksDir, "user-prompt-submit.js");
-  if (fs.existsSync(src)) {
+  const srcDir = path.join(__dirname, "cursor-hooks");
+  for (const name of [
+    "session-start.js",
+    "post-tool-compress.js",
+    "before-submit.js",
+    "user-prompt-submit.js",
+    "compress-prompt-lib.js",
+  ]) {
+    const src = path.join(srcDir, name);
+    const dest = path.join(hooksDir, name);
+    if (!fs.existsSync(src)) continue;
     fs.copyFileSync(src, dest);
-    try {
-      fs.chmodSync(dest, 0o755);
-    } catch {}
+    try { fs.chmodSync(dest, 0o755); } catch {}
   }
-  const cmd = dest;
+  return hooksDir;
+}
+
+function upsertClaudeStyleHook(data, eventName, command, matcher) {
+  data.hooks = data.hooks || {};
+  const groups = Array.isArray(data.hooks[eventName]) ? data.hooks[eventName] : [];
+  const filtered = groups.filter((g) => {
+    const hooks = (g && g.hooks) || [];
+    return !hooks.some((h) => String(h.command || "").includes("supercompress"));
+  });
+  const entry = {
+    hooks: [{ type: "command", command, timeout: 20 }],
+  };
+  if (matcher) entry.matcher = matcher;
+  filtered.push(entry);
+  data.hooks[eventName] = filtered;
+}
+
+/**
+ * Install Claude Code + Codex (+ Gemini when present) every-message + tool hooks.
+ */
+function writeAgentPromptHooks() {
+  const hooksDir = syncHookScripts();
+  const promptCmd = path.join(hooksDir, "user-prompt-submit.js");
+  const postCmd = path.join(hooksDir, "post-tool-compress.js");
   const installed = [];
 
-  // Claude Code ~/.claude/settings.json
+  // Claude Code ~/.claude/settings.json — prompt + PostToolUse (true auto on tool dumps)
   const claudePath = path.join(HOME, ".claude", "settings.json");
-  try {
-    let data = {};
-    if (fs.existsSync(claudePath)) {
-      data = JSON.parse(fs.readFileSync(claudePath, "utf8"));
+  if (commandExists("claude") || fs.existsSync(path.join(HOME, ".claude")) || fs.existsSync(claudePath)) {
+    try {
+      let data = {};
+      if (fs.existsSync(claudePath)) data = JSON.parse(fs.readFileSync(claudePath, "utf8"));
+      backupFile(claudePath);
+      upsertClaudeStyleHook(data, "UserPromptSubmit", promptCmd);
+      upsertClaudeStyleHook(
+        data,
+        "PostToolUse",
+        `SUPERCOMPRESS_AGENT_NAME="Claude Code" ${postCmd}`,
+        ".*"
+      );
+      fs.mkdirSync(path.dirname(claudePath), { recursive: true });
+      fs.writeFileSync(claudePath, `${JSON.stringify(data, null, 2)}\n`);
+      installed.push("Claude Code");
+    } catch (err) {
+      console.error(`  ⚠ Claude Code hooks: ${err.message}`);
     }
-    data.hooks = data.hooks || {};
-    const groups = Array.isArray(data.hooks.UserPromptSubmit)
-      ? data.hooks.UserPromptSubmit
-      : [];
-    const filtered = groups.filter((g) => {
-      const hooks = (g && g.hooks) || [];
-      return !hooks.some((h) => String(h.command || "").includes("supercompress"));
-    });
-    filtered.push({
-      hooks: [{ type: "command", command: cmd, timeout: 20 }],
-    });
-    data.hooks.UserPromptSubmit = filtered;
-    fs.mkdirSync(path.dirname(claudePath), { recursive: true });
-    fs.writeFileSync(claudePath, `${JSON.stringify(data, null, 2)}\n`);
-    installed.push("Claude Code");
-  } catch (err) {
-    console.error(`  ⚠ Claude Code hooks: ${err.message}`);
   }
 
   // Codex ~/.codex/hooks.json
   const codexPath = path.join(HOME, ".codex", "hooks.json");
-  try {
-    let data = { hooks: {} };
-    if (fs.existsSync(codexPath)) {
-      data = JSON.parse(fs.readFileSync(codexPath, "utf8"));
+  if (commandExists("codex") || fs.existsSync(path.join(HOME, ".codex")) || fs.existsSync(codexPath)) {
+    try {
+      let data = { hooks: {} };
+      if (fs.existsSync(codexPath)) data = JSON.parse(fs.readFileSync(codexPath, "utf8"));
+      backupFile(codexPath);
+      upsertClaudeStyleHook(data, "UserPromptSubmit", `SUPERCOMPRESS_AGENT_NAME=Codex ${promptCmd}`);
+      upsertClaudeStyleHook(
+        data,
+        "PostToolUse",
+        `SUPERCOMPRESS_AGENT_NAME=Codex ${postCmd}`,
+        ".*"
+      );
+      fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+      fs.writeFileSync(codexPath, `${JSON.stringify(data, null, 2)}\n`);
+      installed.push("Codex");
+    } catch (err) {
+      console.error(`  ⚠ Codex hooks: ${err.message}`);
     }
-    data.hooks = data.hooks || {};
-    const groups = Array.isArray(data.hooks.UserPromptSubmit)
-      ? data.hooks.UserPromptSubmit
-      : [];
-    const filtered = groups.filter((g) => {
-      const hooks = (g && g.hooks) || [];
-      return !hooks.some((h) => String(h.command || "").includes("supercompress"));
-    });
-    filtered.push({
-      hooks: [
-        {
-          type: "command",
-          command: `SUPERCOMPRESS_AGENT_NAME=Codex ${cmd}`,
-          timeout: 20,
-        },
-      ],
-    });
-    data.hooks.UserPromptSubmit = filtered;
-    fs.mkdirSync(path.dirname(codexPath), { recursive: true });
-    fs.writeFileSync(codexPath, `${JSON.stringify(data, null, 2)}\n`);
-    installed.push("Codex");
-  } catch (err) {
-    console.error(`  ⚠ Codex hooks: ${err.message}`);
   }
 
-  return { cmd, installed };
+  // Gemini CLI — settings.json may accept hooks in newer builds; also ensure MCP
+  const geminiPath = path.join(HOME, ".gemini", "settings.json");
+  if (commandExists("gemini") || fs.existsSync(path.join(HOME, ".gemini"))) {
+    try {
+      let data = {};
+      if (fs.existsSync(geminiPath)) data = JSON.parse(fs.readFileSync(geminiPath, "utf8"));
+      backupFile(geminiPath);
+      if (!data.mcpServers) data.mcpServers = {};
+      // MCP already written by configureMcp; add soft instruction flag
+      data.supercompress = { ...(data.supercompress || {}), auto: true };
+      fs.mkdirSync(path.dirname(geminiPath), { recursive: true });
+      fs.writeFileSync(geminiPath, `${JSON.stringify(data, null, 2)}\n`);
+      installed.push("Gemini CLI");
+    } catch (err) {
+      console.error(`  ⚠ Gemini CLI: ${err.message}`);
+    }
+  }
+
+  return { cmd: promptCmd, postCmd, installed };
+}
+
+/**
+ * Always-on instruction files so agents that lack hooks still prefer compress_context.
+ */
+function writeAgentInstructionFiles() {
+  const written = [];
+  const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
+  const body = [
+    "# SuperCompress (always on)",
+    "",
+    "Before spending tokens on large dumps (files, search, logs, diffs, long history):",
+    "",
+    "1. If `" + inboxPath + "` exists, Read it first — it is the compressed digest for this turn.",
+    "2. Otherwise call MCP `compress_context` with `context`=<dump> and `query`=<current task>.",
+    "3. Prefer the compressed result for reasoning. Keep normal login — no provider API-key mode required.",
+    "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
+    "",
+  ].join("\n");
+
+  const targets = [
+    ["Claude Code", path.join(HOME, ".claude", "CLAUDE.md")],
+    ["Codex", path.join(HOME, ".codex", "AGENTS.md")],
+    ["Aider", path.join(HOME, ".aider", "CONVENTIONS.md")],
+    ["Goose", path.join(HOME, ".config", "goose", "AGENTS.md")],
+    ["OpenCode", path.join(HOME, ".config", "opencode", "AGENTS.md")],
+  ];
+
+  for (const [name, filePath] of targets) {
+    try {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir) && name !== "Claude Code" && name !== "Codex") {
+        // Only create instruction files when the agent home already exists
+        if (!fs.existsSync(path.dirname(dir)) && !commandExists(name.split(" ")[0].toLowerCase())) {
+          continue;
+        }
+      }
+      const existsAgent =
+        fs.existsSync(dir) ||
+        (name === "Claude Code" && (commandExists("claude") || fs.existsSync(path.join(HOME, ".claude")))) ||
+        (name === "Codex" && (commandExists("codex") || fs.existsSync(path.join(HOME, ".codex")))) ||
+        (name === "Aider" && commandExists("aider")) ||
+        (name === "Goose" && commandExists("goose")) ||
+        (name === "OpenCode" && commandExists("opencode"));
+      if (!existsAgent) continue;
+
+      fs.mkdirSync(dir, { recursive: true });
+      let next = body;
+      if (fs.existsSync(filePath)) {
+        const prev = fs.readFileSync(filePath, "utf8");
+        if (prev.includes("SuperCompress (always on)")) {
+          next = prev.replace(
+            /# SuperCompress \(always on\)[\s\S]*?(?=\n# |\n## |$)/,
+            body.trim() + "\n\n"
+          );
+        } else {
+          next = `${prev.trimEnd()}\n\n${body}`;
+        }
+      }
+      fs.writeFileSync(filePath, next.endsWith("\n") ? next : `${next}\n`);
+      written.push(name);
+    } catch (err) {
+      console.error(`  ⚠ ${name} instructions: ${err.message}`);
+    }
+  }
+  return written;
+}
+
+/**
+ * Full auto install: MCP everywhere detected + Cursor/Claude/Codex hooks + instruction files.
+ * Headroom-parity path for true traffic auto is `supercompress wrap <agent>`.
+ */
+function installAutoPlugin() {
+  const found = detectAll();
+  const mcpConfigured = configureMcp();
+  const rulePath = writeCursorRule();
+  const hooks = writeCursorHooks();
+  const agentHooks = writeAgentPromptHooks();
+  const instructions = writeAgentInstructionFiles();
+  const cleared = clearProxyOverrides();
+  return {
+    found,
+    mcpConfigured,
+    rulePath,
+    hooks,
+    agentHooks,
+    instructions,
+    cleared,
+  };
 }
 
 module.exports = {
@@ -1039,4 +1205,6 @@ module.exports = {
   writeCursorRule,
   writeCursorHooks,
   writeAgentPromptHooks,
+  writeAgentInstructionFiles,
+  installAutoPlugin,
 };
