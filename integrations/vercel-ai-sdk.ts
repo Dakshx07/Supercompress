@@ -42,7 +42,7 @@ interface CompressResponse {
   compressed_text: string;
   original_tokens: number;
   kept_tokens: number;
-  kv_savings_pct: number;
+  tokens_saved_pct: number;
   policy_name: string;
 }
 
@@ -123,13 +123,13 @@ export class SuperCompressAI {
     if (this.verbose) {
       console.log(
         `SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok ` +
-        `(${compressed.kv_savings_pct.toFixed(1)}%% saved)`
+        `(${compressed.tokens_saved_pct.toFixed(1)}%% saved)`
       );
     }
 
     // Rebuild messages with compressed context
     const compressedContent = [
-      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${compressed.kv_savings_pct.toFixed(1)}%% saved]`,
+      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${compressed.tokens_saved_pct.toFixed(1)}%% saved]`,
       "",
       compressed.compressed_text,
       "",

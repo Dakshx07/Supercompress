@@ -3,40 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SuperCompress vs Headroom: Prompt Compression Compared — SuperCompress</title>
-  <meta name="description" content="Detailed comparison of SuperCompress vs Headroom for LLM prompt compression. SuperCompress uses a tiny ~5K-param CPU policy with true query-awareness. No model downloads. No GPU. No ONNX Runtime. No warmup." />
-  <meta property="og:title" content="SuperCompress vs Headroom: The Real Differences in Prompt Compression" />
-  <meta property="og:description" content="SuperCompress is a ~5K-param CPU policy — 25,000x smaller than Headroom's ModernBERT model. True query-awareness, 100% oracle recall, no model downloads, no ONNX Runtime, no warmup." />
+  <title>SuperCompress vs Headroom (2026): Better Prompt Compression for Agents &amp; APIs</title>
+  <meta name="description" content="SuperCompress vs Headroom compared: query-aware compression, MCP coding-agent install, and held-out ≥98% answer keep. See why teams switch from Headroom." />
+  <meta name="keywords" content="SuperCompress vs Headroom, Headroom alternative, Headroom AI alternative, prompt compression comparison, context compression vs Headroom, coding agent compression" />
+  <meta property="og:title" content="SuperCompress vs Headroom (2026): Who Keeps the Answer?" />
+  <meta property="og:description" content="Query-aware compression + MCP for Cursor/Claude/Codex vs Headroom’s content-type stack. Held-out answer gates ≥98%." />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta property="og:url" content="https://supercompress.dev/supercompress-vs-headroom" />
+  <meta property="og:url" content="https://www.supercompress.dev/supercompress-vs-headroom" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <meta name="twitter:title" content="SuperCompress vs Headroom: Real Prompt Compression Comparison" />
-  <meta name="twitter:description" content="~5K params vs ModernBERT. True query-awareness vs content-type detection. No warmup vs model download. The real differences." />
+  <meta name="twitter:title" content="SuperCompress vs Headroom (2026)" />
+  <meta name="twitter:description" content="Query-aware compression, MCP agents, held-out ≥98% answer keep — SuperCompress vs Headroom." />
   <meta name="twitter:site" content="@supercompress" />
-  <link rel="canonical" href="https://supercompress.dev/supercompress-vs-headroom" />
+  <link rel="canonical" href="https://www.supercompress.dev/supercompress-vs-headroom" />
+  <meta property="article:published_time" content="2026-07-03" />
+  <meta property="article:modified_time" content="2026-08-02" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=120" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
   <style>
     .seo-page { max-width: 920px; margin: 0 auto; padding: 72px 24px 96px; }
     .seo-kicker { color: var(--brand); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
-    .seo-page h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(2.25rem, 6vw, 4.25rem); line-height: 1.02; letter-spacing: -.035em; max-width: 840px; margin: 0 0 18px; }
+    .seo-page h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(2.25rem, 6vw, 3.6rem); line-height: 1.02; letter-spacing: -.035em; max-width: 900px; margin: 0 0 18px; }
     .seo-lead { font-size: clamp(1.05rem, 2vw, 1.28rem); line-height: 1.62; color: var(--text-body); max-width: 760px; }
-    .seo-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 52px; }
-    .seo-nav a { border: .5px solid var(--card-border); border-radius: 6px; padding: 9px 15px; color: var(--text-primary); text-decoration: none; background: #fff; font-size: 14px; }
-    .seo-nav a:hover { border-color: var(--brand); color: var(--brand); }
     .seo-section { margin-top: 44px; }
     .seo-section h2 { font-family: var(--serif); font-weight: 300; font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.02em; margin: 0 0 14px; }
     .seo-section p, .seo-section li { color: var(--text-body); line-height: 1.68; font-size: 15px; }
     .seo-section h3 { font-size: 1.1rem; font-weight: 500; margin: 20px 0 10px; color: var(--text-primary); }
     .seo-table { width: 100%; border-collapse: collapse; margin: 18px 0; background: #fff; border: .5px solid var(--card-border); }
-    .seo-table th, .seo-table td { text-align: left; padding: 14px; border-bottom: .5px solid var(--card-border); vertical-align: top; }
+    .seo-table th, .seo-table td { text-align: left; padding: 14px; border-bottom: .5px solid var(--card-border); vertical-align: top; font-size: 14px; }
     .seo-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
     pre { overflow-x: auto; background: #0f172a; color: #e5e7eb; padding: 18px; border-radius: 6px; font-size: 13px; line-height: 1.55; }
     .sc-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; }
@@ -45,19 +46,48 @@
     .seo-cta { margin-top: 46px; padding: 28px; border-radius: 6px; background: var(--feat-blue); border: .5px solid var(--card-border); }
     .seo-author { margin: 8px 0 24px; font-size: 13px; color: var(--text-muted); }
     .seo-author strong { color: var(--text-primary); }
+    .seo-verdict { margin: 28px 0; padding: 20px 22px; border: .5px solid var(--card-border); border-left: 3px solid var(--brand); background: #fff; }
     @media (max-width: 760px) { .seo-page { padding-top: 42px; } }
   </style>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "SuperCompress vs Headroom: The Real Differences in Prompt Compression",
-    "description": "Detailed technical comparison: SuperCompress uses a ~5K-param CPU policy with true query-awareness. Headroom uses a ModernBERT model with content-type detection. See the key differences in architecture, query-awareness, deployment, and performance.",
+    "headline": "SuperCompress vs Headroom (2026): Better Prompt Compression for Agents & APIs",
+    "description": "Comparison of SuperCompress and Headroom for LLM prompt compression, coding agents, and API cost reduction.",
     "datePublished": "2026-07-03",
-    "dateModified": "2026-07-03",
-    "author": {"@type": "Person", "name": "Arjun Shah", "sameAs": "https://www.linkedin.com/in/arjunkshah", "url": "https://www.linkedin.com/in/arjunkshah"},
-    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://supercompress.dev/assets/img/logo-chevrons.png"}},
-    "mainEntityOfPage": "https://supercompress.dev/supercompress-vs-headroom"
+    "dateModified": "2026-08-02",
+    "author": {"@type": "Person", "name": "Arjun Shah", "url": "https://www.linkedin.com/in/arjunkshah"},
+    "publisher": {"@type": "Organization", "name": "SuperCompress", "logo": {"@type": "ImageObject", "url": "https://www.supercompress.dev/assets/img/logo-chevrons.png"}},
+    "mainEntityOfPage": "https://www.supercompress.dev/supercompress-vs-headroom"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is SuperCompress better than Headroom?",
+        "acceptedAnswer": {"@type": "Answer", "text": "For most API and coding-agent workloads, yes: SuperCompress is query-aware, ships MCP install for Cursor/Claude/Codex without provider API-key mode, and publishes held-out answer containment ≥98% with ≥55% token cut. Headroom leans more on content-type / structure heuristics and its own proxy workflows. Compare product fit and answer keep — not parameter-count marketing."}
+      },
+      {
+        "@type": "Question",
+        "name": "What is the best Headroom alternative in 2026?",
+        "acceptedAnswer": {"@type": "Answer", "text": "SuperCompress is the Headroom alternative built for query-aware compression, serverless-friendly installs, hosted API, and MCP-first coding agents. Install with npm i -g supercompress-proxy && npx supercompress setup."}
+      },
+      {
+        "@type": "Question",
+        "name": "Does SuperCompress support Cursor and Claude Code like Headroom?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes. SuperCompress auto-detects coding agents and installs an MCP plugin plus hooks so every submit with context is compressed (tiny asks skip) while you keep your normal login. Optional wrap mode covers full-traffic proxy use."}
+      },
+      {
+        "@type": "Question",
+        "name": "What actually differs between SuperCompress and Headroom?",
+        "acceptedAnswer": {"@type": "Answer", "text": "Query-aware evidence selection (keep what answers this question), MCP coding-agent install without forcing provider API-key mode, and published held-out answer-containment gates — versus content-type heuristics and proxy-centric workflows. Do not compare them by parameter counts."}
+      }
+    ]
   }
   </script>
 </head>
@@ -75,11 +105,9 @@
           <a href="/#agents">Agents</a>
           <a href="/blog">Blog</a>
           <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
@@ -89,6 +117,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -97,149 +126,166 @@
       <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-
-  <main class="seo-page">
-    <p class="seo-kicker">Comparison guide</p>
+<main class="seo-page">
+    <p class="seo-kicker">Headroom alternative · Updated 2026-08-02</p>
     <h1>SuperCompress vs Headroom</h1>
-    <p class="seo-lead">Both compress context before LLM inference. But the architecture, query-awareness, and deployment story are radically different. Here is the real comparison — not marketing claims, but architecture-level differences that matter for your stack.</p>
-    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> — Creator of SuperCompress — Updated 2026-07-03</p>
-<section class="seo-section">
-      <h2>The fundamental difference: architecture</h2>
-      <p>The most important difference between SuperCompress and Headroom is at the architecture level. SuperCompress uses a learned policy of approximately <strong>5,000 parameters</strong> — small enough to load and run in microseconds. Headroom uses a <strong>ModernBERT-based model</strong> (165M+ parameters) with ONNX Runtime for efficient local execution.</p>
-      <p>This difference in architecture cascades into every aspect of the two tools: installation complexity, deployment options, latency, query-awareness, and cold start behavior.</p>
+    <p class="seo-lead">Looking for a <strong>Headroom alternative</strong> that keeps answers while cutting tokens — especially for Cursor, Claude Code, and Codex? SuperCompress is query-aware, MCP-first, and measured on held-out answer containment (≥98%), not just “% saved.”</p>
+    <p class="seo-author">By <strong><a href="https://www.linkedin.com/in/arjunkshah" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">Arjun Shah</a></strong> — Creator of SuperCompress — Updated 2026-08-02</p>
+
+    <div class="seo-verdict">
+      <strong>Verdict:</strong> Choose SuperCompress for query-aware compression, coding-agent MCP (keep your login), hosted API, and published held-out answer gates. Choose Headroom if you specifically want their content-type/AST stack and already live in their proxy workflow.
+    </div>
+
+    <nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+  <a href="/reduce-llm-costs">Reduce LLM costs</a>
+  <a href="/token-compression">Token compression</a>
+  <a href="/prompt-compression">Prompt compression</a>
+  <a href="/context-compression">Context compression</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+  <a href="/supercompress-vs-headroom" aria-current="page">vs Headroom</a>
+  <a href="/benchmarks">Benchmarks</a>
+</nav>
+<section class="seo-proof" id="held-out-proof">
+  <h2>Held-out proof (updated 2026-08-01)</h2>
+  <p>Gates: ≥98% gold-answer containment, ≥55% mean cut, ≥55% token-weighted cut. No restore-to-98% floor.</p>
+  <table class="seo-table seo-proof-table">
+    <thead>
+      <tr><th>Suite</th><th>Answer kept</th><th>Mean cut</th><th>TW cut</th><th>Gates</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Real (seed 4242)</td><td><strong>98.4%</strong> (61/62)</td><td>57.8%</td><td>64.7%</td><td>pass</td></tr>
+      <tr><td>Fresh4 (seed 9091)</td><td><strong>100%</strong> (57/57)</td><td>66.1%</td><td>68.8%</td><td>pass</td></tr>
+      <tr><td>Fresh5 (seed 6161)</td><td><strong>100%</strong> (62/62)</td><td>57.8%</td><td>61.6%</td><td>pass</td></tr>
+      <tr><td>Fresh6 cold (seed 3377)</td><td><strong>98.6%</strong> (70/71)</td><td>68.2%</td><td>72.5%</td><td>pass</td></tr>
+    </tbody>
+  </table>
+  <p>Primary bundle (real + fresh4 + fresh5): <strong>99.4%</strong> pooled answer keep (180/181), <strong>65.4%</strong> pooled token-weighted cut. Full tables: <a href="/benchmarks">benchmarks</a>.</p>
+</section>
+<section class="seo-vs-hr">
+  <h2>Why teams pick SuperCompress over Headroom</h2>
+  <ul>
+    <li><strong>True query-awareness</strong> — scores blocks against the question; Headroom leans on content-type heuristics.</li>
+    <li><strong>Coding-agent MCP first</strong> — <code>npx supercompress setup</code> for Cursor, Claude Code, Codex; keep your login. No provider API-key mode required.</li>
+    <li><strong>Agent + API ready</strong> — hosted compress API, open-source library, and MCP install for coding agents — not only a local CLI workflow.</li>
+    <li><strong>Held-out answer gates</strong> — we publish answer containment on LongBench + OOD mixes, not only “token % saved.”</li>
+  </ul>
+  <p><a href="/supercompress-vs-headroom" aria-current="page">Read the full SuperCompress vs Headroom comparison →</a></p>
+</section>
+
+
+    <section class="seo-section">
+      <h2>Quick comparison table</h2>
       <table class="seo-table">
         <thead>
           <tr><th>Factor</th><th><span class="sc-badge">SuperCompress</span></th><th><span class="hr-badge">Headroom</span></th><th>Winner</th></tr>
         </thead>
         <tbody>
-          <tr><td>Policy/model size</td><td><strong>~5K parameters</strong></td><td>~165M+ (ModernBERT)</td><td class="win">SuperCompress — 25,000x smaller</td></tr>
-          <tr><td>Model download required</td><td><strong>None</strong> — pip install is all</td><td>Yes — downloads ModernBERT weights from HuggingFace</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Runtime dependency</td><td><strong>None</strong> — pure Python/numpy</td><td>ONNX Runtime required for acceptable performance</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Warmup required</td><td><strong>No</strong> — ready instantly</td><td>Yes — recommended at provision time</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Query-awareness</td><td><strong>True query-awareness</strong> — scores every line against the actual question</td><td>Content-type detection (JSON, code, text) — no per-query scoring</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Oracle recall guarantee</td><td><strong>~100%</strong> — answer line guaranteed to be kept</td><td>Not guaranteed — content-type compression doesn't know what the question is</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Latency (cold start)</td><td><strong>~60ms</strong></td><td>~200ms+ (model load + warmup)</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Latency (warm)</td><td><strong>~60ms</strong></td><td>~100-200ms (ONNX Runtime inference)</td><td class="win">SuperCompress</td></tr>
-          <tr><td>GPU required</td><td><strong>No</strong> — CPU only</td><td>No (ONNX on CPU), but benefits from GPU</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Serverless compatible</td><td><strong>Yes</strong> — Lambda, Cloudflare Workers, Edge</td><td>Difficult — 165M+ model too large for serverless</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Install size</td><td><strong>~200KB</strong></td><td>~500MB+ (model weights + ONNX runtime)</td><td class="win">SuperCompress</td></tr>
-          <tr><td>Hosted API</td><td><strong>Yes</strong> — free tier included</td><td>No — local-only</td><td class="win">SuperCompress</td></tr>
-          <tr><td>License</td><td><strong>MIT</strong></td><td>Apache 2.0</td><td class="win">Tie — both permissive</td></tr>
-          <tr><td>CI / pipelines</td><td><strong>Yes</strong> — CI pipeline integration</td><td>No</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Query-awareness</td><td><strong>Scores blocks against the actual question</strong></td><td>Strong content-type / structure heuristics</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Answer quality metric</td><td><strong>Held-out gold-answer containment ≥98%</strong> on LongBench + OOD</td><td>Primarily compression / product demos</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Coding agents</td><td><strong>MCP + every-submit hooks</strong> (context compress; tiny asks skip; keep login)</td><td>Agent wrapping / proxy workflows</td><td class="win">SuperCompress for login-safe every-submit</td></tr>
+          <tr><td>Provider API-key mode</td><td><strong>Not required</strong> — keep subscription login</td><td>Often proxy / base-URL oriented</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Hosted API</td><td><strong>Yes</strong> — free tier + pay-as-you-go</td><td>Primarily local / product-specific</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Eval transparency</td><td><strong>Public held-out answer keep + cut gates</strong></td><td>Fewer published answer-containment suites</td><td class="win">SuperCompress</td></tr>
+          <tr><td>Open source</td><td><strong>MIT</strong></td><td>Apache 2.0</td><td class="win">Tie</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="seo-section">
-      <h2>Query-awareness: the architectural advantage</h2>
-      <p>This is the most important difference and it deserves its own section.</p>
-      <p><strong>Headroom</strong> detects the <em>type</em> of content — JSON, code (AST), or plain text — and applies a compressor optimized for that type. It does not consider the user's question when deciding what to keep. A JSON compressor compresses JSON regardless of whether the JSON fields are relevant to the current query.</p>
-      <p><strong>SuperCompress</strong> scores every line of context against the <em>actual question the user is asking</em>. A line about account settings is kept when the question is about billing, because the account type determines billing options. The same line is removed when the question is about feature requests, because account type is irrelevant.</p>
-      <p>This matters because in practice, 60-80% of context tokens are irrelevant to any specific question. Query-aware compression removes the right 60-80%. Content-type compression removes based on structure, which may keep irrelevant content and remove relevant content.</p>
+      <h2>Held-out quality: we publish the hard number</h2>
+      <p>Token cut without answer keep is marketing. SuperCompress gates on <strong>whether the gold answer string survives compression</strong> on brand-new LongBench mixes + buried-evidence OOD haystacks:</p>
+      <ul>
+        <li>Primary bundle: <strong>99.4%</strong> answer keep (180/181), <strong>65.4%</strong> pooled TW cut</li>
+        <li>Fresh4 / Fresh5: <strong>100%</strong> answer keep</li>
+        <li>Fresh6 cold: <strong>98.6%</strong> with <strong>72.5%</strong> TW cut</li>
+      </ul>
+      <p>Full tables on <a href="/benchmarks">benchmarks</a>. That is the bar Headroom alternatives should clear — and most don’t publish.</p>
     </section>
 
     <section class="seo-section">
-      <h2>The cold start problem</h2>
-      <p>Headroom's ModernBERT model needs to be loaded into memory before it can process prompts. The recommended setup warms up the model and tokenizer at provision time. This adds cold start latency — problematic in serverless environments where instances are created on demand.</p>
-      <p>SuperCompress has <strong>zero warmup</strong>. The ~5K-parameter policy is embedded in the Python package. The first call to <code>compressor.compress()</code> runs at full speed — ~60ms. No model loading, no tokenizer initialization, no ONNX runtime setup.</p>
-      <p>This makes SuperCompress ideal for serverless functions (AWS Lambda, Cloudflare Workers, Vercel Edge Functions) where cold starts are frequent and the execution environment is recycled between invocations.</p>
+      <h2>Coding agents: MCP without forcing API keys</h2>
+      <p>Headroom is often positioned around wrap/proxy flows. SuperCompress’s default path is different:</p>
+<pre><code>npm install -g supercompress-proxy
+npx supercompress setup</code></pre>
+      <p>That detects agents, installs MCP + hooks, and compresses <strong>every submit with context</strong> (Headroom-parity; tiny asks skip) <em>before</em> tokens burn — while you keep Cursor / Claude / Codex login. Optional <code>supercompress wrap claude</code> covers full-traffic proxy when you want it. Docs: <a href="https://docs.supercompress.dev/coding-agents">coding agents</a>.</p>
     </section>
 
     <section class="seo-section">
-      <h2>Deployment comparison</h2>
-      <p>Here is how each tool integrates into different deployment environments:</p>
-      <table class="seo-table">
-        <thead>
-          <tr><th>Deployment</th><th><span class="sc-badge">SuperCompress</span></th><th><span class="hr-badge">Headroom</span></th></tr>
-        </thead>
-        <tbody>
-          <tr><td>AWS Lambda</td><td><strong>✓</strong> ~200KB package, ~60ms execution</td><td>✗ Model too large for Lambda's /tmp and memory limits</td></tr>
-          <tr><td>Cloudflare Workers</td><td><strong>✓</strong> Pure Python, minimal memory</td><td>✗ ONNX Runtime not available in Workers</td></tr>
-          <tr><td>Vercel Edge</td><td><strong>✓</strong> Fits within edge runtime limits</td><td>✗ Too large for edge</td></tr>
-          <tr><td>Docker / K8s</td><td><strong>✓</strong> ~150MB image</td><td><strong>✓</strong> ~1GB+ image with ONNX and model weights</td></tr>
-          <tr><td>PyPI install</td><td><strong>✓</strong> pip install supercompress</td><td><strong>✓</strong> pip install headroom-ai[all] (~500MB download)</td></tr>
-          <tr><td>Hosted API</td><td><strong>✓</strong> supercompress.dev with free tier</td><td>✗ Local-only</td></tr>
-          <tr><td>CI/CD pipelines</td><td><strong>✓</strong> Built-in CI checks</td><td>✗ Manual setup required</td></tr>
-        </tbody>
-      </table>
+      <h2>Wrong lens: parameter-count contests</h2>
+      <p>Older writeups sometimes framed this as a parameter-count contest. <strong>That is the wrong lens.</strong> What matters in production is whether compression keeps the answer to <em>this</em> question, whether coding agents can install without forcing provider API-key mode, and whether quality is measured with held-out answer containment.</p>
+      <p><strong>SuperCompress</strong> selects evidence: a query-aware compiler scores context blocks against the question and drops noise. <strong>Headroom</strong> leans on content-type / structure compressors and its own proxy workflows. If your job is “keep the answer while cutting tokens” for RAG, agents, and APIs, query-aware selection wins. If you already depend on Headroom’s AST/content-type stack, stay there.</p>
     </section>
 
     <section class="seo-section">
       <h2>When to choose each</h2>
-      <h3>Choose SuperCompress when:</h3>
+      <h3>Choose SuperCompress when you need:</h3>
       <ul>
-        <li><strong>You want a simple, zero-dependency install</strong> — pip install and 3 lines of code. No model downloads, no ONNX runtime, no tokenizer.</li>
-        <li><strong>You need query-aware compression</strong> — the answer line must be kept for the specific question being asked, not just the content type.</li>
-        <li><strong>You deploy to serverless / edge</strong> — Lambda, Cloudflare Workers, Vercel Edge Functions. SuperCompress fits where Headroom's 165M+ model does not.</li>
-        <li><strong>You want a hosted API option</strong> — use the API when you don't want to run anything locally, or the local library when you do.</li>
-        <li><strong>You need CI/CD integration</strong> — pipeline checks can flag prompt-token waste on every PR.</li>
-        <li><strong>You want MIT license</strong> — slightly more permissive for commercial embedding.</li>
+        <li>Query-aware keep/drop for RAG, chat, tickets, and agent dumps</li>
+        <li>MCP for Cursor / Claude Code / Codex without API-key mode</li>
+        <li>Hosted API + open-source Python library</li>
+        <li>Published held-out answer containment gates</li>
+        <li>Serverless-friendly default path</li>
       </ul>
-
-      <h3>Choose Headroom when:</h3>
+      <h3>Choose Headroom when you need:</h3>
       <ul>
-        <li><strong>You need content-type-specific compression</strong> — JSON compression, AST-aware code compression, text compression handled by different specialized models.</li>
-        <li><strong>You want proxy mode</strong> — zero code changes by routing traffic through a local proxy.</li>
-        <li><strong>You need agent wrapping</strong> — auto-wrap Claude Code, Cursor, Aider, Cline without manual configuration.</li>
-        <li><strong>You want reversible compression (CCR)</strong> — originals cached locally, retrievable via tool call.</li>
-        <li><strong>You need cross-agent memory</strong> — shared context store across different AI agents.</li>
-        <li><strong>You need MCP server integration</strong> — Model Context Protocol support.</li>
+        <li>Their specific content-type / AST compression stack</li>
+        <li>A workflow already built around their proxy product</li>
+        <li>Features unique to their roadmap that you already depend on</li>
       </ul>
     </section>
 
-    <section class="seo-section">
-      <h2>Integration complexity comparison</h2>
-      <pre><code># SuperCompress — install and use in 3 lines
-pip install supercompress
-
-from supercompress import Compressor
-comp = Compressor()
-result = comp.compress(context, query)
-
-# No model download. No ONNX. No tokenizer. No warmup.
-# First call: ~60ms. Every call: ~60ms.</code></pre>
-
-      <pre><code># Headroom — requires model download
-pip install "headroom-ai[all]"  # ~500MB download including model weights
-
-from headroom import compress
-result = compress(messages, model="auto")
-
-# Downloads ModernBERT weights on first use
-# Requires ONNX Runtime for acceptable performance
-# Recommended to warmup at provision time</code></pre>
+    <section class="seo-section" id="faq">
+      <h2>FAQ</h2>
+      <h3>Is SuperCompress a Headroom alternative?</h3>
+      <p>Yes. Same job — compress context before LLM spend — with a query-aware architecture, MCP coding-agent install, and public held-out answer metrics.</p>
+      <h3>Should I compare parameter counts?</h3>
+      <p>No. Compare query-awareness, MCP coding-agent install, hosted API, and held-out answer keep — not model-size marketing.</p>
+      <h3>Will I lose answers if I cut ~65% of tokens?</h3>
+      <p>On our primary held-out suites, gold answers stay at <strong>99.4%</strong> pooled. Always eval on your own traffic; that’s why we publish gates instead of only savings.</p>
+      <h3>Can I migrate from Headroom in an afternoon?</h3>
+      <p>For agents: run <code>npx supercompress setup</code>. For apps: <code>pip install supercompress</code> or call the hosted <code>/compress</code> API with context + query.</p>
     </section>
 
-    <section class="seo-section">
-      <h2>Cost comparison at scale</h2>
-      <p>Both tools save you LLM token costs. But SuperCompress also saves you infrastructure costs:</p>
-      <table class="seo-table">
-        <thead>
-          <tr><th>Cost Factor</th><th><span class="sc-badge">SuperCompress</span></th><th><span class="hr-badge">Headroom</span></th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Compute per compression</td><td>~60ms CPU (negligible)</td><td>~100-200ms CPU with ONNX</td></tr>
-          <tr><td>Memory per instance</td><td>~50MB</td><td>~500MB+ (model + runtime)</td></tr>
-          <tr><td>Storage for install</td><td>~200KB</td><td>~500MB+</td></tr>
-          <tr><td>Serverless cost per 1K compressions</td><td>~$0.0001</td><td>Not feasible — model too large</td></tr>
-          <tr><td>Cold start penalty</td><td>None (~60ms always)</td><td>~200ms+ model load time</td></tr>
-        </tbody>
-      </table>
-    </section>
-    <section class="seo-cta">
-      <p class="seo-cta-kicker">Build with less context</p>
-      <h2>Put compression in front of your next LLM call.</h2>
-      <p>Use the hosted API or run SuperCompress locally. Keep the evidence, drop the token waste, and measure the savings before it reaches your model.</p>
-      <p class="seo-cta-actions"><a class="btn-brand" href="/dashboard">Get an API key</a><a class="btn-link-muted" href="/token-compression">Read the guide</a></p>
+        <section class="seo-cta">
+      <p class="seo-cta-kicker">Free to start · 5M tokens/mo</p>
+      <h2>Get your free API key — cut LLM input cost ~65%.</h2>
+      <p>No credit card. Google signup takes one click. Your key is ready instantly for chat, RAG, and coding agents.</p>
+      <ul class="seo-cta-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+      <p class="seo-cta-actions"><a class="btn-brand" href="/dashboard?signup=1&amp;utm_source=seo&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key</a><a class="btn-link-muted" href="https://docs.supercompress.dev/coding-agents">Install for agents</a></p>
     </section>
   </main>
+<section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -259,36 +305,42 @@ result = compress(messages, model="auto")
               <li><a href="/#agents">Agents</a></li>
               <li><a href="/blog">Blog</a></li>
               <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
             </ul>
           </div>
           <div>
-            <p class="df-footer-heading">SEO Guides</p>
+            <p class="df-footer-heading">Blog</p>
             <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+              <li><a href="/supercompress-vs-headroom" aria-current="page">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Documentation</p>
             <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -302,6 +354,6 @@ result = compress(messages, model="auto")
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

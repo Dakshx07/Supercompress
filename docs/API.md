@@ -23,7 +23,7 @@ result = compress_context(
 )
 
 print(result.compressed_text)       # send to your LLM
-print(result.kv_savings_pct)        # tokens removed before your LLM call
+print(result.tokens_saved_pct)        # tokens removed before your LLM call
 print(result.original_tokens, result.kept_tokens)
 ```
 
@@ -43,7 +43,7 @@ Compiler response fields:
 | Field | Description |
 |-------|-------------|
 | `tokens_saved` | Tokens removed from this API call |
-| `kv_savings_pct` | Percent of input tokens removed |
+| `tokens_saved_pct` | Percent of input tokens removed |
 | `important_kept_pct` | Estimated share of important context preserved |
 | `compression_risk` | `low`, `medium`, or `high` verifier risk |
 | `preprocessor` | Content type detected: `json`, `code`, `log`, or `none` |
@@ -203,7 +203,7 @@ Returns `dict[str, CompressResult]` for FIFO, Truncation, Summarization, H2O, an
 
 ```python
 for name, r in compare_policies(ctx, question).items():
-    print(name, r.kept_tokens, f"{r.kv_savings_pct:.1f}%")
+    print(name, r.kept_tokens, f"{r.tokens_saved_pct:.1f}%")
 ```
 
 ### `compress_detailed(text, question, ...)`
@@ -229,7 +229,7 @@ Returns `(context, question)` where head+tail truncation loses a middle answer �
 | `compressed_text` | str | Trimmed context for your LLM |
 | `original_tokens` | int | Tokens before eviction |
 | `kept_tokens` | int | Tokens retained |
-| `kv_savings_pct` | float | `(1 - kept/original) × 100` |
+| `tokens_saved_pct` | float | `(1 - kept/original) × 100` |
 | `compression_ratio` | float | Property: `original / kept` |
 | `policy_name` | str | `SuperCompress`, `H2O-fallback`, or baseline name |
 | `budget_ratio` | float | Retention budget used |
@@ -259,7 +259,7 @@ Optional parameters:
 |-----------|------|---------|-------------|
 | `mode` | str | `"compiler"` | `"compiler"`, `"precision"`, or `"fixed"` |
 | `ccr` | bool | `false` | Enable reversible compression (markers + storage) |
-| `cache_prefix` | bool | `false` | Wrap compressed output in a deterministic XML preamble/postamble for provider-side KV cache hits (OpenAI, Anthropic, vLLM) |
+| `cache_prefix` | bool | `false` | Wrap compressed output in a deterministic XML preamble/postamble so providers can reuse **prompt/prefix cache**. SuperCompress does not operate inside model KV cache — compression is pre-inference text selection. |
 
 Or use the Python client:
 

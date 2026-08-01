@@ -11,12 +11,12 @@ const ASSUMPTIONS = {
   tokens_per_gpu_second: 2500,
   gpu_watts: 150,
   grid_kg_co2_per_kwh: 0.417,
-  kv_share_of_prefill: 0.55,
+  context_share_of_prefill: 0.55,
   liters_water_per_kwh: 1.8,
 };
 
 function envForTokenCount(tokenCount) {
-  const effective = Math.max(tokenCount, 0) * ASSUMPTIONS.kv_share_of_prefill;
+  const effective = Math.max(tokenCount, 0) * ASSUMPTIONS.context_share_of_prefill;
   const gpuSeconds = effective / ASSUMPTIONS.tokens_per_gpu_second;
   const wattHours = (gpuSeconds * ASSUMPTIONS.gpu_watts) / 3600;
   const kwh = wattHours / 1000;
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
       detail: "context too long (80k max for demo)"
     }, rl);
 
-    const result = compressAdaptive(context, query);
+    const result = await compressAdaptive(context, query);
     const E = getEngine();
     const quality =
       result.answer_quality ?? E.answerQualityScore(context, result.compressed_text, query);
@@ -68,7 +68,9 @@ module.exports = async (req, res) => {
       original_tokens: result.original_tokens,
       kept_tokens: result.kept_tokens,
       tokens_saved: tokensSaved,
-      kv_savings_pct: Math.round(result.kv_savings_pct * 100) / 100,
+      tokens_saved_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
+      // deprecated alias — same value as tokens_saved_pct
+      kv_savings_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
       original_chars: originalChars,
       compressed_chars: compressedChars,
       char_savings_pct: charSavingsPct,

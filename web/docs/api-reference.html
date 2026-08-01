@@ -7,98 +7,59 @@
   <meta name="description" content="SuperCompress API reference: Python compress_context, compress_for_turn, HTTP POST /v1/compress, response fields, error codes, and client usage." />
   <meta property="og:title" content="API Reference — SuperCompress Documentation" />
   <meta property="og:description" content="Complete API reference for SuperCompress prompt compression." />
-  <meta property="og:url" content="https://supercompress.dev/docs/api-reference" />
+  <meta property="og:url" content="https://docs.supercompress.dev/api-reference" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="canonical" href="https://supercompress.dev/docs/api-reference" />
+  <link rel="canonical" href="https://docs.supercompress.dev/api-reference" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="/assets/css/supercompress.css" />
-  <link rel="stylesheet" href="/assets/css/docs.css" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
+<link rel="stylesheet" href="/assets/css/docs.css?v=12" />
 </head>
 <body>
-  <header class="df-header">
-    <div class="df-header-blur" aria-hidden="true"></div>
-    <div class="df-header-inner">
-      <a href="/" class="df-logo-desktop">
-        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
-        <span class="df-logo-word">Super<em>Compress</em></span>
-      </a>
-      <div class="df-header-end">
-        <nav class="df-nav-pill" aria-label="Main">
-          <a href="/benchmarks">Benchmarks</a>
-          <a href="/#agents">Agents</a>
-          <a href="/blog">Blog</a>
-          <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
-        </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
-        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-        </a>
-      </div>
-      <div class="df-mobile-bar">
-        <a href="/" class="df-logo-mobile">
-          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
-          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
-        </a>
-        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      </div>
-    </div>
-    <div class="df-mobile-nav" id="df-mobile-nav">
-      <a href="/benchmarks">Benchmarks</a>
-      <a href="/#agents">Agents</a>
-      <a href="/blog">Blog</a>
-      <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
-      <a href="/playground">Playground</a>
-      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
-    </div>
-  </header>
-  <div class="df-header-spacer" aria-hidden="true"></div>
-<div class="docs-layout">
+  <div class="docs-layout">
     <aside class="docs-sidebar" id="docs-sidebar">
-      <a href="/docs/" class="docs-sidebar-logo">
+      <a href="/" class="docs-sidebar-logo">
         <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
         <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
       </a>
       <div class="docs-sidebar-section">Getting started</div>
-      <a href="/docs/" class="docs-sidebar-link">Overview</a>
-      <a href="/docs/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <a href="/" class="docs-sidebar-link">Overview</a>
+      <a href="/quickstart" class="docs-sidebar-link">Quickstart</a>
       <div class="docs-sidebar-section">Reference</div>
-      <a href="/docs/api-reference" class="docs-sidebar-link active" aria-current="page">API Reference</a>
-      <a href="/docs/integrations" class="docs-sidebar-link">Integrations</a>
-      <a href="/docs/coding-agents" class="docs-sidebar-link">Coding Agents</a>
-      <a href="/docs/usage" class="docs-sidebar-link">Usage</a>
+      <a href="/api-reference" class="docs-sidebar-link active">API Reference</a>
+      <a href="/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="/usage" class="docs-sidebar-link">Usage</a>
       <div class="docs-sidebar-section">Deep dives</div>
-      <a href="/docs/architecture" class="docs-sidebar-link">Architecture</a>
-      <a href="/docs/environment" class="docs-sidebar-link">Environment & CO₂</a>
+      <a href="/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/compress-engine" class="docs-sidebar-link">Compress engine</a>
+      <a href="/environment" class="docs-sidebar-link">Environment & CO₂</a>
     </aside>
     <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="docs-main">
-      <nav class="docs-nav">
+            <nav class="docs-nav">
         <div class="docs-nav-inner">
-          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg><span>Docs</span></button>
+          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+            <span>Docs</span>
+          </button>
           <div class="docs-nav-end">
             <nav class="docs-nav-pill" aria-label="Main">
-              <a href="/benchmarks">Benchmarks</a>
-              <a href="/#agents">Agents</a>
-              <a href="/blog">Blog</a>
-              <a href="/changelog">Changelog</a>
-              <a href="/docs/">Docs</a>
+              <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a>
+              <a href="https://www.supercompress.dev/#agents">Agents</a>
+              <a href="https://www.supercompress.dev/blog">Blog</a>
+              <a href="https://www.supercompress.dev/changelog">Changelog</a>
+              <a href="/" aria-current="page">Docs</a>
             </nav>
-            <a href="/dashboard" class="docs-nav-cta">Get API key</a>
+            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta">Get API key</a>
           </div>
         </div>
       </nav>
+
 
       <div class="docs-content">
         <h1 class="df-reveal">API Reference</h1>
@@ -142,7 +103,7 @@ result = compress_context(
 )
 
 <span class="kw">print</span>(result.compressed_text)
-<span class="kw">print</span>(<span class="str">f"Saved {result.kv_savings_pct:.1f}% tokens"</span>)</code></pre>
+<span class="kw">print</span>(<span class="str">f"Saved {result.tokens_saved_pct:.1f}% tokens"</span>)</code></pre>
 
         <h3><code>compress_for_turn(context_blocks, user_query, budget_ratio=0.35)</code></h3>
         <p>Compress a list of context blocks (e.g. system prompt, tool output, chat history) against a user query. Merges blocks with <code>\n\n---\n\n</code> before compression. Returns <code>(compressed_text, CompressResult)</code>.</p>
@@ -170,7 +131,7 @@ result, lines = compress_detailed(ctx, question)
 
 ctx, q = middle_truncation_failure_case()
 result = compress_context(ctx, q)
-<span class="kw">print</span>(<span class="str">f"Truncation would lose this. SuperCompress: {result.kv_savings_pct:.0f}% saved"</span>)</code></pre>
+<span class="kw">print</span>(<span class="str">f"Truncation would lose this. SuperCompress: {result.tokens_saved_pct:.0f}% saved"</span>)</code></pre>
 
         <h3>CompressResult fields</h3>
         <table>
@@ -182,7 +143,7 @@ result = compress_context(ctx, q)
             <tr><td><code>compressed_text</code></td><td>str</td><td>Compressed context for your LLM</td></tr>
             <tr><td><code>original_tokens</code></td><td>int</td><td>Tokens before compression</td></tr>
             <tr><td><code>kept_tokens</code></td><td>int</td><td>Tokens after compression</td></tr>
-            <tr><td><code>kv_savings_pct</code></td><td>float</td><td>Percent of tokens removed: (1 − kept/original) × 100</td></tr>
+            <tr><td><code>tokens_saved_pct</code></td><td>float</td><td>Percent of prompt tokens removed: (1 − kept/original) × 100.</td></tr>
             <tr><td><code>compression_ratio</code></td><td>float</td><td>original / kept (read-only property)</td></tr>
             <tr><td><code>policy_name</code></td><td>str</td><td><code>"SuperCompress"</code>, <code>"H2O-fallback"</code>, or baseline name</td></tr>
             <tr><td><code>budget_ratio</code></td><td>float</td><td>Retention budget used</td></tr>
@@ -238,7 +199,7 @@ result = compress_context(ctx, q)
   "original_tokens": 1248,
   "kept_tokens": 436,
   "tokens_saved": 812,
-  "kv_savings_pct": 65.06,
+  "tokens_saved_pct": 65.06,
   "important_kept_pct": 0.98,
   "compression_risk": "low",
   "kept_blocks": [
@@ -261,7 +222,7 @@ result = compress_context(ctx, q)
             <tr><td><code>original_tokens</code></td><td>int</td><td>Input token count (rough estimate).</td></tr>
             <tr><td><code>kept_tokens</code></td><td>int</td><td>Tokens after compression.</td></tr>
             <tr><td><code>tokens_saved</code></td><td>int</td><td>original − kept.</td></tr>
-            <tr><td><code>kv_savings_pct</code></td><td>float</td><td>Percent of tokens removed.</td></tr>
+            <tr><td><code>tokens_saved_pct</code></td><td>float</td><td>Percent of prompt tokens removed.</td></tr>
             <tr><td><code>important_kept_pct</code></td><td>float</td><td>Estimated fraction of important context preserved. 0.0–1.0.</td></tr>
             <tr><td><code>compression_risk</code></td><td>string</td><td><code>"low"</code>, <code>"medium"</code>, or <code>"high"</code> — verifier confidence.</td></tr>
             <tr><td><code>kept_blocks</code></td><td>array</td><td>Evidence blocks kept, with reasons.</td></tr>
@@ -271,7 +232,7 @@ result = compress_context(ctx, q)
         </table>
 
         <h3>Authentication</h3>
-        <p>Include your API key in either the <code>X-API-Key</code> header or the <code>Authorization: Bearer sc_live_…</code> header. Get a key from the <a href="/dashboard">dashboard</a>.</p>
+        <p>Include your API key in either the <code>X-API-Key</code> header or the <code>Authorization: Bearer sc_live_…</code> header. Get a key from the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>.</p>
 
         <h2 id="compiler-mode">Compiler mode (default)</h2>
         <p>Compiler mode is the production path. Users do not choose a budget or ratio. The engine:</p>
@@ -303,7 +264,7 @@ result = compress_context(ctx, q)
 
 results = compare_policies(ctx, question, budget_ratio=0.35)
 <span class="kw">for</span> name, r <span class="kw">in</span> results.items():
-    <span class="kw">print</span>(<span class="str">f"{name}: {r.kept_tokens} tokens ({r.kv_savings_pct:.1f}%)"</span>)</code></pre>
+    <span class="kw">print</span>(<span class="str">f"{name}: {r.kept_tokens} tokens ({r.tokens_saved_pct:.1f}%)"</span>)</code></pre>
 
         <h2 id="sustainability">Environmental impact</h2>
         <p>The <code>sustainability_from_tokens_saved</code> helper converts token savings into estimated GPU-seconds, kWh, and CO₂ avoided.</p>
@@ -315,7 +276,7 @@ impact = sustainability_from_tokens_saved(saved)
 <span class="kw">print</span>(impact.co2_kg_avoided)
 <span class="kw">print</span>(impact.watt_hours_saved)
 <span class="kw">print</span>(impact.assumptions.to_dict())</code></pre>
-        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), 55% KV share of prefill. See <a href="/docs/environment">Environment & CO₂</a> for the full methodology.</p>
+        <p>Default assumptions: 2,500 tokens/GPU-sec, 150W GPU, 0.417 kg CO₂/kWh (US grid), 55% KV share of prefill. See <a href="/environment">Environment & CO₂</a> for the full methodology.</p>
 
         <h2 id="errors">Error handling</h2>
         <h3>Python errors</h3>
@@ -346,80 +307,30 @@ impact = sustainability_from_tokens_saved(saved)
         </table>
 
         <div class="doc-footer">
-          <p>Next: <a href="/docs/integrations">Integrations →</a></p>
+          <p>Next: <a href="/integrations">Integrations →</a></p>
         </div>
 
     </div>
-
-      <!-- Full SuperCompress footer -->
-      <!-- SITE_FOOTER_START -->
-<footer class="df-footer">
-    <div class="df-footer-inner">
-      <div class="df-footer-grid">
-        <div class="df-footer-brand">
-          <a href="/" class="df-footer-lockup">
-            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
-            <p class="df-footer-heading">Super<em>Compress</em></p>
-          </a>
-          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
-          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+              <aside class="docs-signup-cta" aria-label="Get started">
+          <h2>Get your free API key</h2>
+          <p>5M free tokens/mo. No credit card. Compress context before inference in one click.</p>
+          <ul class="docs-signup-cta-incentives">
+            <li>5M free tokens/mo</li>
+            <li>No credit card</li>
+            <li>Then $1/1M</li>
+          </ul>
+          <div class="docs-signup-cta-actions">
+            <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
+            <a class="docs-signup-cta-link" href="/coding-agents">Coding agents setup</a>
+          </div>
+        </aside>
+<footer class="docs-site-footer">
+        <div class="docs-site-footer-inner">
+          <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
         </div>
-        <div class="df-footer-links">
-          <div>
-            <p class="df-footer-heading">Navigation</p>
-            <ul>
-              <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/#agents">Agents</a></li>
-              <li><a href="/blog">Blog</a></li>
-              <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Resources</p>
-            <ul>
-              <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/token-compression">Token compression guide</a></li>
-              <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">SEO Guides</p>
-            <ul>
-              <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
-              <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Documentation</p>
-            <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference" aria-current="page">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="df-footer-heading">Social</p>
-            <ul>
-              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <p class="df-footer-copy">© SuperCompress · MIT License</p>
-    </div>
-  </footer>
-<!-- SITE_FOOTER_END -->
+      </footer>
   </div>
-
-  <script src="/assets/js/supercompress.js"></script>
-  <script>
+<script>
     (function() {
       var s=document.getElementById('docs-sidebar'),o=document.getElementById('sidebar-overlay'),t=document.getElementById('mobile-toggle');
       function oS(){s.classList.add('open');o.classList.add('open');}
@@ -448,6 +359,5 @@ impact = sustainability_from_tokens_saved(saved)
       });
     })();
   </script>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
 </body>
 </html>

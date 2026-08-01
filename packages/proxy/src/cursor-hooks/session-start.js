@@ -12,10 +12,10 @@ process.stdin.on("end", () => {
   const home = process.env.HOME || process.env.USERPROFILE || "";
   const inbox = `${home}/.supercompress/inbox/latest.md`;
   const additional_context = [
-    "SUPERCOMPRESS IS ON FOR EVERY MESSAGE IN THIS SESSION.",
-    `First action every turn: Read ${inbox} if it exists (auto-written on each user submit) and use that digest.`,
+    "SUPERCOMPRESS IS ON FOR EVERY MESSAGE (Headroom-parity).",
+    `Each submit with context writes ${inbox} — Read it first and use that digest.`,
     "Otherwise call MCP compress_context on any bulky dump before reasoning.",
-    "Prefer digests over raw tool output. Keep Cursor login.",
+    "User ask is never compressed. Prefer digests over raw tool output. Keep Cursor login.",
   ].join(" ");
   process.stdout.write(JSON.stringify({ additional_context }));
 });

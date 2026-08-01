@@ -6,7 +6,7 @@
  *   export SUPERCOMPRESS_API_KEY=sc_live_…   # or use ~/.supercompress/config.json
  *   node examples/yc-demo/run.js
  *
- * Shows: before/after tokens, KV savings %, latency, and compressed preview
+ * Shows: before/after tokens, Token savings %, latency, and compressed preview
  * with the answer-critical lines highlighted.
  */
 const fs = require("fs");
@@ -136,7 +136,7 @@ async function main() {
   const original = result.original_tokens ?? 0;
   const kept = result.kept_tokens ?? 0;
   const saved = result.tokens_saved ?? Math.max(0, original - kept);
-  const pct = result.kv_savings_pct ?? (original ? (saved / original) * 100 : 0);
+  const pct = result.tokens_saved_pct ?? (original ? (saved / original) * 100 : 0);
   const compressed = String(result.compressed_text || "");
   const evidence = highlightEvidence(compressed);
   const inLines = context.split("\n").length;
@@ -203,7 +203,7 @@ async function main() {
         original_tokens: original,
         kept_tokens: kept,
         tokens_saved: saved,
-        kv_savings_pct: pct,
+        tokens_saved_pct: pct,
         policy_name: result.policy_name,
         mode: result.mode,
         answer_quality: result.answer_quality,

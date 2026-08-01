@@ -103,7 +103,7 @@
     .faq summary { font-weight: 500; color: #c8c8d8; font-size: 0.9rem; }
     .faq details p { margin-top: 10px; font-size: 0.85rem; color: #777; }
   </style>
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
 </head>
 <body>
 <header class="df-header">
@@ -119,11 +119,9 @@
           <a href="/#agents">Agents</a>
           <a href="/blog">Blog</a>
           <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
@@ -133,6 +131,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -141,15 +140,15 @@
       <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
-
-  <div class="container">
+<div class="container">
     <h1>SuperCompress vs Alternatives</h1>
     <p class="subtitle">A side-by-side comparison of every major prompt compression method — from lightweight scoring to full-model approaches — with benchmarks, trade-offs, and deployment guidance.</p>
 
@@ -160,7 +159,7 @@
           <th>Method</th>
           <th>Approach</th>
           <th>Query-Aware</th>
-          <th>Model Size</th>
+          <th>Approach</th>
           <th>Latency</th>
           <th>Savings</th>
         </tr>
@@ -168,7 +167,7 @@
       <tbody>
         <tr class="row-highlight">
           <td>SuperCompress</td>
-          <td>Learned policy (5K params)</td>
+          <td>Learned policy (neural ranking)</td>
           <td>Yes</td>
           <td>~200KB</td>
           <td>~15ms</td>
@@ -176,9 +175,9 @@
         </tr>
         <tr>
           <td><a href="/supercompress-vs-headroom">Headroom</a></td>
-          <td>ModernBERT (165M+ params)</td>
+          <td>Content-type / structure stack</td>
           <td>No (type-aware only)</td>
-          <td>~500MB</td>
+          <td>Product-specific</td>
           <td>~100ms + warmup</td>
           <td>~50%</td>
         </tr>
@@ -229,9 +228,9 @@
     <div class="comparison-grid">
       <div class="comparison-card">
         <h3><a href="/supercompress-vs-headroom">SuperCompress vs Headroom</a></h3>
-        <p>Headroom uses a 165M+ parameter ModernBERT model with ONNX Runtime. It classifies prompt content by type (JSON, code, text) but does not score against the user's query. SuperCompress is 25,000x smaller and query-aware.</p>
-        <span class="tag tag-sc">5K params, query-aware</span>
-        <span class="tag tag-headroom">165M+ params, type-only</span>
+        <p>Headroom leans on content-type / structure heuristics (JSON, code, text routers) rather than scoring every block against the user's question. SuperCompress is query-aware: keep what answers this query, drop the rest. That — plus MCP coding-agent install and held-out answer gates — is the comparison that matters, not parameter counts.</p>
+        <span class="tag tag-sc">neural ranking, query-aware</span>
+        <span class="tag tag-headroom">content-type heuristics</span>
       </div>
       <div class="comparison-card">
         <h3><a href="/supercompress-vs-sliding-window">SuperCompress vs Sliding Window</a></h3>
@@ -269,9 +268,9 @@
     <div class="why-summary">
       <h3>SuperCompress's advantages</h3>
       <ul>
-        <li><strong>~5K parameters</strong> — 25,000x smaller than the next closest ML-based approach. Installs in milliseconds, not minutes.</li>
+        <li><strong>a learned query-aware neural policy</strong> — more focused on query relevance than the next closest ML-based approach. Installs in milliseconds, not minutes.</li>
         <li><strong>True query-awareness</strong> — Scores every line against the user's actual question, not just content type. A line about account settings is kept when the user asks about billing, dropped when they ask about features.</li>
-        <li><strong>No model download</strong> — <code>pip install supercompress</code> is fully self-contained. No downloading ModernBERT weights, ONNX Runtime, or ~500MB of dependencies.</li>
+        <li><strong>Query-aware by default</strong> — scores context against the question instead of only classifying content type.</li>
         <li><strong>Serverless-ready</strong> — ~60ms cold start, ~200KB install size. Fits comfortably in AWS Lambda, Cloudflare Workers, and Vercel Edge Functions.</li>
         <li><strong>Hosted API + local library</strong> — Use the hosted API (free tier available) for zero-infrastructure setup, or the local library for latency-sensitive workloads.</li>
         <li><strong>97.5% oracle recall</strong> — The compressed prompt produces answers virtually identical to the full-prompt response, even when evaluated against the "oracle" test of whether any dropped content was actually needed.</li>
@@ -284,7 +283,7 @@
     <ul>
       <li>You want the best compression-to-quality ratio (max savings, minimal quality loss)</li>
       <li>You need serverless or edge deployment (Lambda, Cloudflare Workers, Vercel Edge)</li>
-      <li>You don't want to manage a model download or ~500MB of dependencies</li>
+      <li>You want query-aware compression with MCP agents and published answer-keep gates</li>
       <li>You have diverse prompts where relevance varies by user question</li>
       <li>You want a simple API: <code>from supercompress import compress</code></li>
     </ul>
@@ -304,7 +303,7 @@
       </details>
       <details>
         <summary>Can I use SuperCompress with other compression methods?</summary>
-        <p>Yes. SuperCompress's query-aware scoring complements other methods. For example, you can apply SuperCompress before a sliding window as a safety net, or use MMR for candidate selection and SuperCompress for final compression. See the <a href="/prompt-compression-guide">guide</a> for advanced patterns.</p>
+        <p>Yes. SuperCompress's query-aware scoring complements other methods. For example, you can apply SuperCompress before a sliding window as a safety net, or use MMR for candidate selection and SuperCompress for final compression. See the <a href="/prompt-compression">guide</a> for advanced patterns.</p>
       </details>
       <details>
         <summary>Which method has the lowest latency?</summary>
@@ -314,10 +313,29 @@
 
     <div class="cta-section">
       <a href="/playground" class="btn">Try it now &rarr;</a>
-      <a href="/prompt-compression-guide" class="btn btn-outline">Read the full guide</a>
+      <a href="/prompt-compression" class="btn btn-outline">Read the full guide</a>
       <a href="https://github.com/Supercompress/Supercompress" class="btn btn-outline" target="_blank">GitHub</a>
     </div>
   </div>
+<section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -337,36 +355,42 @@
               <li><a href="/#agents">Agents</a></li>
               <li><a href="/blog">Blog</a></li>
               <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
             </ul>
           </div>
           <div>
-            <p class="df-footer-heading">SEO Guides</p>
+            <p class="df-footer-heading">Blog</p>
             <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Documentation</p>
             <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -380,6 +404,6 @@
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

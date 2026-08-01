@@ -22,33 +22,11 @@
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="assets/css/supercompress.css?v=106" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
-  <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; background: #fbfbf8; color: #141412; line-height: 1.7; }
-    .post-header { max-width: 760px; margin: 0 auto; padding: 48px 24px 24px; }
-    .post-header h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 12px 0; }
-    .post-header .meta { color: #6b7280; font-size: 0.875rem; }
-    .post-content { max-width: 760px; margin: 0 auto; padding: 0 24px 64px; }
-    .post-content h2 { font-size: 1.4rem; margin: 40px 0 12px; }
-    .post-content h3 { font-size: 1.1rem; margin: 28px 0 8px; }
-    .post-content p { margin: 16px 0; }
-    .post-content pre { background: #f4f4f0; border: 1px solid #e5e5e0; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
-    .post-content code { background: #f4f4f0; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
-    .post-content pre code { background: none; padding: 0; }
-    .post-content ul, .post-content ol { margin: 12px 0; padding-left: 24px; }
-    .post-content li { margin: 6px 0; }
-    .post-content blockquote { border-left: 3px solid #1d4ed8; margin: 20px 0; padding: 12px 20px; background: #f0f4ff; border-radius: 0 8px 8px 0; }
-    .sc-tag { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; background: #e5e5e0; margin-right: 6px; }
-    .sc-tag--new { background: #dbeafe; color: #1d4ed8; }
-    .nav-bar { display: flex; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #e5e5e0; align-items: center; }
-    .nav-bar a { color: #6b7280; text-decoration: none; font-size: 0.875rem; }
-    .nav-bar a:hover { color: #1d4ed8; }
-    .nav-bar .brand { font-weight: 600; color: #141412; margin-right: auto; }
-    .nav-bar .brand em { font-style: normal; color: #1d4ed8; }
-    @media (max-width: 600px) { .post-header h1 { font-size: 1.5rem; } }
-  </style>
-  <script type="application/ld+json">
+<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=1" />
+<script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -75,11 +53,9 @@
           <a href="/#agents">Agents</a>
           <a href="/blog">Blog</a>
           <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
@@ -89,6 +65,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -97,32 +74,55 @@
       <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
 
-  <nav class="nav-bar">
-    <a href="/" class="brand">Super<em>Compress</em></a>
-    <a href="/blog">Blog</a>
-    <a href="/playground">Playground</a>
-    <a href="https://github.com/Supercompress/Supercompress">GitHub</a>
-  </nav>
+    <aside class="sc-signup-band sc-signup-band--inline" aria-label="Start free">
+      <div class="sc-signup-band-inner">
+        <div class="sc-signup-band-copy">
+          <p class="sc-signup-band-kicker">Free to start</p>
+          <h2>Try it free — 5M tokens included</h2>
+          <p class="sc-signup-band-lead">No credit card. Same engine as production. Key ready after Google signup.</p>
+          <ul class="sc-signup-incentives">
+            <li>5M free tokens/mo</li>
+            <li>No credit card</li>
+            <li>Then $1/1M</li>
+          </ul>
+        </div>
+        <div class="sc-signup-band-actions">
+          <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=mid_cta&amp;utm_campaign=activation">Claim free API key →</a>
+        </div>
+      </div>
+    </aside>
 
-  <header class="post-header">
-    <span class="sc-tag sc-tag--new">New</span>
-    <span class="sc-tag">Integration</span>
+<main class="seo-page">
+    <p class="seo-kicker">New · Integration</p>
+    <div class="seo-tags">
+      <span class="seo-tag seo-tag--accent">New</span>
+      <span class="seo-tag">Integration</span>
+    </div>
     <h1>SuperCompress MCP Server: Compress Context from Any MCP-Compatible AI Agent</h1>
-    <p class="meta">July 8, 2026 · 4 min read</p>
-  </header>
+    <p class="seo-lead">AI agents are only as good as the context they can see. But long context costs money, consumes window space, and slows down inference. The <strong>SuperCompress MCP server</strong> lets any MCP-compatible agent — Claude Desktop, Claude Code, Cursor, Windsurf — compress context before sending it to an LLM, without leaving the agent workflow.</p>
+    <p class="seo-author">July 8, 2026 · 4 min read</p>
 
-  <main class="post-content">
-    <p>AI agents are only as good as the context they can see. But long context costs money, consumes window space, and slows down inference. The <strong>SuperCompress MCP server</strong> lets any MCP-compatible agent — Claude Desktop, Claude Code, Cursor, Windsurf — compress context before sending it to an LLM, without leaving the agent workflow.</p>
+<nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+  <a href="/reduce-llm-costs">Reduce LLM costs</a>
+  <a href="/token-compression">Token compression</a>
+  <a href="/prompt-compression">Prompt compression</a>
+  <a href="/context-compression">Smart context compression</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+  <a href="/supercompress-vs-headroom">vs Headroom</a>
+  <a href="/blog">Blog</a>
+</nav>
 
-    <h2>What is MCP?</h2>
+    <div class="article-prose">
+<h2>What is MCP?</h2>
 
     <p>The <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol (MCP)</a> is an open standard that lets AI agents communicate with external tools and data sources. An MCP server exposes tools — like <code>compress</code> or <code>retrieve</code> — that the agent can invoke autonomously during a conversation.</p>
 
@@ -251,7 +251,27 @@ Agent: Here are the exact error messages from the log...</pre>
       <li><strong>Binary content support</strong> — Compress images and structured data alongside text context</li>
       <li><strong>Streaming compression</strong> — Progressive compression for real-time agent contexts</li>
     </ul>
+    </div>
   </main>
+<section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -271,36 +291,42 @@ Agent: Here are the exact error messages from the log...</pre>
               <li><a href="/#agents">Agents</a></li>
               <li><a href="/blog">Blog</a></li>
               <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
             </ul>
           </div>
           <div>
-            <p class="df-footer-heading">SEO Guides</p>
+            <p class="df-footer-heading">Blog</p>
             <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Documentation</p>
             <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -314,6 +340,6 @@ Agent: Here are the exact error messages from the log...</pre>
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

@@ -74,7 +74,7 @@ def main() -> None:
             "compare": {
                 name: {
                     "kept_tokens": r.kept_tokens,
-                    "kv_savings_pct": round(r.kv_savings_pct, 1),
+                    "tokens_saved_pct": round(r.tokens_saved_pct, 1),
                     "answer_quality": answer_quality_score(ctx, r.compressed_text, question),
                     "has_answer": "404" in r.compressed_text or "User.fetch" in r.compressed_text,
                 }
@@ -85,7 +85,7 @@ def main() -> None:
             "query": demo_query,
             "original_tokens": demo.original_tokens,
             "kept_tokens": demo.kept_tokens,
-            "kv_savings_pct": round(demo.kv_savings_pct, 1),
+            "tokens_saved_pct": round(demo.tokens_saved_pct, 1),
             "policy": demo.policy_name,
             "input_preview": "\n\n---\n\n".join(demo_blocks)[:1200],
             "compressed_text": compressed,

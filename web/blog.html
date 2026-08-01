@@ -24,7 +24,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
 <link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
   <style>
     /* ── Blog-specific overrides ── */
 
@@ -297,11 +297,9 @@
           <a href="/#agents">Agents</a>
           <a href="/blog" aria-current="page">Blog</a>
           <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
@@ -311,6 +309,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -319,8 +318,9 @@
       <a href="/#agents">Agents</a>
       <a href="/blog" aria-current="page">Blog</a>
       <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -358,15 +358,15 @@
           <div class="blog-grid">
 
             <a class="blog-card blog-card--featured" href="/cache-aligner-prefix-stabilization">
-              <h3>CacheAligner: KV Cache Prefix Stabilization for LLM Providers</h3>
-              <p>CacheAligner wraps compressed context in a deterministic XML preamble so OpenAI, Anthropic, and vLLM can reuse KV cache across requests. ~60 stable prefix tokens, zero configuration, <code>cache_prefix=true</code>.</p>
+              <h3>CacheAligner: Stable Prefix for Provider Prompt Caching</h3>
+              <p>CacheAligner wraps compressed context in a deterministic XML preamble so OpenAI, Anthropic, and vLLM can reuse prompt/prefix cache across requests. SuperCompress does not operate inside model KV — ~60 stable prefix tokens, <code>cache_prefix=true</code>.</p>
               <div class="blog-card-meta">
                 <span class="blog-tag blog-tag--new">New</span>
                 <span class="blog-tag blog-tag--feature">Feature</span>
               </div>
             </a>
 
-            <a class="blog-card blog-card--featured" href="/mcp-integration">
+            <a class="blog-card blog-card--featured" href="https://docs.supercompress.dev/coding-agents">
               <h3>SuperCompress MCP Server: Compress Context from Any AI Agent</h3>
               <p>Bring prompt compression to Claude Desktop, Claude Code, Cursor, and every MCP-compatible agent. No API key needed — runs locally using the same engine as the hosted API.</p>
               <div class="blog-card-meta">
@@ -402,7 +402,7 @@
               </div>
             </a>
 
-            <a class="blog-card blog-card--featured" href="/coding-agent-proxy">
+            <a class="blog-card blog-card--featured" href="https://docs.supercompress.dev/coding-agents">
               <h3>SuperCompress Proxy — One Command, Every Coding Agent, ~65% Fewer Tokens</h3>
               <p>Install once. Auto-configure compatible Cursor, Windsurf, Continue, Cline, Claude Code, Codex, and Aider workflows. API-key requests can be compressed automatically. <code>npm install supercompress-proxy &amp;&amp; npm exec supercompress setup</code></p>
               <div class="blog-card-meta">
@@ -414,60 +414,60 @@
           </div>
         </section>
 
-        <!-- ── Featured / Essential Guides ── -->
-        <section class="blog-section df-reveal" data-category="guides">
+        <!-- ── Start here / money pages ── -->
+        <section class="blog-section df-reveal" data-category="guides" id="start-here">
           <div class="blog-section-header">
-            <h2>Essential guides</h2>
-            <span class="blog-section-count">8 articles</span>
+            <h2>Start here</h2>
+            <span class="blog-section-count">8 posts</span>
           </div>
           <div class="blog-grid">
 
+            <a class="blog-card blog-card--featured" href="/reduce-llm-costs">
+              <h3>Reduce LLM costs</h3>
+              <p>Cut API and token spend without switching models. Query-aware compression before OpenAI, Claude, Gemini, or coding agents.</p>
+              <div class="blog-card-meta"><span class="blog-tag blog-tag--cost">Cost</span><span class="blog-tag blog-tag--guide">Guide</span></div>
+            </a>
+
             <a class="blog-card blog-card--featured" href="/token-compression">
-              <h3>Token Compression for LLMs: The Complete Guide (2026)</h3>
-              <p>The definitive guide to LLM token compression. Learn what it is, how it cuts costs by 65%+, compare methods (truncation, summarization, learned compression), and see benchmark results. Includes interactive demo.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Definitive Guide</span></div>
+              <h3>Token compression</h3>
+              <p>The complete guide to LLM token compression — methods, benchmarks, and ~65% input-token cuts with answer retention.</p>
+              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
             </a>
 
             <a class="blog-card" href="/prompt-compression">
-              <h3>Prompt Compression for LLMs: Cut Tokens Without Losing Answers</h3>
-              <p>Query-aware compression removes low-value context before an LLM call. Cuts tokens, latency, and noise.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
-            </a>
-
-            <a class="blog-card" href="/what-is-prompt-compression">
-              <h3>What Is Prompt Compression? A Complete Guide for LLM Developers</h3>
-              <p>Learn what prompt compression is, how it works, and why every LLM application needs it.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
-            </a>
-
-            <a class="blog-card" href="/how-prompt-compression-works">
-              <h3>How Prompt Compression Works: The Technical Deep-Dive</h3>
-              <p>Under the hood of SuperCompress — scoring policy, compression strategy, and runtime behavior.</p>
+              <h3>Prompt compression</h3>
+              <p>Remove low-value context before an LLM call. Keep original evidence instead of rewriting with summarization.</p>
               <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
             </a>
 
             <a class="blog-card" href="/context-compression">
-              <h3>Context Compression for AI Agents and RAG Pipelines</h3>
-              <p>Context compression keeps agents and RAG systems from sending bloated prompts for every LLM call.</p>
+              <h3>Context compression</h3>
+              <p>Smart, query-aware context compression for AI agents, RAG dumps, memory, and tool output.</p>
               <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
             </a>
 
-            <a class="blog-card" href="/llm-token-compression">
-              <h3>LLM Token Compression: Reduce Context Size Before Inference</h3>
-              <p>Compare learned compression, truncation, and summarization with implementation examples.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
+            <a class="blog-card" href="https://docs.supercompress.dev/coding-agents">
+              <h3>Coding agents / MCP</h3>
+              <p>Install once for Cursor, Claude Code, and Codex. Compress huge dumps over MCP — keep your normal login.</p>
+              <div class="blog-card-meta"><span class="blog-tag blog-tag--feature">Integration</span></div>
             </a>
 
-            <a class="blog-card" href="/when-to-use-compression">
-              <h3>When to Use Prompt Compression: Decision Guide</h3>
-              <p>A practical decision framework for when prompt compression makes sense vs when to skip it.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
+            <a class="blog-card" href="/supercompress-vs-headroom">
+              <h3>vs Headroom</h3>
+              <p>Why teams pick SuperCompress over Headroom: true query-awareness, MCP-first agents, held-out answer gates.</p>
+              <div class="blog-card-meta"><span class="blog-tag">Comparison</span></div>
             </a>
 
-            <a class="blog-card" href="/prompt-compression-guide">
-              <h3>Prompt Compression Guide: From Zero to Production</h3>
-              <p>End-to-end guide from understanding compression basics to deploying in production.</p>
-              <div class="blog-card-meta"><span class="blog-tag blog-tag--guide">Guide</span></div>
+            <a class="blog-card" href="/supercompress-vs-truncation">
+              <h3>Vs truncation</h3>
+              <p>Truncation cuts by position. SuperCompress keeps the lines that answer the question.</p>
+              <div class="blog-card-meta"><span class="blog-tag">Comparison</span></div>
+            </a>
+
+            <a class="blog-card" href="/supercompress-vs-summarization">
+              <h3>Vs summarization</h3>
+              <p>Summarization rewrites facts. Selection-based compression keeps original, auditable evidence.</p>
+              <div class="blog-card-meta"><span class="blog-tag">Comparison</span></div>
             </a>
 
           </div>
@@ -602,7 +602,7 @@
 
             <a class="blog-card" href="/supercompress-vs-headroom">
               <h3>SuperCompress vs Headroom</h3>
-              <p>Tiny ~5K-param CPU policy with true query-awareness. No model downloads, no GPU, no ONNX Runtime.</p>
+              <p>Query-aware compression, MCP for coding agents, and held-out ≥98% answer keep — not a model-size comparison.</p>
               <div class="blog-card-meta"><span class="blog-tag">Comparison</span></div>
             </a>
 
@@ -880,7 +880,7 @@
               <div class="blog-card-meta"><span class="blog-tag">Deployment</span></div>
             </a>
 
-            <a class="blog-card" href="/open-source-token-compression">
+            <a class="blog-card" href="/token-compression">
               <h3>Open-Source Token Compression</h3>
               <p>Runs on CPU, MIT licensed. Python or API.</p>
               <div class="blog-card-meta"><span class="blog-tag">Guide</span></div>
@@ -962,7 +962,7 @@
           </div>
           <div class="blog-grid">
 
-            <a class="blog-card" href="/agent-memory-compression">
+            <a class="blog-card" href="/context-compression">
               <h3>Agent Memory Compression</h3>
               <p>Compress long-term agent context to fit within windows while preserving facts.</p>
               <div class="blog-card-meta"><span class="blog-tag">Agents</span></div>
@@ -1045,13 +1045,13 @@
               <div class="blog-card-meta"><span class="blog-tag blog-tag--cost">Cost</span></div>
             </a>
 
-            <a class="blog-card" href="/llm-cost-optimization">
+            <a class="blog-card" href="/reduce-llm-costs">
               <h3>LLM Cost Optimization: Practical Ways to Cut Spend</h3>
               <p>Compression, routing, caching, and prompt hygiene work together.</p>
               <div class="blog-card-meta"><span class="blog-tag blog-tag--cost">Cost</span></div>
             </a>
 
-            <a class="blog-card" href="/reduce-openai-costs">
+            <a class="blog-card" href="/reduce-llm-costs">
               <h3>Reduce OpenAI API Costs</h3>
               <p>Cut prompt tokens before requests while preserving information.</p>
               <div class="blog-card-meta"><span class="blog-tag blog-tag--cost">Cost</span></div>
@@ -1334,7 +1334,25 @@
       </main>
 
       <!-- Footer -->
-      <!-- SITE_FOOTER_START -->
+      <section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -1354,36 +1372,42 @@
               <li><a href="/#agents">Agents</a></li>
               <li><a href="/blog" aria-current="page">Blog</a></li>
               <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
             </ul>
           </div>
           <div>
-            <p class="df-footer-heading">SEO Guides</p>
+            <p class="df-footer-heading">Blog</p>
             <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Documentation</p>
             <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -1397,7 +1421,6 @@
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-<!-- SITE_FOOTER_END -->
 
     </div>
   </div>
@@ -1459,6 +1482,6 @@
       });
     }
   </script>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

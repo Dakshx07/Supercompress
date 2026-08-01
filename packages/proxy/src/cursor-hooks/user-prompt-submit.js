@@ -7,7 +7,7 @@
  */
 const { compressContext, writeInbox, splitAskAndContext } = require("./compress-prompt-lib");
 
-const MIN_CONTEXT_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 800);
+const MIN_CONTEXT_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
 
 process.stdin.setEncoding("utf8");
 let raw = "";

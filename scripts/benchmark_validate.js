@@ -90,7 +90,7 @@ function runOne(context, query, answers, meta) {
     ...meta,
     original_tokens: r.original_tokens,
     kept_tokens: r.kept_tokens,
-    kv_savings_pct: Math.round(r.kv_savings_pct * 10) / 10,
+    tokens_saved_pct: Math.round(r.tokens_saved_pct * 10) / 10,
     important_kept_pct: r.important_kept_pct,
     answer_all_kept: ans ? ans.all : null,
     answer_any_kept: ans ? ans.any : null,
@@ -110,7 +110,7 @@ function summarize(rows) {
   const iks = rows.map((r) => r.important_kept_pct).filter((x) => x != null);
   return {
     n: rows.length,
-    mean_cut_pct: mean(rows.map((r) => r.kv_savings_pct)),
+    mean_cut_pct: mean(rows.map((r) => r.tokens_saved_pct)),
     token_weighted_cut_pct: Math.round((1 - outTok / Math.max(inTok, 1)) * 1000) / 10,
     mean_important_kept_pct: mean(iks),
     min_important_kept_pct: iks.length ? Math.min(...iks) : null,
@@ -188,7 +188,7 @@ async function main() {
         rows.push(row);
         all.push(row);
         process.stderr.write(
-          `.${t.label} ${rows.length}/${samples.length} cut=${row.kv_savings_pct}% ans=${row.answer_all_kept}\n`
+          `.${t.label} ${rows.length}/${samples.length} cut=${row.tokens_saved_pct}% ans=${row.answer_all_kept}\n`
         );
       }
       byTask[t.label] = summarize(rows);
@@ -208,7 +208,7 @@ async function main() {
     });
     docRows.push(row);
     all.push(row);
-    process.stderr.write(`.docs ${d.label} cut=${row.kv_savings_pct}% ans=${row.answer_all_kept}\n`);
+    process.stderr.write(`.docs ${d.label} cut=${row.tokens_saved_pct}% ans=${row.answer_all_kept}\n`);
   }
   byTask.ood_fresh2_docs = summarize(docRows);
 

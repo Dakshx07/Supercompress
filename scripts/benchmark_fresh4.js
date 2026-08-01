@@ -112,11 +112,14 @@ function clip(ctx) {
   if (ctx.length <= MAX_CTX_CHARS) return ctx;
   return ctx.slice(0, MAX_CTX_CHARS) + "\n…[truncated for bench]…";
 }
-function runOne(context, query, answers, meta) {
+const { loadNeuralBoost } = require("./_lib/bench-neural");
+
+async function runOne(context, query, answers, meta) {
   const ctx = clip(context);
   const q = query || "Summarize the key facts and decisions in this context.";
   const t0 = Date.now();
-  const r = E.compressAdaptive(ctx, q, model);
+  const neuralBoost = await loadNeuralBoost(ctx, q);
+  const r = E.compressAdaptive(ctx, q, model, neuralBoost ? { neuralBoost } : null);
   const ms = Date.now() - t0;
   const compressed = r.compressed_text || "";
   const list = Array.isArray(answers) ? answers : answers ? [answers] : [];
@@ -142,7 +145,7 @@ function runOne(context, query, answers, meta) {
     dropped_answers: dropped,
     original_tokens: r.original_tokens,
     kept_tokens: r.kept_tokens,
-    kv_savings_pct: Math.round(r.kv_savings_pct * 10) / 10,
+    tokens_saved_pct: Math.round(r.tokens_saved_pct * 10) / 10,
     important_kept_pct: r.important_kept_pct,
     answer_all_kept: ans ? ans.all : null,
     answer_any_kept: ans ? ans.any : null,
@@ -162,7 +165,7 @@ function summarize(rows) {
   const drops = withAns.filter((r) => !r.answer_all_kept);
   return {
     n: rows.length,
-    mean_cut_pct: mean(rows.map((r) => r.kv_savings_pct)),
+    mean_cut_pct: mean(rows.map((r) => r.tokens_saved_pct)),
     token_weighted_cut_pct: Math.round((1 - outTok / Math.max(inTok, 1)) * 1000) / 10,
     answer_all_kept_rate: withAns.length
       ? withAns.filter((r) => r.answer_all_kept).length / withAns.length
@@ -201,14 +204,14 @@ async function main() {
     .map((l) => JSON.parse(l));
   const hardRows = [];
   for (const s of hardLines) {
-    const row = runOne(s.context || "", s.input || "", s.answers || [], {
+    const row = await runOne(s.context || "", s.input || "", s.answers || [], {
       task: "ood_fresh4_hard",
       id: s.id || null,
     });
     hardRows.push(row);
     all.push(row);
     process.stderr.write(
-      `.ood_fresh4_hard ${hardRows.length}/${hardLines.length} cut=${row.kv_savings_pct}% ans=${row.answer_all_kept} id=${row.id}\n`
+      `.ood_fresh4_hard ${hardRows.length}/${hardLines.length} cut=${row.tokens_saved_pct}% ans=${row.answer_all_kept} id=${row.id}\n`
     );
   }
   byTask.ood_fresh4_hard = summarize(hardRows);
@@ -226,14 +229,14 @@ async function main() {
       if (typeof answers === "string") answers = [answers];
       if (!Array.isArray(answers)) answers = [];
       const assembled = assembleSample(s);
-      const row = runOne(assembled.context, assembled.query, answers, {
+      const row = await runOne(assembled.context, assembled.query, answers, {
         task: t.label,
         id: s._id || null,
       });
       rows.push(row);
       all.push(row);
       process.stderr.write(
-        `.${t.label} ${rows.length}/${samples.length} cut=${row.kv_savings_pct}% ans=${row.answer_all_kept}\n`
+        `.${t.label} ${rows.length}/${samples.length} cut=${row.tokens_saved_pct}% ans=${row.answer_all_kept}\n`
       );
     }
     byTask[t.label] = summarize(rows);

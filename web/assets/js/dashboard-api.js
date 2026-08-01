@@ -22,7 +22,12 @@ const SESSION_KEY = "sc_dash_session";
 const SECRET_KEY = "sc_last_api_secret";
 
 function cleanConfigValue(value) {
-  return String(value || "").trim().split(/\s+/)[0] || "";
+  // Strip whitespace and literal "\n" / "\r" leftovers from poorly pasted Vercel env values.
+  return String(value || "")
+    .replace(/\\[nr]/gi, "")
+    .replace(/[\r\n\t]/g, "")
+    .trim()
+    .split(/\s+/)[0] || "";
 }
 
 function normalizeFirebaseConfig(source = {}) {
@@ -57,6 +62,7 @@ let snippetTab = "python";
 let modalSnippetTab = "python";
 let lastCreatedSecret = null;
 let defaultKeyProvisioning = false;
+let lastBillingSub = null;
 
 const AUTH_NETWORK_MESSAGE =
   "Signed in, but Firebase could not issue a session token. Check your network/ad blocker/VPN and refresh, then try again.";
@@ -383,6 +389,7 @@ async function loadKeysFresh(retries = 6) {
       keysData = data.keys || [];
       usageData = data.usage || {};
       codingAgentUsage = data.coding_agent_usage || {};
+      agentPluginLink = data.agent_plugin || { linked: false };
       renderKeys();
       renderUsage();
       renderCodingAgents();
@@ -398,25 +405,49 @@ async function loadKeysFresh(retries = 6) {
 }
 
 let codingAgentUsage = {};
+let agentPluginLink = { linked: false };
 
 function renderCodingAgents() {
   const tbody = $("coding-tbody");
   const container = $("coding-stats-container");
   const cta = $("coding-cta");
+  const connected = $("coding-connected");
+  const connectedMeta = $("coding-connected-meta");
   if (!tbody) return;
 
   const agents = Object.keys(codingAgentUsage);
+  const isLinked = Boolean(agentPluginLink?.linked) || agents.length > 0;
 
   if (agents.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="dash-empty">No coding agent usage yet.</td></tr>`;
-    if (container) container.classList.add("hidden");
-    if (cta) cta.classList.remove("hidden");
+    tbody.innerHTML = `<tr><td colspan="7" class="dash-empty">${
+      isLinked
+        ? "Linked — waiting for the first compress from a coding agent."
+        : "No coding agent usage yet."
+    }</td></tr>`;
+    if (container) container.classList.toggle("hidden", !isLinked);
+    if (cta) cta.classList.toggle("hidden", isLinked);
+    if (connected) connected.classList.toggle("hidden", !isLinked);
+    if (connectedMeta && isLinked) {
+      const when = agentPluginLink.linked_at ? formatDate(agentPluginLink.linked_at) : "";
+      const src = agentPluginLink.source ? String(agentPluginLink.source) : "oauth";
+      connectedMeta.textContent = when
+        ? `Linked via ${src} · ${when}`
+        : `Linked via ${src}`;
+    }
+    if (isLinked) {
+      const n = (v) => formatNum(v);
+      if ($("coding-total-agents")) $("coding-total-agents").textContent = "0";
+      if ($("coding-total-requests")) $("coding-total-requests").textContent = n(0);
+      if ($("coding-total-saved")) $("coding-total-saved").textContent = n(0);
+      if ($("coding-total-in")) $("coding-total-in").textContent = n(0);
+    }
     return;
   }
 
-  // Show stats, hide CTA
+  // Show stats, hide install CTA (keep connected banner subtle / hide it when stats exist)
   if (container) container.classList.remove("hidden");
   if (cta) cta.classList.add("hidden");
+  if (connected) connected.classList.add("hidden");
 
   // Update summary
   let totalReqs = 0, totalIn = 0, totalOut = 0, totalSaved = 0;
@@ -474,12 +505,15 @@ async function loadKeys() {
     keysData = data.keys || [];
     usageData = data.usage || {};
     codingAgentUsage = data.coding_agent_usage || {};
+    agentPluginLink = data.agent_plugin || { linked: false };
     renderKeys();
     renderUsage();
     renderCodingAgents();
     updateStats();
     renderSnippet("dash");
     await ensureDefaultKey();
+    renderActivationChecklist();
+    if (lastBillingSub) renderPaygNudge(lastBillingSub);
   } catch (err) {
     keysGrid.innerHTML = `<p class="dash-empty">Failed to load keys: ${escapeHtml(err.message)}</p>`;
   }
@@ -651,13 +685,20 @@ function connectCodeFromUrl() {
 async function completeDeviceConnect(code) {
   const cleanCode = String(code || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!cleanCode || cleanCode.length < 6) return null;
+  const params = new URLSearchParams(window.location.search);
+  const source = (params.get("source") || "oauth").trim().slice(0, 40) || "oauth";
   const res = await apiFetch("/api/connect-device", {
     method: "POST",
-    body: JSON.stringify({ code: cleanCode }),
+    body: JSON.stringify({ code: cleanCode, source }),
   });
   if (res?.secret) {
     lastCreatedSecret = res.secret;
     saveSecret(res.secret);
+  }
+  if (res?.agent_plugin?.linked) {
+    agentPluginLink = res.agent_plugin;
+  } else {
+    agentPluginLink = { linked: true, source, linked_at: new Date().toISOString() };
   }
   cleanAuthQuery();
   return res;
@@ -715,15 +756,82 @@ async function loadSubscription() {
 
   try {
     const sub = await apiFetch("/api/billing");
+    lastBillingSub = sub;
     renderSubscription(sub);
+    renderPaygNudge(sub);
+    renderActivationChecklist();
   } catch (err) {
     statusCard.innerHTML = `<p class="dash-empty" style="padding:20px">Could not load billing info: ${escapeHtml(err.message)}</p>`;
   }
 }
 
+function totalTokensIn() {
+  let tokens = 0;
+  for (const snap of Object.values(usageData || {})) {
+    tokens += snap.total_tokens_in || 0;
+  }
+  return tokens;
+}
+
+function totalRequests() {
+  let reqs = 0;
+  for (const snap of Object.values(usageData || {})) {
+    reqs += snap.total_requests || 0;
+  }
+  return reqs;
+}
+
+function renderPaygNudge(sub) {
+  const banner = $("dash-payg-banner");
+  if (!banner) return;
+  const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
+  if (payg) {
+    banner.classList.add("hidden");
+    banner.innerHTML = "";
+    return;
+  }
+
+  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
+  const used = sub.tokens_used_this_period || totalTokensIn() || 0;
+  const pct = freeCap > 0 ? Math.min(100, (Math.min(used, freeCap) / freeCap) * 100) : 0;
+  const hasUse = used > 0 || totalRequests() > 0;
+
+  let tone = "";
+  let copy = "";
+  if (pct >= 80) {
+    tone = "dash-payg-banner--urgent";
+    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add a card now so compression never hard-stops — still $1/1M after free.`;
+  } else if (pct >= 50) {
+    tone = "dash-payg-banner--warn";
+    copy = `Halfway through your free 5M this month. Add pay-as-you-go so a busy agent week doesn't cut you off.`;
+  } else if (hasUse) {
+    tone = "";
+    copy =
+      "Nice — first compress landed. Add a card so compression never hard-stops. You still get 5M free, then $1/1M.";
+  } else {
+    banner.classList.add("hidden");
+    banner.innerHTML = "";
+    return;
+  }
+
+  banner.className = `dash-payg-banner ${tone}`.trim();
+  banner.innerHTML = `
+    <p><strong>Never hard-stop.</strong> ${escapeHtml(copy)}</p>
+    <button type="button" class="btn-brand" id="btn-payg-nudge">Add payment method</button>
+  `;
+  $("btn-payg-nudge")?.addEventListener("click", () => {
+    handleEnablePayg();
+  });
+}
+
+function renderActivationChecklist() {
+  /* Activation checklist removed from dashboard UI. */
+}
+
 function renderSubscription(sub) {
   const statusCard = $("billing-status-card");
   if (!statusCard) return;
+  lastBillingSub = sub;
 
   const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
   const used = sub.tokens_used_this_period || 0;
@@ -910,6 +1018,8 @@ function updateStats() {
   $("stat-requests").textContent = formatNum(reqs);
   $("stat-saved").textContent = formatNum(saved);
   $("stat-in").textContent = formatNum(tin);
+  renderActivationChecklist();
+  if (lastBillingSub) renderPaygNudge(lastBillingSub);
 }
 
 function renderKeys() {
@@ -1073,6 +1183,16 @@ function initModals() {
   $("btn-cancel-rename")?.addEventListener("click", () => hide($("modal-rename")));
   $("btn-confirm-rename")?.addEventListener("click", confirmRename);
   $("btn-test-key")?.addEventListener("click", sendTestRequest);
+
+  const refreshAgents = async () => {
+    try {
+      await loadKeysFresh(3);
+    } catch (err) {
+      setError(err.message || "Failed to refresh agent stats");
+    }
+  };
+  $("btn-test-proxy")?.addEventListener("click", refreshAgents);
+  $("btn-refresh-agents")?.addEventListener("click", refreshAgents);
 }
 
 function initDevAuth(message) {
@@ -1140,25 +1260,33 @@ async function initFirebaseAuth() {
     setError(isAuthNetworkError(err) ? AUTH_NETWORK_MESSAGE : err.message);
   }
 
-  let authTab = "signin";
+  let authTab = "signup";
   const setAuthTab = (nextTab) => {
-    authTab = nextTab === "signup" ? "signup" : "signin";
+    authTab = nextTab === "signin" ? "signin" : "signup";
     document.querySelectorAll(".dash-auth-tab").forEach((t) => {
       t.classList.toggle("active", t.dataset.tab === authTab);
     });
-    $("auth-submit").textContent = authTab === "signup" ? "Sign up" : "Log in";
-    $("auth-password").autocomplete = authTab === "signup" ? "new-password" : "current-password";
+    const submit = $("auth-submit");
+    if (submit) submit.textContent = authTab === "signup" ? "Create free account" : "Log in";
+    const pw = $("auth-password");
+    if (pw) pw.autocomplete = authTab === "signup" ? "new-password" : "current-password";
     // Default dashboard auth copy (plugin OAuth uses applyConnectAuthCopy)
     if (!connectCodeFromUrl()) {
       const title = $("auth-title");
       const subtitle = $("auth-subtitle");
-      if (title) title.textContent = authTab === "signup" ? "Sign up" : "Log in";
+      const label = document.querySelector(".dash-auth-card .dash-section-label");
+      const perks = $("auth-perks");
+      if (label) label.textContent = authTab === "signup" ? "Free to start" : "Welcome back";
+      if (title) {
+        title.textContent = authTab === "signup" ? "Get your free API key" : "Log in";
+      }
       if (subtitle) {
         subtitle.textContent =
           authTab === "signup"
-            ? "Create an account to manage API keys, usage, and billing."
+            ? "5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
+      if (perks) perks.classList.toggle("hidden", authTab !== "signup");
     }
   };
 
@@ -1168,12 +1296,14 @@ async function initFirebaseAuth() {
     const title = $("auth-title");
     const subtitle = $("auth-subtitle");
     const label = document.querySelector(".dash-auth-card .dash-section-label");
+    const perks = $("auth-perks");
     if (label) label.textContent = "Coding agent plugin";
     if (title) title.textContent = "Connect your SuperCompress account";
     if (subtitle) {
       subtitle.textContent =
         "Sign in to link this device. SuperCompress will create your account key automatically for the plugin.";
     }
+    if (perks) perks.classList.add("hidden");
   }
 
   document.querySelectorAll(".dash-auth-tab").forEach((tab) => {
@@ -1182,14 +1312,20 @@ async function initFirebaseAuth() {
 
   const authParams = new URLSearchParams(window.location.search);
   applyConnectAuthCopy();
-  if (
+  const wantLogin =
+    authParams.get("login") === "1" ||
+    authParams.get("login") === "true" ||
+    authParams.get("mode") === "login" ||
+    authParams.get("mode") === "signin";
+  const wantSignup =
     authParams.get("signup") === "1" ||
     authParams.get("signup") === "true" ||
-    authParams.get("mode") === "signup"
-  ) {
-    setAuthTab("signup");
-  } else {
+    authParams.get("mode") === "signup";
+  // Default to signup — login only when explicitly requested (or plugin connect).
+  if (wantLogin && !wantSignup && !connectCodeFromUrl()) {
     setAuthTab("signin");
+  } else {
+    setAuthTab("signup");
   }
 
   $("btn-google").addEventListener("click", async () => {
@@ -1253,14 +1389,17 @@ async function initFirebaseAuth() {
     }
   });
 
-  $("dash-signout").addEventListener("click", async () => {
-    clearSession();
-    if (auth) await signOut(auth);
-    else {
-      idToken = null;
-      showAuth();
-    }
-  });
+  const signOutBtn = $("dash-signout");
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      clearSession();
+      if (auth) await signOut(auth);
+      else {
+        idToken = null;
+        showAuth();
+      }
+    });
+  }
 }
 
 function firebaseConfigReady(source) {

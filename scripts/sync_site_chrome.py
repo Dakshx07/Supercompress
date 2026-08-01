@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Apply landing-page header/footer chrome to every public HTML page."""
+"""Apply landing-page header/footer chrome to every public marketing HTML page.
+
+Canonical sources:
+  web/assets/partials/site-header.html
+  web/assets/partials/site-footer.html
+
+Skipped:
+  - docs/* (sidebar docs chrome)
+  - dashboard.html header (keeps account profile UI; footer still synced)
+  - partials themselves
+"""
 
 from __future__ import annotations
 
@@ -8,24 +18,47 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
-HEADER = (WEB / "assets/partials/site-header.html").read_text()
-FOOTER = (WEB / "assets/partials/site-footer.html").read_text()
+HEADER = (WEB / "assets/partials/site-header.html").read_text(encoding="utf-8")
+FOOTER = (WEB / "assets/partials/site-footer.html").read_text(encoding="utf-8")
+SIGNUP_CTA = (WEB / "assets/partials/signup-cta.html").read_text(encoding="utf-8")
 # Strip comment markers for injection body
 HEADER_HTML = re.sub(r"<!-- SITE_HEADER_(?:START|END) -->\n?", "", HEADER).strip() + "\n"
 FOOTER_HTML = re.sub(r"<!-- SITE_FOOTER_(?:START|END) -->\n?", "", FOOTER).strip() + "\n"
+SIGNUP_CTA_HTML = re.sub(r"<!-- SITE_SIGNUP_CTA_(?:START|END) -->\n?", "", SIGNUP_CTA).strip() + "\n"
 
-SKIP = {
+SKIP_PATHS = {
     "web/assets/partials/site-header.html",
     "web/assets/partials/site-footer.html",
+    "web/assets/partials/signup-cta.html",
     "web/logo-dots.html",
+    "web/assets/partials/seo-cluster.html",
 }
 
-CHROME_CSS = '<link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />'
-CHROME_JS = '<script src="/assets/js/site-chrome.js?v=6"></script>'
+# Pages that already have a full-bleed landing CTA (avoid stacking duplicate bands)
+SKIP_SIGNUP_CTA = {
+    "web/index.html",
+    "web/dashboard.html",
+    "web/unsubscribe.html",
+}
+
+CHROME_CSS = '<link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />'
+CHROME_JS = '<script src="/assets/js/site-chrome.js?v=11"></script>'
 
 
 def rel(path: Path) -> str:
     return str(path.relative_to(ROOT))
+
+
+def is_docs_page(path: Path) -> bool:
+    try:
+        path.relative_to(WEB / "docs")
+        return True
+    except ValueError:
+        return False
+
+
+def is_dashboard(path: Path) -> bool:
+    return path.name == "dashboard.html" and path.parent == WEB
 
 
 def ensure_chrome_css(html: str) -> str:
@@ -36,7 +69,6 @@ def ensure_chrome_css(html: str) -> str:
             html,
             count=1,
         )
-    # Insert after last stylesheet link in head, else before </head>
     links = list(re.finditer(r'<link[^>]+rel="stylesheet"[^>]*>', html, re.I))
     if links:
         last = links[-1]
@@ -89,7 +121,18 @@ def mark_current(html: str, page: Path) -> str:
 
 
 def replace_header(html: str) -> str:
-    # Remove existing df-header (+ spacer)
+    # Marker-wrapped blocks
+    html2, n = re.subn(
+        r"<!-- SITE_HEADER_START -->.*?<!-- SITE_HEADER_END -->\s*",
+        HEADER_HTML,
+        html,
+        count=1,
+        flags=re.S,
+    )
+    if n:
+        return html2
+
+    # Existing df-header (+ spacer)
     html2, n = re.subn(
         r'<header class="df-header">.*?</header>\s*(?:<div class="df-header-spacer"[^>]*></div>\s*)?',
         HEADER_HTML,
@@ -100,7 +143,7 @@ def replace_header(html: str) -> str:
     if n:
         return html2
 
-    # Remove sc-nav
+    # Legacy sc-nav
     html2, n = re.subn(
         r'<nav class="sc-nav">.*?</nav>\s*',
         HEADER_HTML,
@@ -121,30 +164,7 @@ def replace_header(html: str) -> str:
     if n:
         return html2
 
-    # Docs top nav — keep layout but inject site header before docs-layout
-    if 'class="docs-layout"' in html and 'class="df-header"' not in html:
-        html = html.replace(
-            '<div class="docs-layout">',
-            HEADER_HTML + '<div class="docs-layout">',
-            1,
-        )
-        # Replace docs pill links with landing set
-        html = re.sub(
-            r'<nav class="docs-nav-pill"[^>]*>.*?</nav>',
-            """<nav class="docs-nav-pill" aria-label="Main">
-              <a href="/benchmarks">Benchmarks</a>
-              <a href="/#agents">Agents</a>
-              <a href="/blog">Blog</a>
-              <a href="/changelog">Changelog</a>
-              <a href="/docs/">Docs</a>
-            </nav>""",
-            html,
-            count=1,
-            flags=re.S,
-        )
-        return html
-
-    # SEO / pages with no header — insert after <body...>
+    # Pages with no header — insert after <body...>
     if 'class="df-header"' not in html:
         html = re.sub(
             r"(<body[^>]*>)",
@@ -158,7 +178,17 @@ def replace_header(html: str) -> str:
 
 def replace_footer(html: str) -> str:
     html2, n = re.subn(
-        r"<footer class=\"df-footer\">.*?</footer>",
+        r"<!-- SITE_FOOTER_START -->.*?<!-- SITE_FOOTER_END -->",
+        FOOTER_HTML.rstrip(),
+        html,
+        count=1,
+        flags=re.S,
+    )
+    if n:
+        return html2
+
+    html2, n = re.subn(
+        r'<footer class="df-footer">.*?</footer>',
         FOOTER_HTML.rstrip(),
         html,
         count=1,
@@ -187,6 +217,50 @@ def replace_footer(html: str) -> str:
     return html
 
 
+def ensure_signup_cta(html: str) -> str:
+    """Place incentive signup band immediately before site footer."""
+    # Refresh existing band
+    html2, n = re.subn(
+        r"<!-- SITE_SIGNUP_CTA_START -->.*?<!-- SITE_SIGNUP_CTA_END -->\s*",
+        SIGNUP_CTA_HTML,
+        html,
+        count=1,
+        flags=re.S,
+    )
+    if n:
+        return html2
+
+    # Refresh only the pre-footer section band (never touch mid-page asides)
+    html2, n = re.subn(
+        r'<section class="sc-signup-band"(?![^>]*sc-signup-band--inline)[^>]*>.*?</section>\s*',
+        SIGNUP_CTA_HTML,
+        html,
+        count=1,
+        flags=re.S,
+    )
+    if n:
+        return html2
+
+    # Insert before footer if missing
+    if 'class="sc-signup-band"' not in html and 'class="df-footer"' in html:
+        return re.sub(
+            r'(<footer class="df-footer">)',
+            SIGNUP_CTA_HTML + r"\1",
+            html,
+            count=1,
+        )
+    if 'class="df-footer"' in html and 'sc-signup-band"' in html and 'SITE_SIGNUP_CTA' not in html:
+        # Has only an inline mid CTA — still add footer band
+        if "sc-signup-band--inline" in html and '<section class="sc-signup-band"' not in html:
+            return re.sub(
+                r'(<footer class="df-footer">)',
+                SIGNUP_CTA_HTML + r"\1",
+                html,
+                count=1,
+            )
+    return html
+
+
 def strip_seo_chrome_nav(html: str) -> str:
     """Remove in-page seo-nav that duplicates site header links."""
     return re.sub(
@@ -200,19 +274,47 @@ def strip_seo_chrome_nav(html: str) -> str:
 
 def process(path: Path) -> bool:
     rel_path = rel(path)
-    if rel_path in SKIP:
+    if rel_path in SKIP_PATHS:
         return False
+    if is_docs_page(path):
+        return False
+
     original = path.read_text(encoding="utf-8", errors="ignore")
     html = original
+    is_landing = path.name == "index.html" and path.parent == WEB
+    dashboard = is_dashboard(path)
+
+    # Keep chrome CSS cache-bust in sync on every page (including landing)
     html = ensure_chrome_css(html)
-    html = replace_header(html)
-    html = strip_seo_chrome_nav(html)
+
+    # Dashboard keeps its auth/profile header; unify footer only
+    if not dashboard:
+        html = replace_header(html)
+        html = strip_seo_chrome_nav(html)
+
     html = replace_footer(html)
-    html = ensure_chrome_js(html)
-    # Index: keep in-page #agents as /#agents already in partial; sync index header too
-    if path.name == "index.html" and path.parent == WEB:
-        html = html.replace('href="#agents"', 'href="/#agents"')
-    html = mark_current(html, path)
+
+    if rel_path not in SKIP_SIGNUP_CTA and not dashboard:
+        html = ensure_signup_cta(html)
+
+    if not is_landing and not dashboard:
+        html = ensure_chrome_js(html)
+    elif is_landing:
+        html = ensure_chrome_js(html)
+
+    if is_landing:
+        html = html.replace('href="#features"', 'href="/#features"')
+        html = html.replace('href="#coding-agents"', 'href="/#coding-agents"')
+        html = html.replace('href="#demo"', 'href="/#demo"')
+        html = html.replace(
+            'href="/#demo" class="btn-link-muted"',
+            'href="#demo" class="btn-link-muted"',
+            1,
+        )
+
+    if not dashboard:
+        html = mark_current(html, path)
+
     if html != original:
         path.write_text(html, encoding="utf-8")
         return True

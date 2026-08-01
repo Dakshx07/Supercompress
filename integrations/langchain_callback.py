@@ -109,13 +109,13 @@ class SuperCompressCallback(BaseCallbackHandler):
 
         logger.info(
             f"SuperCompress [LangChain]: {result.original_tokens}→{result.kept_tokens} tok "
-            f"({result.kv_savings_pct:.1f}%% saved)"
+            f"({result.tokens_saved_pct:.1f}%% saved)"
         )
 
         # Rebuild messages
         compressed_content = (
             f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok, "
-            f"{result.kv_savings_pct:.1f}%% saved]\n\n"
+            f"{result.tokens_saved_pct:.1f}%% saved]\n\n"
             f"{result.compressed_text}\n\n---\n\n{query}"
         )
 

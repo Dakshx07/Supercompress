@@ -40,7 +40,7 @@ def _result_dict(r) -> dict:
     return {
         "original_tokens": r.original_tokens,
         "kept_tokens": r.kept_tokens,
-        "kv_savings_pct": round(r.kv_savings_pct, 2),
+        "tokens_saved_pct": round(r.tokens_saved_pct, 2),
         "kept_line_ratio": round(r.kept_line_ratio, 3),
         "policy_name": r.policy_name,
         "budget_ratio": r.budget_ratio,

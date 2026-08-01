@@ -9,7 +9,7 @@
     tokens_per_gpu_second: 2500,
     gpu_watts: 150,
     grid_kg_co2_per_kwh: 0.417,
-    kv_share_of_prefill: 0.55,
+    context_share_of_prefill: 0.55,
     liters_water_per_kwh: 1.8,
   };
 
@@ -84,7 +84,7 @@
   }
 
   function envForTokenCount(tokenCount) {
-    const effective = Math.max(tokenCount, 0) * ASSUMPTIONS.kv_share_of_prefill;
+    const effective = Math.max(tokenCount, 0) * ASSUMPTIONS.context_share_of_prefill;
     const gpuSeconds = effective / ASSUMPTIONS.tokens_per_gpu_second;
     const wattHours = (gpuSeconds * ASSUMPTIONS.gpu_watts) / 3600;
     const kwh = wattHours / 1000;
@@ -128,7 +128,7 @@
       const result = E.compressAdaptive(context, query, model);
       const quality = result.answer_quality ?? E.answerQualityScore(context, result.compressed_text, query);
       const saved = Math.max(0, result.original_tokens - result.kept_tokens);
-      const pct = result.kv_savings_pct ?? 0;
+      const pct = result.tokens_saved_pct ?? 0;
       const originalChars = context.length;
       const compressedChars = result.compressed_text.length;
       const charSaved = Math.max(0, originalChars - compressedChars);

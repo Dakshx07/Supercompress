@@ -96,11 +96,11 @@ def main() -> None:
     summary = data.get("summary", {})
     order = [k for k in ("FIFO", "Truncation", "Summarization", "H2O", "SuperCompress") if k in summary]
 
-    kv = [summary[k]["avg_kv_savings_pct"] for k in order]
+    kv = [summary[k]["avg_tokens_saved_pct"] for k in order]
     quality = [summary[k]["avg_answer_quality"] * 100 for k in order]
     oracle = [summary[k]["avg_oracle_recall"] * 100 for k in order]
     # Useful retention = KV savings × oracle recall (both 0–1 scale on recall).
-    useful = [round(summary[k]["avg_kv_savings_pct"] * summary[k]["avg_oracle_recall"], 1) for k in order]
+    useful = [round(summary[k]["avg_tokens_saved_pct"] * summary[k]["avg_oracle_recall"], 1) for k in order]
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "chart-kv-savings.svg").write_text(
@@ -116,7 +116,7 @@ def main() -> None:
     adaptive = data.get("adaptive", {})
     if adaptive.get("presets"):
         labels = [adaptive["presets"][k]["label"] for k in adaptive["presets"]]
-        values = [adaptive["presets"][k]["kv_savings_pct"] for k in adaptive["presets"]]
+        values = [adaptive["presets"][k]["tokens_saved_pct"] for k in adaptive["presets"]]
         ymax = max(max(values) * 1.1, 100)
         (OUT / "chart-adaptive-savings.svg").write_text(
             _bar_chart(

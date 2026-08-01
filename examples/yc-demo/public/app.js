@@ -160,7 +160,7 @@ function renderProof(data, input, compressed, local) {
 }
 
 function renderCompare(data, local) {
-  const compression = Number(data.kv_savings_pct || local.tokenPct || 0);
+  const compression = Number(data.tokens_saved_pct || local.tokenPct || 0);
   const critical = Number(data.important_kept_pct != null ? data.important_kept_pct * 100 : 0);
   compareEl.innerHTML = `
     <div class="compare-card">
@@ -184,7 +184,7 @@ function renderCompare(data, local) {
 }
 
 function renderStats(data, local) {
-  const kv = Number(data.kv_savings_pct || 0);
+  const kv = Number(data.tokens_saved_pct || 0);
   const critical = Number(data.important_kept_pct != null ? data.important_kept_pct * 100 : 0);
   const quality = data.answer_quality != null ? Number(data.answer_quality) * 100 : null;
 
@@ -310,7 +310,7 @@ function renderBefore(input) {
 function renderAll(data, input, query) {
   const compressed = String(data.compressed_text || "");
   const local = localVerify(input, compressed, data);
-  const compression = Number(data.kv_savings_pct || 0);
+  const compression = Number(data.tokens_saved_pct || 0);
   const critical = Number(data.important_kept_pct != null ? data.important_kept_pct * 100 : 0);
   resultSummary.textContent = `${data.policy_name || "SuperCompress"}: ${compression.toFixed(1)}% compression, ${critical.toFixed(0)}% critical retained — measured on this response.`;
 
@@ -389,7 +389,7 @@ async function compress() {
     results.hidden = false;
     renderAll(data, context, query);
     setStatus(
-      `Live response — ${pct(data.kv_savings_pct)} compression · ${pct(Number(data.important_kept_pct || 0) * 100, 0)} critical · ${fmt(data.latency_ms)}ms`,
+      `Live response — ${pct(data.tokens_saved_pct)} compression · ${pct(Number(data.important_kept_pct || 0) * 100, 0)} critical · ${fmt(data.latency_ms)}ms`,
       "ok",
     );
     results.scrollIntoView({ behavior: "smooth", block: "start" });

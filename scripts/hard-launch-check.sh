@@ -11,7 +11,8 @@ docs="$(curl -fsSL --max-time 20 "$live_url/docs/coding-agents")"
 auth_status="$(curl -fsSL --max-time 20 "$live_url/api/auth-status")"
 
 grep -q 'id="coding-agents"' <<<"$homepage"
-grep -q 'npm install supercompress-proxy' <<<"$homepage"
+grep -Eq 'npm install (-g )?supercompress-proxy' <<<"$homepage"
+grep -q 'supercompress setup' <<<"$homepage"
 grep -q 'supercompress-proxy' <<<"$docs"
 grep -q '"storage":"firestore"' <<<"$auth_status"
 

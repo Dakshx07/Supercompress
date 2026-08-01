@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress — Research, Citation & Benchmarks for LLM Prompt Compression</title>
-  <meta name="description" content="Academic citation and benchmark results for SuperCompress LLM prompt compression. ~5K parameter learned policy, 100% oracle recall at 65% token reduction. Benchmarks on NQ, TriviaQA, HotpotQA, and SQuAD." />
+  <meta name="description" content="Academic citation and benchmark results for SuperCompress LLM prompt compression. Query-aware learned keep/drop policy, 100% oracle recall at 65% token reduction. Benchmarks on NQ, TriviaQA, HotpotQA, and SQuAD." />
   <meta name="google-site-verification" content="XsQ7Nmir8JkxthozOvPRlodGtbwV2pRrmldtlXAJhfc" />
   <meta property="og:title" content="SuperCompress — Research, Citation & Benchmarks" />
   <meta property="og:description" content="Academic citation and benchmark results for LLM prompt compression. 100% oracle recall at 65% token reduction." />
@@ -27,7 +27,7 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
 <link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=6" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
   <!-- Preconnect hints for faster external resource loading -->
   <link rel="preconnect" href="https://github.com" />
   <link rel="dns-prefetch" href="https://github.com" />
@@ -61,7 +61,7 @@
     "@context": "https://schema.org",
     "@type": "ScholarlyArticle",
     "name": "SuperCompress: Efficient LLM Context Compression",
-    "description": "Introduces a ~5K parameter learned policy for query-aware context compression achieving 100% oracle recall at 65% token reduction on benchmark seeds.",
+    "description": "Introduces a query-aware learned keep/drop policy for context compression achieving 100% oracle recall at 65% token reduction on benchmark seeds.",
     "url": "https://supercompress.dev/research",
     "author": {
       "@type": "Person",
@@ -93,7 +93,7 @@
     "name": "SuperCompress",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Linux, macOS, Windows",
-    "description": "SuperCompress: Intelligent LLM Prompt Compression. ~5K parameter learned policy for context compression.",
+    "description": "SuperCompress: Intelligent LLM Prompt Compression. Query-aware learned keep/drop policy for context compression.",
     "url": "https://supercompress.dev/research",
     "sameAs": "https://github.com/Supercompress/Supercompress",
     "offers": {
@@ -287,11 +287,9 @@
           <a href="/#agents">Agents</a>
           <a href="/blog">Blog</a>
           <a href="/changelog">Changelog</a>
-          <a href="/docs/">Docs</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
         </nav>
-        <nav class="df-nav-pill df-nav-pill--solo" aria-label="Dashboard">
-          <a href="/dashboard">Dashboard</a>
-        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
         <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
@@ -301,6 +299,7 @@
           <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
           <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
         </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
         <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -309,18 +308,38 @@
       <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
       <a href="/changelog">Changelog</a>
-      <a href="/docs/">Docs</a>
-      <a href="/dashboard">Dashboard</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
       <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
   <div class="df-header-spacer" aria-hidden="true"></div>
+
+    <aside class="sc-signup-band sc-signup-band--inline" aria-label="Start free">
+      <div class="sc-signup-band-inner">
+        <div class="sc-signup-band-copy">
+          <p class="sc-signup-band-kicker">Free to start</p>
+          <h2>Try it free — 5M tokens included</h2>
+          <p class="sc-signup-band-lead">No credit card. Same engine as production. Key ready after Google signup.</p>
+          <ul class="sc-signup-incentives">
+            <li>5M free tokens/mo</li>
+            <li>No credit card</li>
+            <li>Then $1/1M</li>
+          </ul>
+        </div>
+        <div class="sc-signup-band-actions">
+          <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=mid_cta&amp;utm_campaign=activation">Claim free API key →</a>
+        </div>
+      </div>
+    </aside>
+
 <!-- Research Header -->
     <header class="research-head">
       <p class="kicker">Academic Citation & Technical Details</p>
       <h1>SuperCompress: Efficient LLM Context Compression</h1>
-      <p class="subtitle">A ~5K parameter learned policy for query-aware context compression. Achieves 100% oracle recall at 65% token reduction on benchmark seeds. Nine line-level features including recency, position, and query overlap.</p>
+      <p class="subtitle">A query-aware learned keep/drop policy for context compression. Achieves 100% oracle recall at 65% token reduction on benchmark seeds. Features include recency, position, and query overlap.</p>
     </header>
 
     <div class="research-body">
@@ -344,7 +363,7 @@
       <!-- Model Architecture -->
       <section>
         <h2>Model Architecture</h2>
-        <p>SuperCompress uses a ~5,000 parameter learned policy that operates on token-level features:</p>
+        <p>SuperCompress uses a query-aware neural learned policy that operates on token-level features:</p>
         <ul>
           <li><strong>Input features:</strong> Token position, TF-IDF relevance score, named entity density, part-of-speech distribution, line length, and semantic similarity to query</li>
           <li><strong>Policy:</strong> Lightweight logistic regression with feature interactions, trained via reinforcement learning to maximize recall under a token budget</li>
@@ -416,7 +435,6 @@
               <th>Oracle Recall</th>
               <th>Entity Recall</th>
               <th>Latency</th>
-              <th>Model Size</th>
             </tr>
           </thead>
           <tbody>
@@ -425,28 +443,28 @@
               <td>25%</td>
               <td>73%</td>
               <td>~57 ms</td>
-              <td>0 (rule-based)</td>
+
             </tr>
             <tr>
               <td>Summarization</td>
               <td>61%</td>
               <td>65%</td>
               <td>~63 ms*</td>
-              <td>LLM call</td>
+
             </tr>
             <tr>
               <td>H2O (Heavy Hitter Oracle)</td>
               <td>98%</td>
               <td>73%</td>
               <td>~56 ms</td>
-              <td>attention-based</td>
+
             </tr>
             <tr class="best-row">
               <td><strong>SuperCompress</strong></td>
               <td><strong>100%</strong></td>
               <td><strong>73%</strong></td>
               <td><strong>~60 ms</strong></td>
-              <td><strong>~5K params</strong></td>
+
             </tr>
           </tbody>
         </table>
@@ -469,7 +487,25 @@
     </div>
 
     <!-- Footer -->
-    <!-- SITE_FOOTER_START -->
+    <section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
 <footer class="df-footer">
     <div class="df-footer-inner">
       <div class="df-footer-grid">
@@ -489,36 +525,42 @@
               <li><a href="/#agents">Agents</a></li>
               <li><a href="/blog">Blog</a></li>
               <li><a href="/changelog">Changelog</a></li>
-              <li><a href="/docs/">Docs</a></li>
-              <li><a href="/dashboard">Dashboard</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Resources</p>
             <ul>
               <li><a href="/playground">Playground</a></li>
-              <li><a href="/changelog">Changelog</a></li>
               <li><a href="/token-compression">Token compression guide</a></li>
               <li><a href="/benchmarks">Benchmarks</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research" aria-current="page">Research</a></li>
             </ul>
           </div>
           <div>
-            <p class="df-footer-heading">SEO Guides</p>
+            <p class="df-footer-heading">Blog</p>
             <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
               <li><a href="/prompt-compression">Prompt compression</a></li>
-              <li><a href="/token-compression">LLM token compression</a></li>
               <li><a href="/context-compression">Context compression</a></li>
-              <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
             </ul>
           </div>
           <div>
             <p class="df-footer-heading">Documentation</p>
             <ul>
-              <li><a href="/docs/">Documentation</a></li>
-              <li><a href="/docs/quickstart">Quickstart</a></li>
-              <li><a href="/docs/api-reference">API reference</a></li>
-              <li><a href="/docs/coding-agents">Coding agents</a></li>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
             </ul>
           </div>
           <div>
@@ -532,7 +574,6 @@
       <p class="df-footer-copy">© SuperCompress · MIT License</p>
     </div>
   </footer>
-<!-- SITE_FOOTER_END -->
   </div>
 
   <script src="assets/js/supercompress.js?v=6"></script>
@@ -565,6 +606,6 @@
       Share on HN
     </a>
   </div>
-  <script src="/assets/js/site-chrome.js?v=6"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>
