@@ -138,7 +138,7 @@
       {"@type": "PropertyValue", "name": "Oracle Recall", "unitText": "%"},
       {"@type": "PropertyValue", "name": "Entity Recall", "unitText": "%"},
       {"@type": "PropertyValue", "name": "Latency", "unitText": "ms"},
-      {"@type": "PropertyValue", "name": "KV Savings", "unitText": "%"}
+      {"@type": "PropertyValue", "name": "Tokens Saved (tokens_saved_pct)", "unitText": "%"}
     ]
   }
   </script>
@@ -542,7 +542,7 @@
         <!-- Environmental impact -->
         <section class="bench-section">
           <h2>Impact when this runs at scale</h2>
-          <p style="color:var(--text-body);line-height:1.6">Fewer tokens into the GPU means less prefill work. Estimates use documented SuperCompress assumptions (2,500 tok/GPU-s, 150W GPU, 55% KV share, 0.417 kg CO₂/kWh) and ~800 tokens saved per call.</p>
+          <p style="color:var(--text-body);line-height:1.6">SuperCompress removes prompt text before inference, so fewer tokens reach the GPU and the provider performs less prefill work. Estimates use documented assumptions (2,500 tok/GPU-s, 150W GPU, an estimated 55% inference-memory share for provider-managed KV state, 0.417 kg CO₂/kWh) and ~800 tokens saved per call.</p>
           <div class="bench-table-wrap">
             <table class="bench-table">
               <thead>
@@ -587,8 +587,8 @@
               <p>It’s the share of lines that contain the information needed to answer the question that still appear after compression. 100% means nothing required for a correct answer was deleted. That’s the metric that protects quality.</p>
             </details>
             <details>
-              <summary>Why do all methods show ~65% KV savings in the first table?</summary>
-              <p>Because that test forces the same budget: keep 35% of tokens, drop 65%. It’s a quality contest, not a savings contest. The interesting number is who still has the answer afterward.</p>
+              <summary>Why do all methods show ~65% tokens saved in the first table?</summary>
+              <p>Because that test forces the same budget: keep 35% of prompt tokens, drop 65%, so <code>tokens_saved_pct</code> is ~65% for every method. It’s a quality contest, not a savings contest. The interesting number is who still has the answer afterward.</p>
             </details>
             <details>
               <summary>Why do savings vary by workload?</summary>
