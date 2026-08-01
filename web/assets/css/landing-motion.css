@@ -248,7 +248,8 @@ html.gsap-ready .logo-marquee-track { animation: none !important; }
   transition: opacity .35s ease;
   pointer-events: none;
 }
-.hero-frame.is-playing .hero-frame-poster { opacity: 0; }
+.hero-frame.is-playing .hero-frame-poster,
+.hero-frame.is-live.is-playing .hero-frame-poster { opacity: 0; pointer-events: none; }
 .hero-frame-video {
   position: absolute;
   inset: 0;
@@ -259,6 +260,8 @@ html.gsap-ready .logo-marquee-track { animation: none !important; }
   background: #0a0a0a;
   z-index: 1;
 }
+/* Keep the video above a failed/stuck poster once playback has started */
+.hero-frame.is-playing .hero-frame-video { z-index: 3; }
 .launch-video-unmute {
   position: absolute;
   bottom: 16px;

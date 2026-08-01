@@ -57,19 +57,33 @@
     });
   }
 
-  // Launch video unmute
+  // Launch video unmute + ensure autoplay reveals the video (not stuck poster)
   const frame = document.getElementById('launch-video-frame');
   const video = frame?.querySelector('video');
   const soundBtn = document.getElementById('launch-video-sound');
   if (frame && video) {
     const markPlaying = () => frame.classList.add('is-playing');
-    video.addEventListener('playing', markPlaying);
-    if (!video.paused) markPlaying();
+    ['playing', 'canplay', 'loadeddata', 'timeupdate'].forEach((ev) => {
+      video.addEventListener(ev, markPlaying, { once: ev !== 'timeupdate' });
+    });
+    video.addEventListener('timeupdate', () => {
+      if (video.currentTime > 0.05) markPlaying();
+    }, { once: true });
+    if (!video.paused && video.readyState >= 2) markPlaying();
+    video.muted = true;
+    video.playsInline = true;
+    const tryPlay = () => {
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.then(markPlaying).catch(() => { /* autoplay blocked — poster stays until gesture */ });
+      }
+    };
+    tryPlay();
     soundBtn?.addEventListener('click', async () => {
       const muted = !video.muted;
       video.muted = muted;
       if (!muted) {
-        try { await video.play(); } catch (_) { /* */ }
+        try { await video.play(); markPlaying(); } catch (_) { /* */ }
       }
       soundBtn.textContent = muted ? 'Unmute' : 'Mute';
     });
