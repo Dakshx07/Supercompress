@@ -31,7 +31,7 @@ function enforceUsageLimit(owner) {
     const usedM = (tokensUsedThisPeriod / 1_000_000).toFixed(1);
     const freeM = (FREE_TOKENS_PER_MONTH / 1_000_000).toFixed(0);
     const err = new Error(
-      `Free monthly allowance reached (${usedM}M / ${freeM}M tokens). Enable pay-as-you-go (\$1 / 1M tokens) at https://supercompress.dev/dashboard`
+      `Free monthly allowance reached (${usedM}M / ${freeM}M tokens). Enable pay-as-you-go ($1 / 1M) so compression never hard-stops: https://www.supercompress.dev/dashboard#billing`
     );
     err.status = 429;
     throw err;
@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
 
     const result = mode === "fixed"
       ? compress(context, query, budgetRatio)
-      : ccr ? compressCCR(context, query) : compressAdaptive(context, query);
+      : await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
     await recordUsage(authenticated.user, authenticated.owner, result);
 
     // Track coding agent usage in a dedicated Firestore collection (more reliable
@@ -156,7 +156,8 @@ module.exports = async (req, res) => {
       }
     }
 
-    // CacheAligner: optionally wrap compressed text in stable prefix for KV cache hits
+    // CacheAligner: optionally wrap compressed text for provider prompt/prefix
+    // caching. SuperCompress does not operate inside model KV cache.
     const rawText = ccrInfo && ccrInfo.markers_count === 0
       ? result.compressed_text + `\n[SC-Retrieve: ${ccrInfo.hash}]\n`
       : result.compressed_text;
@@ -169,7 +170,9 @@ module.exports = async (req, res) => {
       original_tokens: result.original_tokens,
       kept_tokens: result.kept_tokens,
       tokens_saved: result.tokens_saved ?? Math.max(0, result.original_tokens - result.kept_tokens),
-      kv_savings_pct: Math.round(result.kv_savings_pct * 100) / 100,
+      tokens_saved_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
+      // deprecated alias — same value as tokens_saved_pct
+      kv_savings_pct: Math.round((result.tokens_saved_pct ?? result.kv_savings_pct ?? 0) * 100) / 100,
       kept_line_ratio: result.kept_line_ratio,
       policy_name: result.policy_name,
       mode: result.mode || "compiler",

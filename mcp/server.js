@@ -112,9 +112,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         let result;
         if (mode === "ccr") {
-          result = compressCCR(context, query);
+          result = await compressCCR(context, query);
         } else {
-          result = compressAdaptive(context, query);
+          result = await compressAdaptive(context, query);
         }
 
         return {
@@ -130,7 +130,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 original_tokens: result.original_tokens,
                 kept_tokens: result.kept_tokens,
                 tokens_saved: Math.max(0, result.original_tokens - result.kept_tokens),
-                kv_savings_pct: Math.round(result.kv_savings_pct * 100) / 100,
+                tokens_saved_pct: Math.round(result.tokens_saved_pct * 100) / 100,
                 kept_line_ratio: result.kept_line_ratio,
                 policy_name: result.policy_name,
                 mode: mode,

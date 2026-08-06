@@ -45,7 +45,9 @@ interface CompressResponse {
   compressed_text: string;
   original_tokens: number;
   kept_tokens: number;
-  kv_savings_pct: number;
+  tokens_saved_pct?: number;
+  /** @deprecated Use tokens_saved_pct. */
+  kv_savings_pct?: number;
   policy_name: string;
 }
 
@@ -139,6 +141,8 @@ export function supercompressMiddleware(
       }
 
       const compressed = (await response.json()) as CompressResponse;
+      const tokensSavedPct =
+        compressed.tokens_saved_pct ?? compressed.kv_savings_pct ?? 0;
 
       totalOriginalTokens += compressed.original_tokens;
       totalKeptTokens += compressed.kept_tokens;
@@ -146,13 +150,13 @@ export function supercompressMiddleware(
       if (verbose) {
         console.log(
           `SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok ` +
-          `(${compressed.kv_savings_pct.toFixed(1)}%% saved)`
+          `(${tokensSavedPct.toFixed(1)}%% saved)`
         );
       }
 
       // Rebuild messages
       const compressedContent = [
-        `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${compressed.kv_savings_pct.toFixed(1)}%% saved]`,
+        `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${tokensSavedPct.toFixed(1)}%% saved]`,
         "",
         compressed.compressed_text,
         "",

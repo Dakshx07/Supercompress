@@ -76,36 +76,44 @@ def api(method: str, path: str, payload: dict | None = None) -> dict:
         raise RuntimeError(f"bad JSON from {path}: {result.stdout[:300]}") from err
 
 
-def send_gmail(to: str, subject: str, body: str) -> bool:
+def send_gmail(to: str, subject: str, body: str, html: str | None = None) -> bool:
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
         handle.write(body)
         path = handle.name
+    html_path = None
     try:
-        result = subprocess.run(
-            [
-                "gog",
-                "gmail",
-                "send",
-                "-a",
-                ACCOUNT,
-                "--to",
-                to,
-                "--subject",
-                subject,
-                "--body-file",
-                path,
-                "--no-input",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+        cmd = [
+            "gog",
+            "gmail",
+            "send",
+            "-a",
+            ACCOUNT,
+            "--to",
+            to,
+            "--subject",
+            subject,
+            "--body-file",
+            path,
+            "--no-input",
+            "--reply-to",
+            ACCOUNT,
+        ]
+        if html:
+            # Prefer HTML; keep plain as fallback for clients that strip HTML
+            with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as h2:
+                h2.write(html)
+                html_path = h2.name
+            # gog accepts --body-html as string; read file into arg
+            cmd.extend(["--body-html", html])
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode:
             print(f"FAIL send {to}: {(result.stderr or result.stdout)[:200]}", flush=True)
             return False
         return True
     finally:
         Path(path).unlink(missing_ok=True)
+        if html_path:
+            Path(html_path).unlink(missing_ok=True)
 
 
 def main() -> int:
@@ -118,8 +126,9 @@ def main() -> int:
         email = item.get("email")
         subject = item.get("subject") or "Thanks for signing up — quick note from the founder"
         body = item.get("body") or ""
+        html = item.get("html") or None
         print(f"SEND {email}", flush=True)
-        ok = send_gmail(email, subject, body)
+        ok = send_gmail(email, subject, body, html)
         resp = api(
             "POST",
             "/api/account?op=welcome-mark",

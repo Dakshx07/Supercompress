@@ -26,8 +26,9 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
   <meta name="theme-color" content="rgb(251,251,248)" />
-  <link rel="stylesheet" href="assets/css/supercompress.css?v=102" />
-  <style>
+  <link rel="stylesheet" href="assets/css/supercompress.css?v=107" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+<style>
     /* Dashboard: no dark bg layers, full light page */
     html, body.dash-page {
       background: rgb(251, 251, 248) !important;
@@ -36,6 +37,19 @@
     body.dash-page .df-page-bg-top,
     body.dash-page .df-page-bg-bottom { display: none !important; }
 
+    /* Same site header as marketing; sticky so content scrolls under it */
+    body.dash-page .df-header {
+      position: sticky;
+      top: 0;
+      inset: auto;
+      z-index: 200;
+      background: rgba(251, 251, 248, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+    }
+    body.dash-page .df-header-spacer { display: none; }
+    body.dash-page .dash-profile:not(.hidden) { display: block; }
     /* ── Billing / Plans ── */
     .dash-billing-status {
       margin-bottom: 32px;
@@ -310,6 +324,39 @@
     .dash-coding-cta-actions .btn-brand {
       padding: 10px 20px;
     }
+    .dash-coding-connected {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 24px 28px;
+      border: 0.5px solid var(--card-border);
+      border-radius: 4px;
+      background: linear-gradient(135deg, #f4faf6 0%, #eef6f1 100%);
+      margin-bottom: 24px;
+    }
+    .dash-coding-connected.hidden { display: none; }
+    .dash-coding-connected-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .dash-coding-connected-text h3 {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+    .dash-coding-connected-text p {
+      font-size: 14px;
+      color: var(--text-body);
+      line-height: 1.5;
+      margin: 0;
+    }
+    .dash-coding-connected-meta {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted, #6b7280);
+    }
     .dash-coding-summary {
       display: flex;
       gap: 12px;
@@ -401,62 +448,68 @@
 
   <div class="df-page-inner">
     <header class="df-header">
-      <div class="df-header-blur" aria-hidden="true"></div>
-      <div class="df-header-inner">
-        <a href="/" class="df-logo-desktop">
-          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
-          <span class="df-logo-word">Super<em>Compress</em></span>
-        </a>
-
-        <div class="df-header-end">
-          <nav class="df-nav-pill" aria-label="Dashboard">
-            <a href="/">Home</a>
-            <a href="/docs/" target="_blank" rel="noopener">Docs</a>
-            <a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a>
-          </nav>
-          <div class="dash-profile hidden" id="dash-profile">
-            <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu">
-              <span class="dash-profile-initial" id="dash-profile-initial">?</span>
-            </button>
-            <div class="dash-profile-dropdown">
-              <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
-              <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
-              <button type="button" class="dash-profile-signout" id="dash-signout">Sign out</button>
-            </div>
-          </div>
-          <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M23.6004 9.5927l-.0337-.0862L20.3.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412l-3.935 8.604H8.924L4.989.9814c-.093-.246-.38-.412-.646-.412-.266 0-.552.166-.646.412L.434 9.5065l-.032.0862c-.468 1.228-.148 2.628.804 3.55l.008.008.022.02 6.044 4.533-.032.024 5.735 4.36 5.735-4.36-.033-.024 6.045-4.533.022-.02.008-.008c.95-.922 1.27-2.322.803-3.55z"/>
-            </svg>
-          </a>
-        </div>
-
-        <div class="df-mobile-bar">
-          <a href="/" class="df-logo-mobile">
-            <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
-            <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
-          </a>
-          <button type="button" class="df-menu-btn" id="df-menu-btn" aria-label="Toggle menu" aria-expanded="false">
-            <span></span><span></span>
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+                <div class="dash-profile hidden" id="dash-profile">
+          <button type="button" class="dash-profile-btn" id="dash-profile-btn" aria-label="Account menu">
+            <span class="dash-profile-initial" id="dash-profile-initial">?</span>
           </button>
+          <div class="dash-profile-dropdown">
+            <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
+            <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
+            <button type="button" class="dash-profile-signout" id="dash-signout">Sign out</button>
+          </div>
         </div>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
       </div>
-      <div class="df-mobile-nav hidden" id="df-mobile-nav">
-        <a href="/">Home</a>
-        <a href="/docs/" target="_blank" rel="noopener">Docs</a>
-        <a href="/docs/api-reference" target="_blank" rel="noopener">API reference</a>
-        <a href="https://github.com/Supercompress/Supercompress">GitHub</a>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
-    </header>
-
-    <div class="df-header-spacer" aria-hidden="true"></div>
-
-    <!-- Auth -->
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<!-- Auth -->
     <section class="dash-auth" id="view-auth">
       <div class="dash-auth-card">
-        <p class="dash-section-label">API Dashboard</p>
-        <h1 id="auth-title">Sign in</h1>
-        <p class="dash-auth-sub" id="auth-subtitle">Sign in or create an account to manage API keys, usage, and billing.</p>
+        <p class="dash-section-label">Free to start</p>
+        <h1 id="auth-title">Get your free API key</h1>
+        <p class="dash-auth-sub" id="auth-subtitle">5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly.</p>
+        <ul class="dash-auth-perks" id="auth-perks">
+          <li>No credit card</li>
+          <li>Key created on signup</li>
+          <li>Works with Cursor, Claude Code, Codex &amp; any OpenAI-compatible agent</li>
+        </ul>
 
         <div id="firebase-auth-area">
           <button type="button" class="dash-btn-google" id="btn-google">
@@ -468,17 +521,17 @@
             </svg>
             Continue with Google
           </button>
-          <div class="dash-auth-divider">or</div>
+          <div class="dash-auth-divider">or use email</div>
           <div class="dash-auth-tabs">
-            <button type="button" class="dash-auth-tab active" data-tab="signin">Log in</button>
-            <button type="button" class="dash-auth-tab" data-tab="signup">Sign up</button>
+            <button type="button" class="dash-auth-tab active" data-tab="signup">Sign up</button>
+            <button type="button" class="dash-auth-tab" data-tab="signin">Log in</button>
           </div>
           <form class="dash-auth-form" id="auth-form">
             <label class="dash-field-label" for="auth-email">Email</label>
-            <input class="dash-field-input" id="auth-email" type="email" required autocomplete="email" />
+            <input class="dash-field-input" id="auth-email" type="email" required autocomplete="email" placeholder="you@company.com" />
             <label class="dash-field-label" for="auth-password">Password</label>
-            <input class="dash-field-input" id="auth-password" type="password" required minlength="6" autocomplete="current-password" />
-            <button type="submit" class="btn-brand dash-auth-submit" id="auth-submit">Log in</button>
+            <input class="dash-field-input" id="auth-password" type="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters" />
+            <button type="submit" class="btn-brand dash-auth-submit" id="auth-submit">Create free account</button>
           </form>
         </div>
 
@@ -507,12 +560,14 @@
           <strong>Production API.</strong> Calls to <code>/api/v1/compress</code> with your key are metered here. The landing-page impact calculator runs the same engine in-browser and does not use your key or appear in usage.
         </div>
 
+        <div class="dash-payg-banner hidden" id="dash-payg-banner" role="status"></div>
+
         <nav class="dash-topnav" aria-label="Dashboard sections">
           <button type="button" class="dash-topnav-item active" data-panel="keys">API keys</button>
           <button type="button" class="dash-topnav-item" data-panel="usage">Usage</button>
           <button type="button" class="dash-topnav-item" data-panel="agents">Coding Agents</button>
           <button type="button" class="dash-topnav-item" data-panel="billing">Billing</button>
-          <a class="dash-topnav-item dash-topnav-link" href="/docs/" target="_blank" rel="noopener">Documentation ↗</a>
+          <a class="dash-topnav-item dash-topnav-link" href="https://docs.supercompress.dev" target="_blank" rel="noopener">Documentation ↗</a>
         </nav>
 
         <div id="panel-keys">
@@ -602,7 +657,7 @@
             </div>
           </div>
 
-          <!-- CTA banner: shown when no coding agents have been used yet -->
+          <!-- CTA banner: shown when account is not linked via OAuth / setup -->
           <div class="dash-coding-cta" id="coding-cta">
             <div class="dash-coding-cta-icon">⚡</div>
             <div class="dash-coding-cta-text">
@@ -611,8 +666,22 @@
               <pre class="dash-coding-cta-code" id="coding-cta-code">npm install supercompress-proxy
 npm exec supercompress setup</pre>
               <div class="dash-coding-cta-actions">
-                <a href="/docs/coding-agents" class="btn-brand" target="_blank" rel="noopener">Setup guide →</a>
+                <a href="https://docs.supercompress.dev/coding-agents" class="btn-brand" target="_blank" rel="noopener">Setup guide →</a>
                 <button type="button" class="btn-link-muted" id="btn-test-proxy">Already set up? Refresh stats</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shown after OAuth / device link even before first compress -->
+          <div class="dash-coding-connected hidden" id="coding-connected">
+            <div class="dash-coding-connected-icon">✓</div>
+            <div class="dash-coding-connected-text">
+              <h3>Coding agents connected</h3>
+              <p>Your SuperCompress account is linked. Compatible agents will compress context automatically. Per-agent stats appear after the first compress.</p>
+              <p class="dash-coding-connected-meta" id="coding-connected-meta"></p>
+              <div class="dash-coding-cta-actions" style="margin-top:14px">
+                <button type="button" class="btn-link-muted" id="btn-refresh-agents">Refresh stats</button>
+                <a href="https://docs.supercompress.dev/coding-agents" class="btn-link-muted" target="_blank" rel="noopener">Setup guide →</a>
               </div>
             </div>
           </div>
@@ -758,9 +827,80 @@ npm exec supercompress setup</pre>
     </div>
   </div>
 
+  </div><!-- /.df-page-inner -->
+
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Blog</p>
+            <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
+              <li><a href="/prompt-compression">Prompt compression</a></li>
+              <li><a href="/context-compression">Context compression</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Documentation</p>
+            <ul>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Social</p>
+            <ul>
+              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License</p>
+    </div>
+  </footer>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
-  <script type="module" src="assets/js/dashboard-api.js?v=14"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=19"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

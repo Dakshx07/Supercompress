@@ -43,7 +43,10 @@ function loadApiKey() {
  */
 function splitAskAndContext(text) {
   const raw = String(text || "");
-  if (raw.trim().length < 800) {
+  // Headroom-parity: only skip splitting when the whole message is tiny
+  // (proxy also no-ops under ~100 words of context).
+  const minSplit = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
+  if (raw.trim().length < minSplit) {
     return { ask: raw.trim(), context: "" };
   }
   const parts = raw.split(/\n\s*\n/);
@@ -140,11 +143,13 @@ async function compressContext(context, query, codingAgent) {
     const inTok = body.original_tokens || Math.round(clipped.length / 4);
     const outTok = body.kept_tokens || body.compressed_tokens || Math.round(compressed.length / 4);
     const pct =
-      body.kv_savings_pct != null
-        ? Math.round(body.kv_savings_pct)
-        : inTok > 0
-          ? Math.round(((inTok - outTok) / inTok) * 100)
-          : 0;
+      body.tokens_saved_pct != null
+        ? Math.round(body.tokens_saved_pct)
+        : body.kv_savings_pct != null
+          ? Math.round(body.kv_savings_pct)
+          : inTok > 0
+            ? Math.round(((inTok - outTok) / inTok) * 100)
+            : 0;
     return {
       compressed,
       original_tokens: inTok,

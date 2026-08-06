@@ -33,7 +33,7 @@ for (const [key, p] of Object.entries(presets)) {
     original_tokens: r.original_tokens,
     kept_tokens: r.kept_tokens,
     tokens_removed: r.tokens_removed ?? r.original_tokens - r.kept_tokens,
-    kv_savings_pct: Math.round(r.kv_savings_pct * 10) / 10,
+    tokens_saved_pct: Math.round(r.tokens_saved_pct * 10) / 10,
     important_kept_pct: r.important_kept_pct,
     compression_risk: r.compression_risk,
     answer_quality: r.answer_quality,
@@ -44,7 +44,7 @@ for (const [key, p] of Object.entries(presets)) {
 }
 
 const summary = {
-  avg_kv_savings_pct: Math.round((1 - totalOut / Math.max(totalIn, 1)) * 1000) / 10,
+  avg_tokens_saved_pct: Math.round((1 - totalOut / Math.max(totalIn, 1)) * 1000) / 10,
   avg_tokens_removed: Math.round((totalIn - totalOut) / Object.keys(presets).length),
   presets: Object.keys(presets).length,
 };

@@ -35,13 +35,17 @@ RETRIEVE_ENDPOINT = "/api/retrieve"
 
 @dataclass
 class CompressResult:
-    """Result from the hosted SuperCompress API."""
+    """Result from the hosted SuperCompress API.
+
+    ``tokens_saved_pct`` is percent of prompt tokens removed:
+    ``(1 - kept/original) * 100``.
+    """
 
     compressed_text: str
     original_tokens: int
     kept_tokens: int
     tokens_saved: int
-    kv_savings_pct: float
+    tokens_saved_pct: float
     kept_line_ratio: float
     policy_name: str
     mode: str
@@ -57,7 +61,8 @@ class CompressResult:
             "original_tokens": self.original_tokens,
             "kept_tokens": self.kept_tokens,
             "tokens_saved": self.tokens_saved,
-            "kv_savings_pct": self.kv_savings_pct,
+            "tokens_saved_pct": self.tokens_saved_pct,
+            "kv_savings_pct": self.tokens_saved_pct,  # deprecated alias
             "policy_name": self.policy_name,
             "mode": self.mode,
             "compression_risk": self.compression_risk,
@@ -119,8 +124,10 @@ class SuperCompress:
             budget_ratio: Fraction of tokens to keep (0.0–1.0). Required
                           for ``mode="fixed"``, optional for others.
             ccr: Enable Cache-Compress-Retrieve for reversible compression.
-            cache_prefix: Wrap output in a deterministic preamble to
-                          maximize KV cache hits on the provider side.
+            cache_prefix: Wrap output in a deterministic preamble so
+                          providers can reuse prompt/prefix cache across
+                          requests. SuperCompress does not touch model KV
+                          cache; this only reshapes the text we send.
 
         Returns:
             A :class:`CompressResult` with compressed text and statistics.
@@ -144,7 +151,7 @@ class SuperCompress:
             original_tokens=data.get("original_tokens", 0),
             kept_tokens=data.get("kept_tokens", 0),
             tokens_saved=data.get("tokens_saved", 0),
-            kv_savings_pct=data.get("kv_savings_pct", 0.0),
+            tokens_saved_pct=float(data.get("tokens_saved_pct", data.get("kv_savings_pct", 0.0)) or 0.0),
             kept_line_ratio=data.get("kept_line_ratio", 0.0),
             policy_name=data.get("policy_name", ""),
             mode=data.get("mode", mode),

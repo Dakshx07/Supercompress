@@ -11,7 +11,7 @@ const path = require("path");
 const COMPRESS_URL =
   process.env.SUPERCOMPRESS_COMPRESS_URL ||
   "https://www.supercompress.dev/api/v1/compress";
-const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 800);
+const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
 const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 180000);
 
 function loadApiKey() {
@@ -119,13 +119,15 @@ process.stdin.on("end", async () => {
       Math.round(compressed.length / 4);
     const saved = body.tokens_saved != null ? body.tokens_saved : Math.max(0, inTok - outTok);
     const pct =
-      body.kv_savings_pct != null
-        ? Math.round(body.kv_savings_pct)
-        : body.savings_pct != null
-          ? body.savings_pct
-          : inTok > 0
-            ? Math.round((saved / inTok) * 100)
-            : 0;
+      body.tokens_saved_pct != null
+        ? Math.round(body.tokens_saved_pct)
+        : body.kv_savings_pct != null
+          ? Math.round(body.kv_savings_pct)
+          : body.savings_pct != null
+            ? body.savings_pct
+            : inTok > 0
+              ? Math.round((saved / inTok) * 100)
+              : 0;
 
     const additional_context = [
       `[SuperCompress auto] Compressed ${toolName || "tool"} output (~${inTok}→${outTok} tok, −${pct}%).`,

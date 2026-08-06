@@ -298,7 +298,7 @@ async function main() {
       assert.ok((res.body.tokens_saved || 0) > 0 || String(res.body.compressed_text).length < context.length * 0.85);
       pass(
         `hosted compress format:${name}`,
-        `orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.kv_savings_pct}%`
+        `orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.tokens_saved_pct}%`
       );
     } catch (e) {
       fail(`hosted compress format:${name}`, e.message);
@@ -578,7 +578,7 @@ async function main() {
     assert.ok(String(res.body.compressed_text).length < mega.length * 0.4);
     pass(
       "mega coding dump stress",
-      `chars ${mega.length}→${String(res.body.compressed_text).length}; saved=${res.body.tokens_saved} kv=${res.body.kv_savings_pct}%`
+      `chars ${mega.length}→${String(res.body.compressed_text).length}; saved=${res.body.tokens_saved} kv=${res.body.tokens_saved_pct}%`
     );
   } catch (e) {
     fail("mega coding dump stress", e.message);

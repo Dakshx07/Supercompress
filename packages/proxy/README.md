@@ -11,8 +11,10 @@ supercompress plugin
 
 `setup` / `plugin` auto-detects agents and installs:
 - **MCP** on every detected host (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, …)
-- **Hooks** for Cursor / Claude Code / Codex (every message + large tool dumps)
+- **Hooks** for Cursor / Claude Code / Codex — **every submit with context** auto-compresses (Headroom-parity); tiny asks skip
 - **Instruction files** so other agents still prefer `compress_context`
+
+Your ask is never mangled (it stays the query). Pastes, attachments, and tool dumps are compressed before they burn tokens.
 
 ### Full-traffic auto (Headroom-style)
 
@@ -62,9 +64,9 @@ When context gets huge — file dumps, search results, logs, diffs — the agent
 
 | Agent | What setup writes |
 |-------|-------------------|
-| Cursor | `~/.cursor/mcp.json` + Cursor rule + `~/.cursor/hooks.json` (auto-compress large tool dumps) |
-| Claude Code | `~/.claude.json` MCP entry |
-| Codex | `~/.codex/config.toml` MCP block |
+| Cursor | `~/.cursor/mcp.json` + Cursor rule + `~/.cursor/hooks.json` (every submit + tool dumps) |
+| Claude Code | `~/.claude.json` MCP + UserPromptSubmit / PostToolUse hooks |
+| Codex | `~/.codex/config.toml` MCP + prompt/tool hooks |
 | FreeBuff | `~/.agents/mcp.json` |
 | OpenCode | `~/.config/opencode/opencode.jsonc` (`type: "local"`, `enabled: true`) |
 | Gemini CLI | Gemini settings MCP servers |
@@ -114,4 +116,4 @@ The MCP server / optional proxy run on your machine. Provider API keys never lea
 
 ## License
 
-Non-commercial. See [LICENSE](LICENSE).
+MIT. Commercial use is permitted. See [LICENSE](LICENSE).

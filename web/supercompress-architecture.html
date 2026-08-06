@@ -8,10 +8,10 @@
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SuperCompress Architecture — How Query-Aware Prompt Compression Works | SuperCompress</title>
-  <meta name="description" content="Deep dive into SuperCompress's architecture: the ~5K-parameter query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 65% token reduction with 97% oracle recall." />
+  <meta name="description" content="Deep dive into SuperCompress's architecture: the query-aware neural query-aware scoring policy, segment-then-score pipeline, compiler mode with verifier, and how it achieves 65% token reduction with 97% oracle recall." />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="SuperCompress Architecture — How Query-Aware Prompt Compression Works" />
-  <meta property="og:description" content="How a ~5K-parameter CPU policy achieves 65% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
+  <meta property="og:description" content="How a query-aware neural CPU policy achieves 65% token reduction with 97% oracle recall. Full architecture breakdown: segmentation, scoring, compilation, and verification." />
   <meta property="og:url" content="https://supercompress.dev/supercompress-architecture" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="SuperCompress" />
@@ -19,13 +19,13 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta name="twitter:title" content="SuperCompress Architecture — Query-Aware Prompt Compression" />
-  <meta name="twitter:description" content="How the ~5K-parameter policy works: segmentation, scoring, compilation, and verification." />
+  <meta name="twitter:description" content="How the query-aware neural policy works: segmentation, scoring, compilation, and verification." />
   <link rel="canonical" href="https://supercompress.dev/supercompress-architecture" />
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "SuperCompress Architecture — How Query-Aware Prompt Compression Works",
-    "description": "Technical deep dive into SuperCompress's query-aware compression architecture: ~5K-parameter policy, segment-then-score pipeline, compiler mode, and verifier.",
+    "description": "Technical deep dive into SuperCompress's query-aware compression architecture: query-aware neural policy, segment-then-score pipeline, compiler mode, and verifier.",
     "datePublished": "2026-07-03",
     "author": { "@type": "Organization", "name": "SuperCompress" },
     "publisher": { "@type": "Organization", "name": "SuperCompress", "url": "https://supercompress.dev" }
@@ -77,12 +77,55 @@
     .flow-diagram { background: #0d0d16; border: 1px solid #1c1c2e; border-radius: 10px; padding: 20px; margin: 20px 0; font-family: 'SF Mono', monospace; font-size: 0.82rem; color: #888; line-height: 2; text-align: center; }
     .flow-diagram .arrow { color: #a78bfa; }
   </style>
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
 </head>
 <body>
-  <div class="container">
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<div class="container">
     <h1>SuperCompress Architecture</h1>
     <p class="meta">Last updated July 3, 2026 · 10 min read</p>
-    <p class="subtitle">How a ~5,000-parameter query-aware policy running on CPU removes ~65% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
+    <p class="subtitle">How query-aware compression removes ~65% of prompt tokens before inference while preserving answer-critical evidence — a technical deep dive.</p>
 
     <div class="toc">
       <h2>Contents</h2>
@@ -104,14 +147,14 @@
       <div class="flow-diagram">
         Context + Query<br/>
         <span class="arrow">↓</span><br/>
-        Segmenter → Scorer (<strong>~5K params</strong>) → Compiler → Verifier<br/>
+        Segmenter → Scorer (<strong>neural ranking</strong>) → Compiler → Verifier<br/>
         <span class="arrow">↓</span><br/>
         Compressed Context → LLM
       </div>
 
       <p>The key design choices:</p>
       <ul>
-        <li><strong>~5K parameters</strong> — a tiny feed-forward network that runs on CPU in ~15ms. No GPU needed.</li>
+        <li><strong>a learned query-aware neural policy</strong> — a tiny feed-forward network that runs on CPU in ~15ms. No GPU needed.</li>
         <li><strong>Query-aware</strong> — scores each passage against the user's specific question, not just the content type.</li>
         <li><strong>No model download</strong> — the policy is bundled in the pip package (~200KB total).</li>
         <li><strong>Deterministic given inputs</strong> — same context + query always produces the same compression. Predictable and auditable.</li>
@@ -150,7 +193,7 @@
     <section id="policy">
       <h2>3. The Learned Policy</h2>
 
-      <p>The policy is a small feed-forward neural network with approximately 5,000 parameters. To put that in context:</p>
+      <p>The policy is a small feed-forward neural network with a learned query-aware neural policy. To put that in context:</p>
 
       <table>
         <thead>
@@ -163,12 +206,12 @@
         <tbody>
           <tr>
             <td>SuperCompress policy</td>
-            <td><strong>~5K</strong></td>
+            <td><strong>neural</strong></td>
             <td>1×</td>
           </tr>
           <tr>
-            <td><a href="/supercompress-vs-headroom">Headroom (ModernBERT)</a></td>
-            <td>165M+</td>
+            <td><a href="/supercompress-vs-headroom">Headroom</a></td>
+            <td>Content-type stack</td>
             <td>33,000×</td>
           </tr>
           <tr>
@@ -192,9 +235,9 @@
       <p>The small size is intentional. It means:</p>
       <ul>
         <li>The policy fits in L1 cache on modern CPUs — no memory bottleneck</li>
-        <li>Inference completes in microseconds per segment</li>
+        <li>Scoring runs as a lightweight CPU preprocess before the LLM call</li>
         <li>The entire package (policy + code) is ~200KB — fits in a single network packet</li>
-        <li>No GPU, no ONNX Runtime, no model download</li>
+        <li>Runs as preprocess before the expensive LLM call</li>
         <li><a href="/edge-prompt-compression">Edge deployment</a> is straightforward — the policy compiles to WASM for Cloudflare Workers</li>
       </ul>
 
@@ -283,50 +326,44 @@
             <th>Method</th>
             <th>Approach</th>
             <th>Query-aware</th>
-            <th>Model size</th>
             <th>Latency</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td><strong>SuperCompress</strong></td>
-            <td>Learned scoring policy</td>
+            <td>Query-aware keep/drop scoring</td>
             <td>Yes</td>
-            <td>~5K params</td>
-            <td>~15ms</td>
+            <td>~15–60 ms</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-headroom">Headroom</a></td>
-            <td>Transformer classifier</td>
-            <td>Type-only</td>
-            <td>165M+</td>
-            <td>~100ms + warmup</td>
+            <td>Content-type / structure heuristics</td>
+            <td>Type-oriented</td>
+            <td>~100 ms + warmup</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-sliding-window">Sliding window</a></td>
             <td>Fixed-position truncation</td>
             <td>No</td>
-            <td>0</td>
-            <td>~0ms</td>
+            <td>~0 ms</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-top-k-retrieval">Top-K retrieval</a></td>
             <td>Embedding similarity</td>
             <td>Partial</td>
-            <td>Embedding model</td>
-            <td>~50ms</td>
+            <td>Embedding latency</td>
           </tr>
           <tr>
             <td><a href="/supercompress-vs-hyde">HyDE</a></td>
             <td>Hypothetical doc + retrieval</td>
             <td>Yes</td>
             <td>LLM + embedding</td>
-            <td>~500ms+</td>
           </tr>
         </tbody>
       </table>
 
-      <p>For a comprehensive comparison, see the <a href="/supercompress-vs-alternatives">alternatives hub</a> and the <a href="/prompt-compression-guide">full guide</a>.</p>
+      <p>For a comprehensive comparison, see the <a href="/supercompress-vs-alternatives">alternatives hub</a> and the <a href="/prompt-compression">full guide</a>.</p>
     </section>
 
     <div class="cta-section">
@@ -335,5 +372,93 @@
       <a href="/dashboard" class="btn btn-outline">Get an API key</a>
     </div>
   </div>
+<section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Blog</p>
+            <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
+              <li><a href="/prompt-compression">Prompt compression</a></li>
+              <li><a href="/context-compression">Context compression</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Documentation</p>
+            <ul>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Social</p>
+            <ul>
+              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License</p>
+    </div>
+  </footer>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

@@ -76,12 +76,16 @@ _QUERY_STOPWORDS = {
 
 @dataclass
 class CompressResult:
-    """Result of a local compression operation."""
+    """Result of a local compression operation.
+
+    ``tokens_saved_pct`` is percent of prompt tokens removed:
+    ``(1 - kept/original) * 100``.
+    """
 
     compressed_text: str
     original_tokens: int = 0
     kept_tokens: int = 0
-    kv_savings_pct: float = 0.0
+    tokens_saved_pct: float = 0.0
     policy_name: str = "supercompress"
     mode: str = "compiler"
     keep_ratio: float = 0.35
@@ -99,6 +103,11 @@ class CompressResult:
             return 0.0
         return (1 - self.kept_tokens / self.original_tokens) * 100
 
+    @property
+    def kv_savings_pct(self) -> float:
+        """Deprecated alias of tokens_saved_pct."""
+        return self.tokens_saved_pct
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "compressed_text": self.compressed_text,
@@ -106,7 +115,8 @@ class CompressResult:
             "kept_tokens": self.kept_tokens,
             "tokens_saved": self.tokens_saved,
             "savings_pct": round(self.savings_pct, 1),
-            "kv_savings_pct": self.kv_savings_pct,
+            "tokens_saved_pct": self.tokens_saved_pct,
+            "kv_savings_pct": self.tokens_saved_pct,  # deprecated alias
             "policy_name": self.policy_name,
             "mode": self.mode,
             "keep_ratio": self.keep_ratio,
@@ -158,7 +168,7 @@ def compress_for_turn(
             compressed_text=compressed,
             original_tokens=0,
             kept_tokens=0,
-            kv_savings_pct=0.0,
+            tokens_saved_pct=0.0,
             policy_name="local-query-aware",
             mode=mode,
             keep_ratio=budget_ratio,
@@ -203,7 +213,7 @@ def compress_for_turn(
         compressed_text=compressed,
         original_tokens=original_tokens,
         kept_tokens=kept_tokens,
-        kv_savings_pct=savings,
+        tokens_saved_pct=savings,
         policy_name="local-query-aware",
         mode=mode,
         keep_ratio=budget_ratio,

@@ -234,8 +234,8 @@
     $("telemetry-results").hidden = false;
     $("result-stage").hidden = false;
 
-    $("saving-pct").textContent = `${formatNumber(data.kv_savings_pct, 1)}%`;
-    requestAnimationFrame(() => { $("saving-fill").style.width = `${Math.min(100, data.kv_savings_pct)}%`; });
+    $("saving-pct").textContent = `${formatNumber(data.tokens_saved_pct, 1)}%`;
+    requestAnimationFrame(() => { $("saving-fill").style.width = `${Math.min(100, data.tokens_saved_pct)}%`; });
     $("tokens-before").textContent = formatNumber(data.original_tokens);
     $("tokens-after").textContent = formatNumber(data.kept_tokens);
     $("tokens-saved").textContent = formatNumber(data.original_tokens - data.kept_tokens);

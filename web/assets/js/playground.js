@@ -72,7 +72,7 @@
         <span class="demo-badge">${result.policy_name}</span>
       </div>
       <div class="panel-token-bar"></div>
-      <p class="demo-stats">Answer quality <strong>${(quality * 100).toFixed(0)}%</strong> · ${formatPct(result.kv_savings_pct)} KV saved</p>
+      <p class="demo-stats">Answer quality <strong>${(quality * 100).toFixed(0)}%</strong> · ${formatPct(result.tokens_saved_pct)} KV saved</p>
       <pre class="demo-output">${escapeHtml(result.compressed_text.slice(0, 4000))}</pre>`;
     renderTokenBar(el.querySelector(".panel-token-bar"), result.kept_tokens, result.original_tokens, label);
     return quality;
@@ -89,7 +89,7 @@
       const q = E.answerQualityScore(r.original_text, r.compressed_text, question);
       const tr = document.createElement("tr");
       if (name === "SuperCompress") tr.className = "row-highlight";
-      tr.innerHTML = `<td>${name}</td><td>${r.kept_tokens}/${r.original_tokens}</td><td>${formatPct(r.kv_savings_pct)}</td><td>${(q * 100).toFixed(0)}%</td>`;
+      tr.innerHTML = `<td>${name}</td><td>${r.kept_tokens}/${r.original_tokens}</td><td>${formatPct(r.tokens_saved_pct)}</td><td>${(q * 100).toFixed(0)}%</td>`;
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);

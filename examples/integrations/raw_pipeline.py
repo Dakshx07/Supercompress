@@ -30,7 +30,7 @@ def main() -> None:
             {
                 "original_tokens": result.original_tokens,
                 "kept_tokens": result.kept_tokens,
-                "kv_savings_pct": result.kv_savings_pct,
+                "tokens_saved_pct": result.tokens_saved_pct,
                 "policy": result.policy_name,
                 "co2_kg_avoided": impact.co2_kg_avoided,
             },

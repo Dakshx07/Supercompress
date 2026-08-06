@@ -461,7 +461,7 @@ async function main() {
       assert.match(parsed.compressed_text, /run7/);
       pass(
         "hosted compress API with live key",
-        `saved=${parsed.tokens_saved || 0} kv=${parsed.kv_savings_pct || 0}%`
+        `saved=${parsed.tokens_saved || 0} kv=${parsed.tokens_saved_pct || 0}%`
       );
     }
   } catch (err) {

@@ -4,7 +4,12 @@ const fs = require("fs");
 const path = require("path");
 
 function clean(value) {
-  return String(value || "").trim().split(/\s+/)[0] || "";
+  // Strip whitespace and literal "\n" / "\r" leftovers from poorly pasted Vercel env values.
+  return String(value || "")
+    .replace(/\\[nr]/gi, "")
+    .replace(/[\r\n\t]/g, "")
+    .trim()
+    .split(/\s+/)[0] || "";
 }
 
 const cfg = {

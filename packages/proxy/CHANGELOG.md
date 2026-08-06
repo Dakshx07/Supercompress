@@ -2,6 +2,17 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## Unreleased
+
+- Prefer `tokens_saved_pct` for prompt-token savings while accepting the deprecated `kv_savings_pct` response alias.
+- Correct the package README license statement: SuperCompress is MIT licensed and permits commercial use.
+
+## 0.5.8 — 2026-08-02
+
+- **Headroom-parity every-submit compress**: Cursor `beforeSubmitPrompt` + Claude/Codex `UserPromptSubmit` compress context on every message that has real context; tiny asks (~&lt;400 chars / ~100 words) skip — same floor as the proxy.
+- User ask stays the query (never mangled); pasted/attached/tool context is compressed into `~/.supercompress/inbox/latest.md` + `additional_context`.
+- Tool-dump hook threshold lowered from 800 → 400 chars to match.
+
 ## 0.5.7 — 2026-08-01
 
 - Auto MCP install across detected agents (Cursor, Claude, Codex, OpenCode, FreeBuff, Windsurf, Continue, Gemini, Goose, Crush, Amp, Zed, Copilot, Roo, Cline, …).

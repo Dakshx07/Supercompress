@@ -22,34 +22,10 @@
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
 <link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
-  <link rel="stylesheet" href="assets/css/content-shell.css?v=1" />
-  <style>
-    .article-page { font-family: var(--shell-sans); }
-    .article-hero { padding: 40px 0 24px; }
-    .article-hero h1 { font-size: 1.8rem; line-height: 1.2; margin-bottom: 12px; }
-    .article-hero .article-meta { color: var(--shell-muted); font-size: 0.85rem; }
-    .article-body { max-width: 720px; margin: 0 auto; padding: 24px 0 60px; }
-    .article-body h2 { font-size: 1.35rem; margin: 32px 0 12px; }
-    .article-body h3 { font-size: 1.1rem; margin: 24px 0 8px; }
-    .article-body p { line-height: 1.65; margin-bottom: 16px; color: var(--shell-muted); }
-    .article-body strong { color: var(--shell-text); }
-    .article-body ul { margin-bottom: 16px; padding-left: 20px; line-height: 1.65; color: var(--shell-muted); }
-    .article-body li { margin-bottom: 6px; }
-    .article-body code { background: #f4f4f0; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; }
-    .article-body pre {
-      background: #f4f4f0; border: 0.5px solid var(--card-border); border-radius: 6px;
-      padding: 20px 24px; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; margin-bottom: 20px;
-    }
-    .article-body .callout {
-      background: #f0f7ff; border-left: 3px solid #1d4ed8; padding: 16px 20px;
-      border-radius: 0 6px 6px 0; margin-bottom: 20px; font-size: 0.9rem;
-    }
-    .article-body .callout strong { color: #1d4ed8; }
-    .article-body table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
-    .article-body th { background: #f9f9f6; text-align: left; padding: 10px 14px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 0.5px solid var(--card-border); }
-    .article-body td { padding: 10px 14px; border-bottom: 0.5px solid var(--card-border); }
-  </style>
-  <script type="application/ld+json">
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=1" />
+<script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -61,28 +37,67 @@
   }
   </script>
 </head>
-<body class="sc-shell-page">
-  <header class="sc-topbar">
-    <h1>Super<em>Compress</em> blog</h1>
-    <nav>
-      <a href="/">Landing page</a>
-      <a href="/playground">Playground</a>
+<body>
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
       <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
       <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
-    </nav>
+    </div>
   </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<main class="seo-page">
+    <p class="seo-kicker">Feature Deep-Dive</p>
+    <h1>Domain Preprocessors: Smarter Compression for JSON, Code, and Logs</h1>
+    <p class="seo-lead">Not all text is the same. A JSON config file, a Python traceback, and a product description all carry information differently. SuperCompress's <strong>domain preprocessors</strong> detect the content type automatically and apply specialized transformations before the compression engine runs — boosting savings from 65% to 70–90% on structured data without losing any signal.</p>
+    <p class="seo-author">July 7, 2026 · Arjun Shah · 5 min read</p>
 
-  <main class="sc-content article-page">
-    <section class="sc-panel article-hero">
-      <span class="sc-kicker">Feature Deep-Dive</span>
-      <h1>Domain Preprocessors: Smarter Compression for JSON, Code, and Logs</h1>
-      <p class="article-meta">July 7, 2026 · Arjun Shah · 5 min read</p>
-    </section>
+<nav class="seo-cluster" aria-label="SuperCompress topic cluster">
+  <a href="/reduce-llm-costs">Reduce LLM costs</a>
+  <a href="/token-compression">Token compression</a>
+  <a href="/prompt-compression">Prompt compression</a>
+  <a href="/context-compression">Smart context compression</a>
+  <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a>
+  <a href="/supercompress-vs-headroom">vs Headroom</a>
+  <a href="/blog">Blog</a>
+</nav>
 
-    <article class="article-body">
-      <p>Not all text is the same. A JSON config file, a Python traceback, and a product description all carry information differently. SuperCompress's <strong>domain preprocessors</strong> detect the content type automatically and apply specialized transformations before the compression engine runs — boosting savings from 65% to 70–90% on structured data without losing any signal.</p>
-
-      <div class="callout">
+    <div class="article-prose">
+<div class="callout">
         <strong>TL;DR:</strong> Three preprocessors — JSON SmartCrusher, Code AST compressor, Log/Trace compressor — plus a content router that picks the right one automatically. They run before the compression engine, removing structural noise that the general-purpose scorer can't see. Zero configuration needed.
       </div>
 
@@ -262,7 +277,7 @@ curl -X POST https://supercompress.dev/api/v1/compress \
 #   "compressed_text": "...",
 #   "preprocessor": "json",
 #   "tokens_saved": 780,
-#   "kv_savings_pct": 82.0
+#   "tokens_saved_pct": 82.0
 # }</pre>
 
       <p>Or in browser JS:</p>
@@ -280,7 +295,95 @@ console.log(`Preprocessor: ${result.preprocessor}`); // "json", "code", "log", o
 
       <hr style="margin:32px 0;border:none;border-top:0.5px solid var(--card-border)" />
       <p><em>Domain preprocessors are available in SuperCompress v0.6+. <a href="/dashboard">Get your API key</a> or <a href="/playground">try the playground</a> — paste JSON, code, or logs and see the preprocessor in action.</em></p>
-    </article>
+    </div>
   </main>
+<section class="sc-signup-band" aria-label="Get started">
+  <div class="sc-signup-band-inner">
+    <div class="sc-signup-band-copy">
+      <p class="sc-signup-band-kicker">Free to start</p>
+      <h2>Get your API key — 5M free tokens every month</h2>
+      <p class="sc-signup-band-lead">Cut LLM input cost ~65%. No credit card. Google signup takes one click.</p>
+      <ul class="sc-signup-incentives">
+        <li>5M free tokens/mo</li>
+        <li>No credit card</li>
+        <li>Then $1/1M</li>
+        <li>Cursor · Claude Code · Codex</li>
+      </ul>
+    </div>
+    <div class="sc-signup-band-actions">
+      <a class="sc-signup-band-btn" href="/dashboard?signup=1&amp;utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Get free API key →</a>
+      <a class="sc-signup-band-link" href="https://docs.supercompress.dev/coding-agents?utm_source=site&amp;utm_medium=cta_band&amp;utm_campaign=activation">Install for coding agents</a>
+    </div>
+  </div>
+</section>
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Blog</p>
+            <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
+              <li><a href="/prompt-compression">Prompt compression</a></li>
+              <li><a href="/context-compression">Context compression</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Documentation</p>
+            <ul>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Social</p>
+            <ul>
+              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License</p>
+    </div>
+  </footer>
+  <script src="/assets/js/site-chrome.js?v=11"></script>
 </body>
 </html>

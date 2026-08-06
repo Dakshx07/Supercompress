@@ -110,7 +110,7 @@ class SuperCompressOpenAI:
         self.total_original_tokens += result.original_tokens
         self.total_kept_tokens += result.kept_tokens
 
-        savings = result.kv_savings_pct
+        savings = result.tokens_saved_pct
         logger.info(
             f"SuperCompress: {result.original_tokens}→{result.kept_tokens} tok "
             f"({savings:.1f}%% saved) — policy={result.policy_name}"

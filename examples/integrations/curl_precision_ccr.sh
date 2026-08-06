@@ -89,7 +89,7 @@ END
   mode: .mode // "compiler",
   preprocessor,
   tokens_saved,
-  kv_savings_pct,
+  tokens_saved_pct: (.tokens_saved_pct // .kv_savings_pct),
   compression_risk,
   important_kept_pct,
   compressed_preview: (.compressed_text[0:200] + "...")
@@ -117,7 +117,7 @@ END
   confidence_ok,
   budget_ratio,
   tokens_saved,
-  kv_savings_pct,
+  tokens_saved_pct: (.tokens_saved_pct // .kv_savings_pct),
   compression_risk,
   compressed_preview: (.compressed_text[0:200] + "...")
 }'
@@ -144,7 +144,7 @@ echo "Compression response:"
 echo "$RESPONSE" | jq '{
   ccr: .ccr,
   tokens_saved,
-  kv_savings_pct,
+  tokens_saved_pct: (.tokens_saved_pct // .kv_savings_pct),
   markers_in_output: (.compressed_text | length > 0),
   compressed_preview: (.compressed_text[0:300] + "...")
 }'

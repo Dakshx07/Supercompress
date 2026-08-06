@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compress Engine Reference — SuperCompress Documentation</title>
+  <meta name="description" content="Layman and technical reference for every function in web/assets/js/compress-engine.js — what it does and how it works." />
+  <meta property="og:title" content="Compress Engine Reference — SuperCompress Documentation" />
+  <meta property="og:description" content="Function-by-function guide to the browser compress engine: preprocessors, ML scoring, compiler selection, CCR, and precision mode." />
+  <meta property="og:url" content="https://docs.supercompress.dev/compress-engine" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperCompress" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://docs.supercompress.dev/compress-engine" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <link rel="stylesheet" href="/assets/css/docs.css?v=12" />
+  <style>
+    .fn-card { margin: 1.25rem 0 1.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border, #e5e7eb); }
+    .fn-card h3 { margin: 0 0 0.35rem; font-size: 1.05rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .fn-meta { font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; }
+    .fn-grid { display: grid; gap: 0.75rem; }
+    @media (min-width: 840px) { .fn-grid { grid-template-columns: 1fr 1fr; } }
+    .fn-box { padding: 0.75rem 0.9rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; }
+    .fn-box strong { display: block; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; margin-bottom: 0.35rem; }
+    .fn-box p { margin: 0; font-size: 0.92rem; line-height: 1.45; }
+    .policy-note { padding: 0.9rem 1rem; border-left: 3px solid #0f766e; background: #f0fdfa; margin: 1rem 0 1.5rem; }
+    .lang-list { columns: 2; gap: 1.5rem; }
+    @media (min-width: 720px) { .lang-list { columns: 3; } }
+    .lang-list li { break-inside: avoid; margin: 0.2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="docs-sidebar">
+      <a href="/" class="docs-sidebar-logo">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
+        <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="docs-sidebar-section">Getting started</div>
+      <a href="/" class="docs-sidebar-link">Overview</a>
+      <a href="/quickstart" class="docs-sidebar-link">Quickstart</a>
+      <div class="docs-sidebar-section">Reference</div>
+      <a href="/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="/usage" class="docs-sidebar-link">Usage</a>
+      <div class="docs-sidebar-section">Deep dives</div>
+      <a href="/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/compress-engine" class="docs-sidebar-link active">Compress engine</a>
+      <a href="/environment" class="docs-sidebar-link">Environment &amp; CO₂</a>
+    </aside>
+    <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="docs-main">
+      <nav class="docs-nav">
+        <div class="docs-nav-inner">
+          <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+            <span>Docs</span>
+          </button>
+          <div class="docs-nav-end">
+            <nav class="docs-nav-pill" aria-label="Main">
+              <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a>
+              <a href="https://www.supercompress.dev/#agents">Agents</a>
+              <a href="https://www.supercompress.dev/blog">Blog</a>
+              <a href="https://www.supercompress.dev/changelog">Changelog</a>
+              <a href="/" aria-current="page">Docs</a>
+            </nav>
+            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta">Get API key</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="docs-content">
+        <h1>Compress engine reference</h1>
+        <p class="doc-lead">Every function in <code>web/assets/js/compress-engine.js</code> — what it does in plain English, and how it works technically. Source of truth for the browser playground and the proxy package copy.</p>
+
+        <div class="policy-note">
+          <strong>Eviction policy.</strong> Domain preprocessors may tidy structure (blank-line collapse, JSON shape crushing, log dedupe, stack-frame collapse). They must <em>not</em> drop content because a hardcoded phrase matched. Keep/drop decisions belong to the ML path: token MLP scores, compiler block ranking, and optional neural (<code>neuralBoost</code>) reranking.
+        </div>
+
+        <div class="doc-toc">
+          <h3>Sections</h3>
+          <ol>
+            <li><a href="#pipeline">End-to-end flow</a></li>
+            <li><a href="#preprocessors">Domain preprocessors</a></li>
+            <li><a href="#languages">Language detection</a></li>
+            <li><a href="#query">Query &amp; entity helpers</a></li>
+            <li><a href="#ml">ML features &amp; forward pass</a></li>
+            <li><a href="#compiler">Compiler / block selection</a></li>
+            <li><a href="#public">Public API entry points</a></li>
+            <li><a href="#precision">Precision, CCR, cache wrap</a></li>
+            <li><a href="#features">Feature helpers</a></li>
+            <li><a href="#export">Exported surface</a></li>
+          </ol>
+        </div>
+
+        <h2 id="pipeline">End-to-end flow</h2>
+        <ol>
+          <li>Normalize text → split lines.</li>
+          <li><code>preprocessLines</code> routes to JSON / code / log tidy (structure only).</li>
+          <li>Tokenize → build per-token features → <code>forwardModel</code> (tiny MLP).</li>
+          <li>Aggregate to lines/blocks → <code>scoreCompilerBlocks</code> (+ optional neural boost).</li>
+          <li><code>selectCompilerLines</code> keeps a budgeted subset; verifiers check entity recall.</li>
+          <li>Return compressed text + stats via <code>compressAdaptive</code> / <code>compressContext</code>.</li>
+        </ol>
+
+        <h2 id="preprocessors">Domain preprocessors</h2>
+
+        <article class="fn-card" id="fn-routeContentType">
+          <h3>routeContentType(lines)</h3>
+          <div class="fn-meta">Preprocessor · returns <code>"json" | "code" | "log" | "text"</code></div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Skims the first chunk of lines and guesses whether you mostly pasted JSON, code, logs, or plain text.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Samples up to 50 lines, tallies <code>classifyLine</code> types. Prefers code when import/definition/fence/comment dominate; log/trace when those counts are high; JSON when config/table dominate or the sample looks like a keyed object/array. Avoids treating C#/Java null literals as JSON.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-crushJSONLines">
+          <h3>crushJSONLines(lines)</h3>
+          <div class="fn-meta">Preprocessor · structural JSON reduction</div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Finds JSON blobs in the text and shrinks them: empty junk out, huge blobs truncated, big same-shaped arrays sampled.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Brace-walks for top-level <code>{…}</code>/<code>[…]</code>, <code>JSON.parse</code>s, then <code>crushValue</code>. Replaces each successful span with compacted JSON. Non-JSON text outside spans is preserved.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-crushValue">
+          <h3>crushValue(val, depth)</h3>
+          <div class="fn-meta">Preprocessor helper</div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Recursively cleans one JSON value so it takes less space without inventing new meaning.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Drops null/empty arrays; truncates long non-whitespace strings; samples homogeneous arrays; strips some high-cardinality id-like keys when values are long; depth-caps nesting.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressCodeLines">
+          <h3>compressCodeLines(lines)</h3>
+          <div class="fn-meta">Preprocessor · <strong>no keyword eviction</strong></div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Tidies code whitespace and tags the language. It does <em>not</em> delete comments or “boring” lines by keyword — that is the ML engine’s job.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Calls <code>detectLanguage</code>, collapses runs of blank lines to at most one, returns <code>{ lines, preprocessor: "code", language }</code>. Comment/docstring/license stripping and fixture phrase blacklists were removed.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-detectLanguage">
+          <h3>detectLanguage(lines)</h3>
+          <div class="fn-meta">Preprocessor · language id string</div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Looks at the top of the file and names the programming language (Python, Rust, SQL, …) or <code>unknown</code>.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Ordered regex heuristics on the first ~80 lines, then markdown fence aliases (<code>```ts</code>, <code>```py</code>, …). Specific patterns run before greedy ones so e.g. Python <code>import os</code> is not mislabeled as JavaScript.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressLogLines">
+          <h3>compressLogLines(lines, question)</h3>
+          <div class="fn-meta">Preprocessor · <strong>no level-keyword eviction</strong></div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Collapses giant stack traces and repeated identical log lines. It no longer throws away DEBUG lines just because the question didn’t say “debug”.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Accumulates stack frames → keep first/last + count; fingerprints timestamp/number-normalized messages and caps duplicates; collapses blank runs. Question arg is unused (kept for API stability). Level-based drops removed.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-preprocessLines">
+          <h3>preprocessLines(lines, question)</h3>
+          <div class="fn-meta">Orchestrator</div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Picks the right tidy-up for the paste (JSON, code, log, or none).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Dispatches on <code>routeContentType</code> to <code>crushJSONLines</code> / <code>compressCodeLines</code> / <code>compressLogLines</code>, else pass-through.</p></div>
+          </div>
+        </article>
+
+        <h2 id="languages">Language detection coverage</h2>
+        <p>Detection is for metadata and routing hints — the compressor still works on any text. Recognized ids include:</p>
+        <ul class="lang-list">
+          <li>c / cpp (via fence)</li>
+          <li>csharp</li>
+          <li>kotlin</li>
+          <li>swift</li>
+          <li>elixir</li>
+          <li>rust</li>
+          <li>go</li>
+          <li>java</li>
+          <li>python</li>
+          <li>typescript</li>
+          <li>javascript</li>
+          <li>ruby</li>
+          <li>php</li>
+          <li>sql</li>
+          <li>shell</li>
+          <li>powershell</li>
+          <li>scala</li>
+          <li>r</li>
+          <li>lua</li>
+          <li>dart</li>
+          <li>matlab</li>
+          <li>yaml / toml (fence)</li>
+          <li>html</li>
+          <li>css</li>
+          <li>vue</li>
+          <li>unknown</li>
+        </ul>
+
+        <h2 id="query">Query &amp; entity helpers</h2>
+
+        <article class="fn-card" id="fn-tokenizeContextLines">
+          <h3>tokenizeContextLines(lines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Breaks each line into word-like pieces the model can score.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Regex <code>/[A-Za-z_][A-Za-z0-9_]*|[^\s]/g</code> per line; returns flat token list (and parallel line indices elsewhere in the pipeline).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-extractQuestionEntities">
+          <h3>extractQuestionEntities(question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Pulls out the “proper nouns” of the question: names, paths, IDs, code-ish tokens.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Heuristic extractors for CamelCase, paths, dotted ids, quoted spans, ALL_CAPS, numerics — used as soft overlap features, not hard drop rules.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-looksLikeCodePrefix">
+          <h3>looksLikeCodePrefix(q)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Guesses if the question is about code (so we can focus the query).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Keyword/syntax cues for coding tasks.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-focusCodeQuery">
+          <h3>focusCodeQuery(q)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Shortens a code-ish question to the useful part.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Strips boilerplate instruction wrappers when <code>looksLikeCodePrefix</code> is true.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-normalizeQuestion">
+          <h3>normalizeQuestion(question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Cleans the question text so matching is consistent.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Whitespace/Unicode normalize; optional code-query focusing.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-questionForContent">
+          <h3>questionForContent(question, lines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Chooses the best question form for this particular paste.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>May adapt normalization based on content shape (code vs prose).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-normalizeContextText">
+          <h3>normalizeContextText(text)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Standardizes newlines and odd characters before compression.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Line-ending unify, soft wrapping of runaway lines, light cleanup without semantic rewrite.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-foldKey">
+          <h3>foldKey(s)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Makes two spellings of the same thing compare equal.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Lowercases / folds punctuation for soft matching keys.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-softIncludes">
+          <h3>softIncludes(text, entity)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Checks if an entity appears in text even if spacing/case differ a bit.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Exact + folded containment; used for entity/term hit counting.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-distinctiveEntitiesInCorpus">
+          <h3>distinctiveEntitiesInCorpus(entities, corpusText)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Keeps entities that actually appear and aren’t everywhere (so they’re useful signals).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Filters to corpus-present, down-weights ultra-common tokens via document frequency style checks.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-specificQuestionEntities">
+          <h3>specificQuestionEntities(question, blocks)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Finds question entities that are rare across blocks — the good “needles.”</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Entity list filtered by block DF for multi-hop protection.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-normalizeEvidenceLine">
+          <h3>normalizeEvidenceLine(line)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Normalizes a line before comparing “did we keep the important evidence?”</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Whitespace/fingerprint style normalize for retention metrics.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-measureCriticalRetention">
+          <h3>measureCriticalRetention(original, compressed, question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Scores whether the compressed text still has the lines that look critical for answering.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Ranks original lines by entity overlap; reports kept vs dropped critical previews. Measurement only — not an eviction policy.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-questionTerms">
+          <h3>questionTerms(question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Splits the question into searchable words.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Tokenizes / filters stop-ish short terms for overlap features.</p></div>
+          </div>
+        </article>
+
+        <h2 id="ml">ML features &amp; forward pass</h2>
+
+        <article class="fn-card" id="fn-classifyTokenSemantic">
+          <h3>classifyTokenSemantic(tok, lineContext)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Tags a token as code-ish, comment-ish, chat-ish, or boilerplate-ish.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Maps into <code>SEM</code> enum used as a categorical feature.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-deterministicAttention">
+          <h3>deterministicAttention(…)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>A hand-crafted “attention” score when no neural boost is present — still a feature, not a keyword blacklist.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Combines semantic class, entity match, and recency into a bounded prior for the MLP / fallback.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-buildInferenceRecords">
+          <h3>buildInferenceRecords(lines, question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Builds one feature row per token for the model.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Tokenizes, attaches line context, entity flags, entropy/fingerprint/ngram features, position encoding.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-buildFeatureTensor">
+          <h3>buildFeatureTensor(records, seqLen)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Packs those rows into a dense matrix the network expects.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Pads/truncates to <code>seqLen</code>; returns Float32-style flat or 2D feature array.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-gelu">
+          <h3>gelu(x)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Smooth activation used inside the tiny network.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Gaussian Error Linear Unit approximation.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-layerNormRow">
+          <h3>layerNormRow(x, weight, bias, dim)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Rescales a feature vector so training stays stable.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Per-row mean/var normalize + affine.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-linearRow">
+          <h3>linearRow(x, weight, bias, inDim, outDim)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>One dense layer: multiply, add bias.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Row-vector × weight matrix + bias.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-forwardModel">
+          <h3>forwardModel(model, feats, n)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Runs the keep/drop neural net on every token and returns scores.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Stacked linear + GELU + LayerNorm from <code>model.json</code> weights; outputs per-token keep probabilities/logits.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-linesFromKeptTokens">
+          <h3>linesFromKeptTokens(…)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Turns “which tokens survived” back into whole lines, always keeping a bit of the start and end.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Union of token→line indices plus sink/recency line sets.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-markOracleImportant">
+          <h3>markOracleImportant(tokens, lines, question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Labels tokens that look like they must survive for the question (for training/eval style checks).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Entity/term overlap oracle flags on tokens.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-lineQuestionRelevance">
+          <h3>lineQuestionRelevance(line, question, modelLineScore)</h3>
+          <div class="fn-meta"><strong>No hardcoded drop phrases</strong></div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>How relevant is this line to the question? Starts from the model score and bumps when question words appear.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p><code>modelLineScore * 2</code> + term/entity soft hits. Fixture penalties (e.g. Maycomb, Region CPU eviction, Appendix notes) removed — negatives are not applied from keyword lists.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-lineFingerprint">
+          <h3>lineFingerprint(line)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>A fuzzy ID for a line so duplicates can be spotted.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Lowercase, digits→<code>#</code>, whitespace collapse.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-duplicateLinePenalty">
+          <h3>duplicateLinePenalty(lines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Slightly downranks lines that appear over and over.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Fingerprint histogram → per-line penalty vector (structural, not lexical blacklist).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-textFromKeptLines">
+          <h3>textFromKeptLines(lines, keptLineSet)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Joins the kept line numbers back into a string.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Sorted indices → <code>join("\n")</code>.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-countTokensInLines">
+          <h3>countTokensInLines(lineForToken, keptLineSet)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Counts how many tokens sit on kept lines.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Iterates token→line map; increments when line is kept.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-entityRecallOk">
+          <h3>entityRecallOk(original, compressed, question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Did we keep the rare names from the question?</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Distinctive entity hit ratio gate (strict for ≤3 entities, ≥0.9 otherwise).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-lineScoresFromModel">
+          <h3>lineScoresFromModel(records, scores, lineForToken, numLines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Turns token scores into one score per line (best token on that line).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Max-pool over tokens belonging to each line index.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-sinkLineIndices">
+          <h3>sinkLineIndices(numLines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Always protect the very start and a bit of the end of the document.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Set containing index 0 and the last few lines (attention-sink style).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-questionRecallOk">
+          <h3>questionRecallOk(original, compressed, question, minRatio)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Broader check: entities plus question words still show up enough.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Requires <code>entityRecallOk</code> then term-hit ratio ≥ <code>minRatio</code> (default 0.66).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-lineTokenCounts">
+          <h3>lineTokenCounts(lineForToken, numLines)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>How many tokens does each line cost?</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Histogram of token→line assignments.</p></div>
+          </div>
+        </article>
+
+        <h2 id="compiler">Compiler / block selection</h2>
+
+        <article class="fn-card" id="fn-classifyLine">
+          <h3>classifyLine(line)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Labels a line: heading, code, log, blank, etc.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Regex typology used by routing and block segmentation.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-shouldStartBlock">
+          <h3>shouldStartBlock(prevType, type, prevLine, line)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Decides when a new “paragraph/block” should begin.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Type transitions + structural cues (headings, fences).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-segmentContext">
+          <h3>segmentContext(lines, tokenCounts)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Cuts the document into scored chunks.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Emits blocks with start/end, type, text, token mass.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-blockFingerprint">
+          <h3>blockFingerprint(block)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Fuzzy ID for a whole block to detect copies.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Normalized text fingerprint for DF / duplicate penalties.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-scoreCompilerBlocks">
+          <h3>scoreCompilerBlocks(blocks, …, neuralBoost)</h3>
+          <div class="fn-meta"><strong>ML-primary when neuralBoost present</strong></div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Ranks each chunk by how useful it looks for the question. When the hosted neural scores exist, they mostly decide.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>IDF-weighted entity/term soft hits + light type priors + duplicate soft penalty. No copyright/Passage/“see also” keyword dumps. With <code>neuralBoost</code>: <code>score = 0.1 * heuristic + 0.9 * neural</code>.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-blockToLineSet">
+          <h3>blockToLineSet(blocks)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Expands kept blocks into the set of line numbers.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Union of inclusive <code>[start, end]</code> ranges.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-addBlockWithDependencies">
+          <h3>addBlockWithDependencies(kept, blocks, block)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>When keeping a chunk, also keep its nearby heading so context stays readable.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Adds block id; walks back a few blocks for a heading dependency.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-fenceMarkerCount">
+          <h3>fenceMarkerCount(text)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Counts markdown code fences so we don’t leave one hanging open.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Counts <code>```</code> markers (parity check).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-closeStructuralBlocks">
+          <h3>closeStructuralBlocks(kept, blocks)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Fixes odd open fences after selection.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>May add closing fence blocks when parity is odd.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-verifierStats">
+          <h3>verifierStats(original, compressed, question, …)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Package of quality numbers for dashboards/benchmarks.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Entity/keyword recall, important-line retention, token ratios.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-selectCompilerLines">
+          <h3>selectCompilerLines(…)</h3>
+          <div class="fn-meta">Largest internal routine — budgeted keep set</div>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>The compiler: given scores and a token budget, picks which lines survive, protecting answer-critical bridges and sinks.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Segments → scores → greedy/protected keep with neural seed protection, multi-hop bridge harvest, fence closing, and verifier loops. This is where eviction happens — driven by relative scores / neural ranks, not phrase blacklists.</p></div>
+          </div>
+        </article>
+
+        <h2 id="public">Public API entry points</h2>
+
+        <article class="fn-card" id="fn-prepareNeuralBlocks">
+          <h3>prepareNeuralBlocks(text, question, model)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Prepares block text for the hosted neural reranker.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Normalize/preprocess/segment; returns block payloads for cross-encoder scoring.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressAdaptive">
+          <h3>compressAdaptive(text, question, model, options)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Main “smart compress” entry: runs the full pipeline and returns compressed text + metrics.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Preprocess → features → forward → compiler selection → optional neural blend → stats object.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressContext">
+          <h3>compressContext(text, question, budgetRatio, policyName, model)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Simpler wrapper: compress toward a fraction of the original size under a named policy.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Delegates to adaptive path with budgetRatio (default 0.35).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-comparePolicies">
+          <h3>comparePolicies(text, question, budgetRatio, model)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Runs a few strategies side-by-side for demos/benchmarks.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Returns per-policy compressed outputs and quality metrics.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-answerQualityScore">
+          <h3>answerQualityScore(original, compressed, question)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Rough 0–1 score of how answerable the compressed text still is.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Combines entity/term recall and critical retention signals.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-sustainabilityFromTokensSaved">
+          <h3>sustainabilityFromTokensSaved(tokensSaved, assumptions)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Turns “tokens not sent” into a CO₂ / energy estimate for the site.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Linear model over energy-per-token assumptions.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-middleTruncationFailureCase">
+          <h3>middleTruncationFailureCase()</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Demo fixture showing why dumb middle truncation fails.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Returns a canned {context, question, answer} style object.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-loadModel">
+          <h3>async loadModel(url)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Downloads the tiny browser weights file.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p><code>fetch</code> → JSON parse of <code>assets/data/model.json</code> by default.</p></div>
+          </div>
+        </article>
+
+        <h2 id="precision">Precision, CCR, cache wrap</h2>
+
+        <article class="fn-card" id="fn-forwardVerifier">
+          <h3>forwardVerifier(verifierModel, features)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Second tiny net that checks if a compression looks safe.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>MLP over hand-built verifier features → accept/reject style score.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-buildVerifierFeatures">
+          <h3>buildVerifierFeatures(…)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Builds the checklist numbers the verifier reads.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Compression ratio, entity recall, kept-token stats, etc.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-loadPrecisionModel">
+          <h3>async loadPrecisionModel(url)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Loads the higher-precision weight file.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Fetch <code>model_precision.json</code>.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-loadVerifier">
+          <h3>async loadVerifier(url)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Loads verifier weights.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Fetch <code>verifier.json</code>.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-ccrStore">
+          <h3>ccrStore(original)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Remembers the full original under a short hash so you can fetch it later.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>In-memory map keyed by <code>simpleHash</code>; reversible compression companion.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-ccrRetrieve">
+          <h3>ccrRetrieve(hash)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Looks up the original by hash.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Map get; returns null if missing.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-ccrGetStats">
+          <h3>ccrGetStats()</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>How many originals are cached right now.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Size / byte estimates of the CCR store.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-simpleHash">
+          <h3>simpleHash(str)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Quick fingerprint string for CCR keys (not crypto security).</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Non-cryptographic rolling hash → hex-ish string.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressCCR">
+          <h3>compressCCR(text, question, model, options)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Compress and stash the original so decompression/retrieval is possible.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Store original → compressAdaptive → return compressed + retrieval hash.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-compressPrecision">
+          <h3>compressPrecision(text, question, precisionModel, verifierModel)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>More cautious compress: try a cut, ask the verifier if it’s safe, back off if not.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Precision weights + verifier loop until accept or budget floor.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-cacheWrap">
+          <h3>cacheWrap(compressedText, query)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Optional wrapper that puts a fixed header around compressed text so providers can reuse prompt/prefix cache. We never touch the model’s KV cache — we only change the string we send.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>CacheAligner: deterministic XML preamble/postamble for provider prompt caching (OpenAI/Anthropic/vLLM). Not in-model KV eviction.</p></div>
+          </div>
+        </article>
+
+        <h2 id="features">Feature helpers</h2>
+
+        <article class="fn-card" id="fn-computeTokenEntropy">
+          <h3>computeTokenEntropy(tok, allTokens)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Rare tokens score higher than tokens that spam the file.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p><code>1 - freq*3</code> clamped to [0,1].</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-computeSemanticFingerprint">
+          <h3>computeSemanticFingerprint(lineText, questionText)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>How similar do the line and question “feel” at character-pair level?</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Character bigram Jaccard.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-computeCrossContextSimilarity">
+          <h3>computeCrossContextSimilarity(tok, entities)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Does this token look like any question entity?</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Max character-set overlap vs entity set.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-computeContextDivergence">
+          <h3>computeContextDivergence(tok, allTokens)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Another rarity signal for tokens.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Same family as entropy; frequency-based divergence.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-sinusoidalPositionEncoding">
+          <h3>sinusoidalPositionEncoding(position, seqLen)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Tells the model where in the document a token sits.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Sinusoids of position ratio (Transformer-style scalar feature).</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-computeNgramSim">
+          <h3>computeNgramSim(lineText, questionText)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>Overlapping 3-character chunks between line and question.</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Trigram Jaccard.</p></div>
+          </div>
+        </article>
+
+        <article class="fn-card" id="fn-estimateIndentDepth">
+          <h3>estimateIndentDepth(line)</h3>
+          <div class="fn-grid">
+            <div class="fn-box"><strong>Layman</strong><p>How nested is this line (spaces/tabs)?</p></div>
+            <div class="fn-box"><strong>Technical</strong><p>Leading whitespace / 40, capped at 1.0.</p></div>
+          </div>
+        </article>
+
+        <h2 id="export">Exported surface</h2>
+        <p>Attached to <code>global.SuperCompressEngine</code>:</p>
+        <pre><code>compressContext, compressAdaptive, prepareNeuralBlocks, comparePolicies,
+answerQualityScore, sustainabilityFromTokensSaved, middleTruncationFailureCase,
+loadModel, extractQuestionEntities, normalizeQuestion, normalizeContextText,
+routeContentType, preprocessLines, crushJSONLines, compressCodeLines, compressLogLines,
+compressPrecision, loadPrecisionModel, loadVerifier, forwardVerifier,
+compressCCR, ccrRetrieve, ccrGetStats, simpleHash, cacheWrap</code></pre>
+        <p>Many helpers above are internal closures (not exported) but documented because they define behavior.</p>
+
+        <aside class="docs-signup-cta" aria-label="Get started">
+          <h2>Try it live</h2>
+          <p>5M free tokens/mo. No credit card. Compress context before inference in one click.</p>
+          <ul class="docs-signup-cta-incentives">
+            <li>5M free tokens/mo</li>
+            <li>No credit card</li>
+            <li>Then $1/1M</li>
+          </ul>
+          <div class="docs-signup-cta-actions">
+            <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/playground">Open playground →</a>
+            <a class="docs-signup-cta-link" href="/architecture">Architecture overview</a>
+          </div>
+        </aside>
+
+        <footer class="docs-site-footer">
+          <div class="docs-site-footer-inner">
+            <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var s=document.getElementById('docs-sidebar'),o=document.getElementById('sidebar-overlay'),t=document.getElementById('mobile-toggle');
+      function oS(){s.classList.add('open');o.classList.add('open');}
+      function cS(){s.classList.remove('open');o.classList.remove('open');}
+      if(t)t.addEventListener('click',oS);if(o)o.addEventListener('click',cS);
+    })();
+  </script>
+</body>
+</html>

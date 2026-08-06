@@ -52,7 +52,7 @@
         if (name === "SuperCompress") tr.className = "row-highlight";
         tr.innerHTML = `
           <td>${name}</td>
-          <td>${s.avg_kv_savings_pct}%</td>
+          <td>${s.avg_tokens_saved_pct}%</td>
           <td>${(s.avg_answer_quality * 100).toFixed(1)}%</td>
           <td>${(s.avg_entity_recall * 100).toFixed(1)}%</td>
           <td>${(s.avg_oracle_recall * 100).toFixed(1)}%</td>
@@ -61,7 +61,7 @@
       }
       const head = document.getElementById("bench-headline");
       if (head && data.headline) {
-        head.textContent = `SuperCompress retains ${(data.headline.supercompress_answer_quality * 100).toFixed(0)}% answer quality at ${data.headline.supercompress_kv_savings_pct}% KV savings (Truncation: ${(data.headline.truncation_answer_quality * 100).toFixed(0)}%).`;
+        head.textContent = `SuperCompress retains ${(data.headline.supercompress_answer_quality * 100).toFixed(0)}% answer quality at ${data.headline.supercompress_tokens_saved_pct}% KV savings (Truncation: ${(data.headline.truncation_answer_quality * 100).toFixed(0)}%).`;
       }
     } catch (e) {
       table.innerHTML = `<tr><td colspan="6">Benchmark data unavailable offline.</td></tr>`;

@@ -57,7 +57,7 @@ def compress_local(context: str, query: str, budget_ratio: float) -> dict:
         "compressed_text": result.compressed_text,
         "original_tokens": result.original_tokens,
         "kept_tokens": result.kept_tokens,
-        "kv_savings_pct": round(result.kv_savings_pct, 2),
+        "tokens_saved_pct": round(result.tokens_saved_pct, 2),
         "kept_line_ratio": round(result.kept_line_ratio, 3),
         "policy_name": result.policy_name,
         "budget_ratio": result.budget_ratio,

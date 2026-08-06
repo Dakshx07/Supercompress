@@ -36,7 +36,7 @@ def compress_history(
     meta = {
         "original_tokens": stats.original_tokens,
         "kept_tokens": stats.kept_tokens,
-        "kv_savings_pct": stats.kv_savings_pct,
+        "tokens_saved_pct": stats.tokens_saved_pct,
     }
     return out, meta
 

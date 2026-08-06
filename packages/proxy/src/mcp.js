@@ -207,8 +207,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         compressed_tokens: body.kept_tokens || body.compressed_tokens,
         kept_tokens: body.kept_tokens || body.compressed_tokens,
         tokens_saved: body.tokens_saved ?? Math.max(0, (body.original_tokens || 0) - (body.kept_tokens || body.compressed_tokens || 0)),
-        savings_pct: body.savings_pct ?? body.kv_savings_pct,
-        kv_savings_pct: body.kv_savings_pct ?? body.savings_pct,
+        savings_pct: body.tokens_saved_pct ?? body.kv_savings_pct ?? body.savings_pct,
+        tokens_saved_pct: body.tokens_saved_pct ?? body.kv_savings_pct ?? body.savings_pct,
         risk: body.compression_risk || body.risk,
       }));
     } catch (err) {

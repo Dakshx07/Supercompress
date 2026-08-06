@@ -7,44 +7,44 @@
   <meta name="description" content="Get started with SuperCompress in under 5 minutes. Install, get an API key, compress your first prompt." />
   <meta property="og:title" content="Quickstart — SuperCompress Documentation" />
   <meta property="og:description" content="Get started with SuperCompress in under 5 minutes." />
-  <meta property="og:url" content="https://supercompress.dev/docs/quickstart" />
+  <meta property="og:url" content="https://docs.supercompress.dev/quickstart" />
   <meta property="og:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="SuperCompress" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://www.supercompress.dev/assets/img/og-share-light.png" />
-  <link rel="canonical" href="https://supercompress.dev/docs/quickstart" />
+  <link rel="canonical" href="https://docs.supercompress.dev/quickstart" />
   <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="/assets/css/supercompress.css" />
-  <link rel="stylesheet" href="/assets/css/docs.css" />
+<link rel="stylesheet" href="/assets/css/docs.css?v=12" />
 </head>
 <body>
   <div class="docs-layout">
     <!-- Sidebar (same as index) -->
     <aside class="docs-sidebar" id="docs-sidebar">
-      <a href="/docs/" class="docs-sidebar-logo">
+      <a href="/" class="docs-sidebar-logo">
         <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="18" height="18" />
         <span class="docs-sidebar-logo-word">Super<em>Compress</em></span>
       </a>
       <div class="docs-sidebar-section">Getting started</div>
-      <a href="/docs/" class="docs-sidebar-link">Overview</a>
-      <a href="/docs/quickstart" class="docs-sidebar-link active">Quickstart</a>
+      <a href="/" class="docs-sidebar-link">Overview</a>
+      <a href="/quickstart" class="docs-sidebar-link active">Quickstart</a>
       <div class="docs-sidebar-section">Reference</div>
-      <a href="/docs/api-reference" class="docs-sidebar-link">API Reference</a>
-      <a href="/docs/integrations" class="docs-sidebar-link">Integrations</a>
-      <a href="/docs/coding-agents" class="docs-sidebar-link">Coding Agents</a>
-      <a href="/docs/usage" class="docs-sidebar-link">Usage</a>
+      <a href="/api-reference" class="docs-sidebar-link">API Reference</a>
+      <a href="/integrations" class="docs-sidebar-link">Integrations</a>
+      <a href="/coding-agents" class="docs-sidebar-link">Coding Agents</a>
+      <a href="/usage" class="docs-sidebar-link">Usage</a>
       <div class="docs-sidebar-section">Deep dives</div>
-      <a href="/docs/architecture" class="docs-sidebar-link">Architecture</a>
-      <a href="/docs/environment" class="docs-sidebar-link">Environment & CO₂</a>
+      <a href="/architecture" class="docs-sidebar-link">Architecture</a>
+      <a href="/compress-engine" class="docs-sidebar-link">Compress engine</a>
+      <a href="/environment" class="docs-sidebar-link">Environment & CO₂</a>
     </aside>
     <div class="docs-sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="docs-main">
-      <nav class="docs-nav">
+            <nav class="docs-nav">
         <div class="docs-nav-inner">
           <button class="docs-mobile-toggle" id="mobile-toggle" aria-label="Toggle sidebar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
@@ -52,17 +52,17 @@
           </button>
           <div class="docs-nav-end">
             <nav class="docs-nav-pill" aria-label="Main">
-              <a href="/">Home</a>
-              <a href="/token-compression">Guide</a>
-              <a href="/blog">Blog</a>
-              <a href="/dashboard">Dashboard</a>
-              <a href="/playground">Playground</a>
-              <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a>
+              <a href="https://www.supercompress.dev/#agents">Agents</a>
+              <a href="https://www.supercompress.dev/blog">Blog</a>
+              <a href="https://www.supercompress.dev/changelog">Changelog</a>
+              <a href="/" aria-current="page">Docs</a>
             </nav>
-            <a href="/dashboard" class="docs-nav-cta">Get API key</a>
+            <a href="https://www.supercompress.dev/dashboard?signup=1" class="docs-nav-cta">Get API key</a>
           </div>
         </div>
       </nav>
+
 
       <div class="docs-content">
         <h1 class="df-reveal">Quickstart</h1>
@@ -70,7 +70,7 @@
 
         <div class="doc-callout doc-callout--info">
           <span class="doc-callout-label">Prefer the hosted API?</span>
-          Skip the install and go straight to <a href="/dashboard">getting an API key</a>. The hosted API returns compressed results in ~5ms overhead.
+          Skip the install and go straight to <a href="https://www.supercompress.dev/dashboard?signup=1">getting an API key</a>. The hosted API returns compressed results in ~5ms overhead.
         </div>
 
         <div class="doc-toc">
@@ -93,7 +93,7 @@
         <pre><code><span class="kw">pip</span> install -e <span class="str">".&#91;dev&#93;"</span></code></pre>
 
         <h2 id="get-a-key">2. Get an API key</h2>
-        <p>To use the hosted API, head to the <a href="/dashboard">dashboard</a>, sign in with Google or email, and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
+        <p>To use the hosted API, head to the <a href="https://www.supercompress.dev/dashboard?signup=1">dashboard</a>, sign in with Google or email, and create a key. Keys look like <code>sc_live_xxxxxxxx</code>.</p>
         <p>For local-only use, you don't need a key — the library compresses entirely on-device.</p>
         <p>Set your key as an environment variable:</p>
         <pre><code><span class="kw">export</span> <span class="str">SUPERCOMPRESS_API_KEY</span>=sc_live_YOUR_KEY</code></pre>
@@ -142,7 +142,7 @@ Seats: 5
         <p>The <code>compress_context</code> function returns a <code>CompressResult</code> with useful metadata:</p>
         <pre><code><span class="kw">print</span>(<span class="str">f"Original: {result.original_tokens} tokens"</span>)
 <span class="kw">print</span>(<span class="str">f"Compressed: {result.kept_tokens} tokens"</span>)
-<span class="kw">print</span>(<span class="str">f"Saved: {result.kv_savings_pct:.1f}%"</span>)
+<span class="kw">print</span>(<span class="str">f"Saved: {result.tokens_saved_pct:.1f}%"</span>)
 <span class="kw">print</span>(<span class="str">f"Policy: {result.policy_name}"</span>)</code></pre>
         <p>On this example you'll see something like:</p>
         <pre><code>Original: 104 tokens
@@ -153,11 +153,11 @@ Policy: SuperCompress</code></pre>
 
         <h2 id="next-steps">5. Next steps</h2>
         <ul>
-          <li><strong>Use the hosted API</strong> — <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="/docs/api-reference">API reference</a>.</li>
-          <li><strong>Wire it into your app</strong> — add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="/docs/integrations">integrations</a>.</li>
-          <li><strong>Deploy on your own server</strong> — <code>pip install supercompress</code> and call it from any Python backend. See <a href="/docs/usage">usage</a>.</li>
-          <li><strong>Try the playground</strong> — test compression on your own text in-browser at <a href="/playground">supercompress.dev/playground</a>.</li>
-          <li><strong>Compare approaches</strong> — see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="/benchmarks">supercompress.dev/benchmarks</a>.</li>
+          <li><strong>Use the hosted API</strong> — <code class="str">POST /api/v1/compress</code> (or just <code>/compress</code>) from any language. See the <a href="/api-reference">API reference</a>.</li>
+          <li><strong>Wire it into your app</strong> — add compression before OpenAI, LangChain, Express.js, or any LLM call. See <a href="/integrations">integrations</a>.</li>
+          <li><strong>Deploy on your own server</strong> — <code>pip install supercompress</code> and call it from any Python backend. See <a href="/usage">usage</a>.</li>
+          <li><strong>Try the playground</strong> — test compression on your own text in-browser at <a href="https://www.supercompress.dev/playground">supercompress.dev/playground</a>.</li>
+          <li><strong>Compare approaches</strong> — see how SuperCompress stacks up against truncation, summarization, and H2O at <a href="https://www.supercompress.dev/benchmarks">supercompress.dev/benchmarks</a>.</li>
         </ul>
 
         <h2>Using the hosted API (curl)</h2>
@@ -180,7 +180,7 @@ Policy: SuperCompress</code></pre>
   "compressed_text": "…",
   "original_tokens": 104,
   "kept_tokens": 40,
-  "kv_savings_pct": 61.5,
+  "tokens_saved_pct": 61.5,
   "important_kept_pct": 0.95,
   "compression_risk": "low",
   "kept_blocks": ["User account info", "Recent activity"],
@@ -196,80 +196,30 @@ out = sc.compress(context, question)
 <span class="kw">print</span>(out.compressed_text)</code></pre>
 
         <div class="doc-footer">
-          <p>Next: <a href="/docs/api-reference">API Reference →</a></p>
+          <p>Next: <a href="/api-reference">API Reference →</a></p>
         </div>
 
     </div>
-
-      <!-- Full SuperCompress footer -->
-      <!-- SITE_FOOTER_START -->
-<footer class="df-footer">
-  <div class="df-footer-inner">
-    <div class="df-footer-grid">
-      <div class="df-footer-brand">
-        <a href="/" class="df-footer-lockup">
-          <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
-          <p class="df-footer-heading">Super<em>Compress</em></p>
-        </a>
-        <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · coding agent plugin.</p>
-        <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
-      </div>
-      <div class="df-footer-links">
-        <div>
-          <p class="df-footer-heading">Navigation</p>
-          <ul>
-            <li><a href="/benchmarks">Benchmarks</a></li>
-            <li><a href="/#agents">Agents</a></li>
-            <li><a href="/blog">Blog</a></li>
-            <li><a href="/changelog">Changelog</a></li>
-            <li><a href="/docs/">Docs</a></li>
-            <li><a href="/dashboard">Dashboard</a></li>
+              <aside class="docs-signup-cta" aria-label="Get started">
+          <h2>Get your free API key</h2>
+          <p>5M free tokens/mo. No credit card. Compress context before inference in one click.</p>
+          <ul class="docs-signup-cta-incentives">
+            <li>5M free tokens/mo</li>
+            <li>No credit card</li>
+            <li>Then $1/1M</li>
           </ul>
+          <div class="docs-signup-cta-actions">
+            <a class="docs-signup-cta-btn" href="https://www.supercompress.dev/dashboard?signup=1&amp;utm_source=docs&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key →</a>
+            <a class="docs-signup-cta-link" href="/coding-agents">Coding agents setup</a>
+          </div>
+        </aside>
+<footer class="docs-site-footer">
+        <div class="docs-site-footer-inner">
+          <p><a href="https://www.supercompress.dev/">SuperCompress</a> · <a href="/">Docs</a> · <a href="https://www.supercompress.dev/dashboard?signup=1">Dashboard</a> · <a href="/coding-agents">Coding agents</a> · <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a> · MIT License</p>
         </div>
-        <div>
-          <p class="df-footer-heading">Resources</p>
-          <ul>
-            <li><a href="/playground">Playground</a></li>
-            <li><a href="/changelog">Changelog</a></li>
-            <li><a href="/token-compression">Token compression guide</a></li>
-            <li><a href="/benchmarks">Benchmarks</a></li>
-            <li><a href="/docs/coding-agents">Coding agents</a></li>
-          </ul>
-        </div>
-        <div>
-          <p class="df-footer-heading">SEO Guides</p>
-          <ul>
-            <li><a href="/prompt-compression">Prompt compression</a></li>
-            <li><a href="/token-compression">LLM token compression</a></li>
-            <li><a href="/context-compression">Context compression</a></li>
-            <li><a href="/llm-cost-optimization">Reduce LLM costs</a></li>
-          </ul>
-        </div>
-        <div>
-          <p class="df-footer-heading">Documentation</p>
-          <ul>
-            <li><a href="/docs/">Documentation</a></li>
-            <li><a href="/docs/quickstart">Quickstart</a></li>
-            <li><a href="/docs/api-reference">API reference</a></li>
-            <li><a href="/docs/coding-agents">Coding agents</a></li>
-          </ul>
-        </div>
-        <div>
-          <p class="df-footer-heading">Social</p>
-          <ul>
-            <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <p class="df-footer-copy">© SuperCompress · Non-commercial license</p>
+      </footer>
   </div>
-</footer>
-<!-- SITE_FOOTER_END -->
-  </div>
-
-  <script src="/assets/js/supercompress.js"></script>
-  <script>
+<script>
     (function() {
       var sidebar = document.getElementById('docs-sidebar');
       var overlay = document.getElementById('sidebar-overlay');

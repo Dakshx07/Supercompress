@@ -144,7 +144,7 @@ function unwrapMcpCompress(call) {
   assert.ok(!/Missing or invalid API key/i.test(text), "auth failed");
   const orig = data.original_tokens || 0;
   const saved = data.tokens_saved || 0;
-  const kv = data.kv_savings_pct || data.savings_pct || 0;
+  const kv = data.tokens_saved_pct || data.savings_pct || 0;
   assert.ok(orig > 50, `original_tokens too small: ${orig}`);
   assert.ok(saved > 0 || kv > 0, `no savings saved=${saved} kv=${kv}`);
   assert.match(String(compressed), /fetch7|value7|payment|ERROR|job=1242/i);
@@ -175,7 +175,7 @@ async function main() {
     assert.match(res.body.compressed_text, /fetch7|value7/i);
     pass(
       "hosted API compress coding context",
-      `orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.kv_savings_pct}%`
+      `orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.tokens_saved_pct}%`
     );
   } catch (e) {
     fail("hosted API compress coding context", e.message);
@@ -199,7 +199,7 @@ async function main() {
     assert.ok((res.body.tokens_saved || 0) > 100, `weak token savings: ${res.body.tokens_saved}`);
     pass(
       "hosted API compress logs",
-      `chars ${inChars}→${outChars}; tokens orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.kv_savings_pct}%`
+      `chars ${inChars}→${outChars}; tokens orig=${res.body.original_tokens} saved=${res.body.tokens_saved} kv=${res.body.tokens_saved_pct}%`
     );
   } catch (e) {
     fail("hosted API compress logs", e.message);

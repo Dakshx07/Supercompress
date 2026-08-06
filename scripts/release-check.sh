@@ -13,11 +13,18 @@ const fs = require('fs');
 const html = fs.readFileSync('web/index.html', 'utf8');
 const required = [
   'id="coding-agents"',
-  'npm install supercompress-proxy',
-  'npm exec supercompress setup',
-  'assets/css/sc-sm.css',
+  'supercompress-proxy',
+  'supercompress setup',
   'assets/js/compress-engine.js',
 ];
+const installOk =
+  html.includes('npm install -g supercompress-proxy') ||
+  html.includes('npm install supercompress-proxy');
+if (!installOk) throw new Error('landing page missing npm install for supercompress-proxy');
+const cssOk =
+  html.includes('assets/css/supercompress.css') ||
+  html.includes('assets/css/sc-sm.css');
+if (!cssOk) throw new Error('landing page missing stylesheet');
 for (const value of required) {
   if (!html.includes(value)) throw new Error(`landing page missing: ${value}`);
 }
