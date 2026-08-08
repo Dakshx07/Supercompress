@@ -383,7 +383,7 @@ async function main() {
       console.log("  → Reverting agent configurations...");
       const { revertAll, removeMcp } = require("../src/detector");
       const undone = revertAll();
-      undone.forEach((a) => console.log(`  → Reverted ${a}`));
+      undone.forEach((a) => console.log(`  → ${a}`));
       removeMcp().forEach((a) => console.log(`  → Removed ${a} MCP registration`));
       // Remove config dir
       if (fs.existsSync(CONFIG_DIR)) {
