@@ -88,10 +88,13 @@ if (!rootLock) {
   }
 
   // Verify resolved tarball URL matches current version
-  if (lockedDep.resolved && !lockedDep.resolved.includes(`-${proxyVersion}.tgz`)) {
+  if (!lockedDep.resolved) {
+    console.error('❌ Missing resolved artifact URL for supercompress-proxy in root package-lock.json');
+    hasErrors = true;
+  } else if (!lockedDep.resolved.includes(`-${proxyVersion}.tgz`)) {
     console.error(`❌ Mismatch: Root package-lock.json supercompress-proxy resolved URL (${lockedDep.resolved}) does not match current version ${proxyVersion}`);
     hasErrors = true;
-  } else if (lockedDep.resolved) {
+  } else {
     console.log(`✅ Root package-lock.json supercompress-proxy resolved artifact matches ${proxyVersion}`);
   }
 }
