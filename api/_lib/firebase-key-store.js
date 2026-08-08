@@ -262,24 +262,57 @@ async function authenticateKey(secret) {
     throw err;
   }
 
-  const store = await loadStore();
   const digest = hashApiKey(secret);
+
+  // Auth-backed keys first — works even when gist/Firestore store is down.
+  const authUser = await findAuthBackedKey(secret);
+  if (authUser) {
+    const c = authUser.customClaims || {};
+    try {
+      const rec = await migrateAuthKeyToStore(authUser, secret);
+      if (rec && !rec.revoked && verifyApiKey(secret, rec.key_hash || "")) {
+        const owner = await auth().getUser(rec.user_id);
+        return { user: rec, owner, ownerUid: rec.user_id, keyId: rec.id };
+      }
+    } catch (err) {
+      // Store unavailable — still authenticate from Auth claims.
+      console.warn("authenticateKey: store migrate skipped:", err.message);
+      const ownerUid = c.sc_owner;
+      if (ownerUid && verifyApiKey(secret, c.sc_hash || "")) {
+        const owner = await auth().getUser(ownerUid);
+        const rec = {
+          id: authUser.uid,
+          user_id: ownerUid,
+          name: c.sc_name || "Production",
+          prefix: c.sc_prefix || secret.slice(0, 16),
+          key_hash: c.sc_hash,
+          created_at: c.sc_created || authUser.metadata?.creationTime || null,
+          last_used_at: c.sc_last || null,
+          revoked: false,
+        };
+        return { user: rec, owner, ownerUid, keyId: rec.id };
+      }
+    }
+  }
+
+  let store;
+  try {
+    store = await loadStore();
+  } catch (err) {
+    const e = new Error(
+      `API key store unavailable (${err.message}). Retry in a minute, or reconnect from the dashboard.`
+    );
+    e.status = 503;
+    throw e;
+  }
+
   const keyId = store.hash_index[digest];
   let rec = keyId ? store.keys[keyId] : null;
 
   if (!rec || rec.revoked || !verifyApiKey(secret, rec.key_hash || "")) {
-    const authUser = await findAuthBackedKey(secret);
-    if (!authUser) {
-      const err = new Error("Invalid API key");
-      err.status = 401;
-      throw err;
-    }
-    rec = await migrateAuthKeyToStore(authUser, secret);
-    if (!rec || rec.revoked || !verifyApiKey(secret, rec.key_hash || "")) {
-      const err = new Error("Invalid API key");
-      err.status = 401;
-      throw err;
-    }
+    const err = new Error("Invalid API key");
+    err.status = 401;
+    throw err;
   }
 
   const owner = await auth().getUser(rec.user_id);
@@ -292,32 +325,38 @@ async function recordUsage(keyRec, owner, compressed) {
   const tokensSaved = Math.max(0, compressed.original_tokens - compressed.kept_tokens);
   const now = new Date().toISOString();
 
-  await mutateStore((store) => {
-    if (!store.keys[keyId]) return null;
-    store.keys[keyId].last_used_at = now;
-    if (!store.usage[keyId]) store.usage[keyId] = {};
-    if (!store.usage[keyId][day]) {
-      store.usage[keyId][day] = {
-        key_id: keyId,
-        requests: 0,
-        tokens_in: 0,
-        tokens_out: 0,
-        tokens_saved: 0,
-      };
-    }
-    const u = store.usage[keyId][day];
-    u.requests += 1;
-    u.tokens_in += compressed.original_tokens;
-    u.tokens_out += compressed.kept_tokens;
-    u.tokens_saved += tokensSaved;
-    return u;
-  });
+  try {
+    await mutateStore((store) => {
+      if (!store.keys[keyId]) return null;
+      store.keys[keyId].last_used_at = now;
+      if (!store.usage[keyId]) store.usage[keyId] = {};
+      if (!store.usage[keyId][day]) {
+        store.usage[keyId][day] = {
+          key_id: keyId,
+          requests: 0,
+          tokens_in: 0,
+          tokens_out: 0,
+          tokens_saved: 0,
+        };
+      }
+      const u = store.usage[keyId][day];
+      u.requests += 1;
+      u.tokens_in += compressed.original_tokens;
+      u.tokens_out += compressed.kept_tokens;
+      u.tokens_saved += tokensSaved;
+      return u;
+    });
+  } catch (err) {
+    // Compression already succeeded — don't 503 the client if store is flaky.
+    console.warn("recordUsage: store update skipped:", err.message);
+  }
 
   // Owner monthly usage stays on the real Auth user for billing enforcement.
   const month = now.slice(0, 7);
   const ownerClaims = owner.customClaims || {};
   const ownerPrevious = ownerClaims.sc_usage?.month === month ? ownerClaims.sc_usage : {};
-  const ownerTokensIn = (ownerPrevious.tokens_in || 0) + compressed.original_tokens;
+  const prevTokensIn = ownerPrevious.tokens_in || 0;
+  const ownerTokensIn = prevTokensIn + compressed.original_tokens;
   let ownerUsage = {
     month,
     requests: (ownerPrevious.requests || 0) + 1,
@@ -327,9 +366,23 @@ async function recordUsage(keyRec, owner, compressed) {
     tokens_reported: ownerPrevious.tokens_reported || 0,
   };
 
+  const {
+    reportPaygUsage,
+    isPaygEnabled,
+    isComped,
+    isLegacyMetered,
+    isCreditWallet,
+    billableTokens,
+    tokensToUsd,
+    attemptAutoRecharge,
+    roundUsd,
+  } = require("./stripe");
+
+  let nextClaims = { ...ownerClaims, sc_usage: ownerUsage };
+
+  // Legacy metered: report to Stripe meters
   try {
-    const { reportPaygUsage, isPaygEnabled } = require("./stripe");
-    if (isPaygEnabled(ownerClaims.sc_plan)) {
+    if (isPaygEnabled(ownerClaims.sc_plan) && isLegacyMetered(ownerClaims) && !isComped(ownerClaims)) {
       const freshOwner = {
         ...owner,
         customClaims: { ...ownerClaims, sc_usage: ownerUsage },
@@ -337,17 +390,52 @@ async function recordUsage(keyRec, owner, compressed) {
       const reported = await reportPaygUsage(freshOwner, ownerTokensIn);
       if (reported?.tokens_reported != null) {
         ownerUsage.tokens_reported = reported.tokens_reported;
+        nextClaims.sc_usage = ownerUsage;
       }
     }
   } catch (err) {
-    console.error("PAYG meter skipped:", err.message || err);
+    console.warn("PAYG meter skipped:", err.message || err);
   }
 
-  await auth().setCustomUserClaims(owner.uid, {
-    ...ownerClaims,
-    sc_usage: ownerUsage,
-  });
-  owner.customClaims = { ...ownerClaims, sc_usage: ownerUsage };
+  // Prepaid credit wallet: burn $ for newly billable tokens
+  try {
+    if (!isComped(ownerClaims) && (isCreditWallet(ownerClaims) || (isPaygEnabled(ownerClaims.sc_plan) && !isLegacyMetered(ownerClaims)))) {
+      const prevBillable = billableTokens(prevTokensIn);
+      const newBillable = billableTokens(ownerTokensIn);
+      const deltaBillable = Math.max(0, newBillable - prevBillable);
+      let cost = tokensToUsd(deltaBillable);
+      if (cost > 0) {
+        // Refresh claims in case enforceUsageLimit already auto-recharged
+        let balance = roundUsd(nextClaims.sc_credit_balance_usd || 0);
+        if (balance < cost && nextClaims.sc_auto_recharge) {
+          const recharge = await attemptAutoRecharge({
+            ...owner,
+            customClaims: nextClaims,
+          });
+          if (recharge.ok) {
+            const fresh = await auth().getUser(owner.uid);
+            nextClaims = { ...(fresh.customClaims || {}), sc_usage: ownerUsage };
+            balance = roundUsd(nextClaims.sc_credit_balance_usd || 0);
+          }
+        }
+        if (balance < cost) {
+          // Soft-fail burn: zero out — request already compressed; next call 402s.
+          nextClaims.sc_credit_balance_usd = 0;
+          nextClaims.sc_plan = "payg";
+          nextClaims.sc_metered = false;
+        } else {
+          nextClaims.sc_credit_balance_usd = roundUsd(balance - cost);
+          nextClaims.sc_plan = "payg";
+          nextClaims.sc_metered = false;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Credit burn skipped:", err.message || err);
+  }
+
+  await auth().setCustomUserClaims(owner.uid, nextClaims);
+  owner.customClaims = nextClaims;
   return ownerUsage;
 }
 

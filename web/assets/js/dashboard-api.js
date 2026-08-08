@@ -785,29 +785,41 @@ function renderPaygNudge(sub) {
   const banner = $("dash-payg-banner");
   if (!banner) return;
   const payg = !!(sub?.payg_enabled || sub?.unlimited || (sub?.plan && sub.plan !== "free"));
-  if (payg) {
+  const limitHit = !!(sub?.limit_reached || sub?.paywall || (sub?.free_tokens_remaining === 0 && !payg));
+
+  if (payg && !limitHit) {
     banner.classList.add("hidden");
     banner.innerHTML = "";
     return;
   }
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
+  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 1_000_000;
   const used = sub.tokens_used_this_period || totalTokensIn() || 0;
   const pct = freeCap > 0 ? Math.min(100, (Math.min(used, freeCap) / freeCap) * 100) : 0;
   const hasUse = used > 0 || totalRequests() > 0;
 
   let tone = "";
+  let title = "Never hard-stop.";
   let copy = "";
-  if (pct >= 80) {
+  let cta = "Add credits";
+
+  if (limitHit) {
+    tone = "dash-payg-banner--blocked";
+    title = "Compression paused — free 1M used";
+    copy =
+      `You've hit your free ${formatNum(freeCap)} tokens this month (${formatNum(used)} used). ` +
+      `Add credits to unlock again — $0.30 per 1M tokens after free.`;
+    cta = "Add credits";
+  } else if (pct >= 80) {
     tone = "dash-payg-banner--urgent";
-    copy = `You've used ${Math.round(pct)}% of your free 5M tokens. Add a card now so compression never hard-stops — still $1/1M after free.`;
+    copy = `You've used ${Math.round(pct)}% of your free 1M tokens. Add credits now so compression never hard-stops — $0.30/1M after free.`;
   } else if (pct >= 50) {
     tone = "dash-payg-banner--warn";
-    copy = `Halfway through your free 5M this month. Add pay-as-you-go so a busy agent week doesn't cut you off.`;
+    copy = `Halfway through your free 1M this month. Add credits so a busy agent week doesn't cut you off.`;
   } else if (hasUse) {
     tone = "";
     copy =
-      "Nice — first compress landed. Add a card so compression never hard-stops. You still get 5M free, then $1/1M.";
+      "Nice — first compress landed. Add credits so compression never hard-stops. You still get 1M free, then $0.30/1M.";
   } else {
     banner.classList.add("hidden");
     banner.innerHTML = "";
@@ -816,12 +828,27 @@ function renderPaygNudge(sub) {
 
   banner.className = `dash-payg-banner ${tone}`.trim();
   banner.innerHTML = `
-    <p><strong>Never hard-stop.</strong> ${escapeHtml(copy)}</p>
-    <button type="button" class="btn-brand" id="btn-payg-nudge">Add payment method</button>
+    <div class="dash-payg-banner-copy">
+      <p><strong>${escapeHtml(title)}</strong> ${escapeHtml(copy)}</p>
+      ${limitHit ? `<p class="dash-payg-banner-price">$0.30 / 1M after free · load credits anytime</p>` : ""}
+    </div>
+    <button type="button" class="btn-brand dash-payg-banner-cta" id="btn-payg-nudge">${escapeHtml(cta)}</button>
   `;
   $("btn-payg-nudge")?.addEventListener("click", () => {
+    // Jump to billing panel then open Stripe
+    document.querySelector('.dash-topnav-item[data-panel="billing"]')?.click();
     handleEnablePayg();
   });
+
+  if (limitHit) {
+    // Force billing panel into view once per session so the wall is obvious
+    try {
+      if (!sessionStorage.getItem("sc_paywall_shown")) {
+        sessionStorage.setItem("sc_paywall_shown", "1");
+        document.querySelector('.dash-topnav-item[data-panel="billing"]')?.click();
+      }
+    } catch (_) { /* ignore */ }
+  }
 }
 
 function renderActivationChecklist() {
@@ -833,42 +860,63 @@ function renderSubscription(sub) {
   if (!statusCard) return;
   lastBillingSub = sub;
 
-  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 5_000_000;
+  const freeCap = sub.free_tokens_per_month || sub.tokens_per_month || 1_000_000;
   const used = sub.tokens_used_this_period || 0;
   const freeUsed = Math.min(used, freeCap);
   const pct = Math.min(100, Math.round((freeUsed / freeCap) * 10000) / 100);
   const fillClass = pct >= 90 ? "dash-billing-usage-fill--full" : pct >= 70 ? "dash-billing-usage-fill--high" : "";
   const payg = !!(sub.payg_enabled || sub.unlimited || (sub.plan && sub.plan !== "free"));
+  const creditWallet = !!(sub.credit_wallet || (payg && sub.credit_balance_usd != null));
+  const creditBalance = Number(sub.credit_balance_usd);
+  const hasCreditBalance = Number.isFinite(creditBalance);
+  const limitHit = !!(sub.limit_reached || sub.paywall) && !payg;
   const overageUsd = Number(sub.estimated_overage_usd || 0);
   const billable = sub.billable_tokens || Math.max(0, used - freeCap);
 
-  const title = payg ? "Pay as you go" : "Free allowance";
-  const badge = payg
+  const title = payg || creditWallet
+    ? "Pay as you go"
+    : limitHit
+      ? "Paused — free allowance used"
+      : "Free allowance";
+  const badge = payg || creditWallet
     ? (sub.cancel_at_period_end ? "cancels at period end" : (sub.status || "active"))
-    : "free";
+    : limitHit
+      ? "LOCKED"
+      : "free";
 
   statusCard.innerHTML = `
+    ${limitHit ? `
+      <div class="dash-paywall-lock" role="alert">
+        <div class="dash-paywall-lock-kicker">Paywall</div>
+        <h2>Compression is paused</h2>
+        <p>You used your free <strong>${formatNum(freeCap)}</strong> tokens this month (<strong>${formatNum(used)}</strong> in). Add credits to unlock — <strong>$0.30 / 1M</strong> after free.</p>
+        <button type="button" class="btn-brand dash-paywall-lock-cta" id="btn-paywall-unlock">Add credits</button>
+      </div>
+    ` : ""}
     <div class="dash-billing-status-active">
       <div class="dash-billing-status-info">
         <h2>${escapeHtml(title)}</h2>
         <p>
-          <span class="dash-billing-status-badge">${escapeHtml(badge)}</span>
-          ${payg && sub.has_active_subscription
-            ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Period ends ${formatDate(sub.period_end)}</span>`
-            : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">$5 free / 5M tokens each month</span>`
+          <span class="dash-billing-status-badge${limitHit ? " dash-billing-status-badge--locked" : ""}">${escapeHtml(badge)}</span>
+          ${hasCreditBalance
+            ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Credit balance <strong>$${creditBalance.toFixed(2)}</strong></span>`
+            : payg && sub.has_active_subscription
+              ? `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">Period ends ${formatDate(sub.period_end)}</span>`
+              : `<span style="margin-left:8px;font-size:13px;color:var(--text-body)">$1 free / 1M tokens each month</span>`
           }
         </p>
       </div>
       <div class="dash-billing-status-actions">
-        ${payg
+        ${payg || creditWallet
           ? `
-            <button type="button" class="btn-brand" id="btn-manage-billing">Manage billing</button>
+            <button type="button" class="btn-brand" id="btn-enable-payg-top">Add credits</button>
+            <button type="button" class="btn-brand" id="btn-manage-billing" style="background:var(--text-muted)">Manage billing</button>
             ${sub.cancel_at_period_end
               ? `<button type="button" class="btn-brand" id="btn-reactivate-billing" style="background:#059669">Reactivate</button>`
               : `<button type="button" class="btn-brand" id="btn-cancel-billing" style="background:var(--text-muted)">Disable PAYG</button>`
             }
           `
-          : `<button type="button" class="btn-brand" id="btn-enable-payg-top">Add payment method</button>`
+          : `<button type="button" class="btn-brand" id="btn-enable-payg-top">${limitHit ? "Unlock — add credits" : "Add credits"}</button>`
         }
       </div>
     </div>
@@ -881,16 +929,19 @@ function renderSubscription(sub) {
         <div class="dash-billing-usage-fill ${fillClass}" style="width:${pct}%"></div>
       </div>
     </div>
-    ${payg && billable > 0
+    ${creditWallet || hasCreditBalance
+      ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Prepaid wallet at $0.30 / 1M after free. Load $${Number(sub.min_credit_limit_usd || 10)}+ (about ${Math.round(Number(sub.min_credit_limit_usd || 10) / Number(sub.usd_per_million || 0.3))}M+ tokens).</p>`
+      : payg && billable > 0
       ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Overage this month: <strong>${formatNum(billable)}</strong> tokens (~$${overageUsd.toFixed(2)} estimated)</p>`
       : payg
-        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 5M bills at $1 / 1M tokens.</p>`
+        ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">No overage yet. Usage beyond 1M bills at $0.30 / 1M tokens.</p>`
         : pct >= 100
-          ? `<p style="margin:12px 0 0;font-size:13px;color:var(--text-body)">Free allowance used. Enable pay-as-you-go to keep compressing.</p>`
+          ? `<p style="margin:12px 0 0;font-size:14px;color:#b91c1c;font-weight:600">Free allowance used. Add credits to keep compressing.</p>`
           : ""
     }
   `;
 
+  $("btn-paywall-unlock")?.addEventListener("click", () => handleEnablePayg());
   // Update plan cards
   document.querySelectorAll(".dash-plan-card").forEach((card) => {
     const plan = card.dataset.plan;
@@ -903,11 +954,7 @@ function renderSubscription(sub) {
     if (isFreeCard) {
       cta.innerHTML = `<span class="dash-plan-current-label">${payg ? "Still included" : "Current"}</span>`;
     } else if (isPaygCard) {
-      if (payg) {
-        cta.innerHTML = `<span class="dash-plan-current-label">Enabled</span>`;
-      } else {
-        cta.innerHTML = `<button type="button" class="dash-plan-btn btn-brand" data-plan-btn="payg">Add payment method</button>`;
-      }
+      cta.innerHTML = `<button type="button" class="dash-plan-btn btn-brand" data-plan-btn="payg">Add credits</button>`;
     }
   });
 
@@ -928,23 +975,181 @@ function renderSubscription(sub) {
   if (reactivateBtn) reactivateBtn.addEventListener("click", handleReactivateSubscription);
 }
 
-async function handleEnablePayg() {
+function creditLimitsFromSub(sub) {
+  const min = Number(sub?.min_credit_limit_usd);
+  const max = Number(sub?.max_credit_limit_usd);
+  const def = Number(sub?.default_credit_limit_usd);
+  const rate = Number(sub?.usd_per_million);
+  return {
+    min: Number.isFinite(min) && min > 0 ? min : 10,
+    max: Number.isFinite(max) && max > 0 ? max : 1000,
+    def: Number.isFinite(def) && def > 0 ? def : 10,
+    rate: Number.isFinite(rate) && rate > 0 ? rate : 0.3,
+  };
+}
+
+function syncCreditsHint() {
+  const input = $("credits-amount");
+  const hint = $("credits-hint");
+  if (!input || !hint) return;
+  const { min, max, rate } = creditLimitsFromSub(lastBillingSub);
+  const raw = Number(input.value);
+  const amount = Number.isFinite(raw) ? raw : 0;
+  const tokensM = rate > 0 ? Math.round((amount / rate) * 10) / 10 : 0;
+  const tokensLabel = Number.isFinite(amount) && amount > 0
+    ? `About ${tokensM}M tokens after free`
+    : "Enter an amount";
+  hint.textContent = `${tokensLabel} · $${rate}/1M`;
+}
+
+function syncCreditsPresets(amount) {
+  document.querySelectorAll(".dash-credits-preset").forEach((btn) => {
+    const preset = Number(btn.dataset.amount);
+    btn.classList.toggle("active", Number.isFinite(amount) && preset === amount);
+  });
+}
+
+function openCreditsModal() {
+  const modal = $("modal-credits");
+  if (!modal) {
+    handleEnablePaygCheckout(lastBillingSub?.default_credit_limit_usd || 10, false);
+    return;
+  }
+  const { min, max, def, rate } = creditLimitsFromSub(lastBillingSub);
+  const input = $("credits-amount");
+  const err = $("credits-error");
+  const title = $("credits-modal-title");
+  const lead = $("credits-modal-lead");
+  const payg = !!(lastBillingSub?.payg_enabled || lastBillingSub?.credit_wallet);
+  const balance = Number(lastBillingSub?.credit_balance_usd || 0);
+
+  if (title) title.textContent = payg ? "Add credits" : "Unlock with credits";
+  if (lead) {
+    lead.textContent = payg
+      ? `Balance $${balance.toFixed(2)}. $0.30 = 1M tokens after free. $10 ≈ ${Math.round(10 / rate)}M tokens.`
+      : `$0.30 = 1M tokens after your free monthly allowance. $10 ≈ ${Math.round(10 / rate)}M tokens.`;
+  }
+  if (input) {
+    input.min = String(min);
+    input.max = String(max);
+    const preferred = Number(lastBillingSub?.credit_limit_usd);
+    input.value = String(Number.isFinite(preferred) && preferred >= min ? preferred : def);
+  }
+  if (err) {
+    err.textContent = "";
+    err.classList.add("hidden");
+  }
+  const auto = $("credits-auto-recharge");
+  if (auto) auto.checked = Boolean(lastBillingSub?.auto_recharge);
+  syncCreditsPresets(Number(input?.value));
+  syncCreditsHint();
+  modal.classList.remove("hidden");
+  input?.focus();
+  input?.select();
+}
+
+function closeCreditsModal() {
+  $("modal-credits")?.classList.add("hidden");
+}
+
+function initCreditsModal() {
+  const modal = $("modal-credits");
+  if (!modal || modal.dataset.bound === "1") return;
+  modal.dataset.bound = "1";
+
+  document.querySelectorAll(".dash-credits-preset").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const amount = Number(btn.dataset.amount);
+      const input = $("credits-amount");
+      if (input && Number.isFinite(amount)) {
+        input.value = String(amount);
+        syncCreditsPresets(amount);
+        syncCreditsHint();
+      }
+    });
+  });
+
+  $("credits-amount")?.addEventListener("input", () => {
+    syncCreditsPresets(Number($("credits-amount")?.value));
+    syncCreditsHint();
+  });
+
+  $("btn-cancel-credits")?.addEventListener("click", closeCreditsModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeCreditsModal();
+  });
+
+  $("btn-confirm-credits")?.addEventListener("click", async () => {
+    const { min, max } = creditLimitsFromSub(lastBillingSub);
+    const raw = Number($("credits-amount")?.value);
+    const err = $("credits-error");
+    if (!Number.isFinite(raw) || raw < min || raw > max) {
+      if (err) {
+        err.textContent = `Enter an amount between $${min} and $${max}.`;
+        err.classList.remove("hidden");
+      }
+      return;
+    }
+    const amount = Math.round(raw * 100) / 100;
+    const autoRecharge = Boolean($("credits-auto-recharge")?.checked);
+    const submit = $("btn-confirm-credits");
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = "Opening checkout…";
+    }
+    try {
+      await handleEnablePaygCheckout(amount, autoRecharge);
+    } finally {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Continue to checkout";
+      }
+    }
+  });
+}
+
+function handleEnablePayg() {
+  openCreditsModal();
+}
+
+async function handleEnablePaygCheckout(creditUsd, autoRecharge = false) {
   if (apiMode === "local") {
     alert("Stripe billing is not available in local/dev mode. Set up production with STRIPE_SECRET_KEY on Vercel.");
     return;
   }
 
+  const { min, max } = creditLimitsFromSub(lastBillingSub);
+  const amount = Math.round(Number(creditUsd) * 100) / 100;
+  if (!Number.isFinite(amount) || amount < min || amount > max) {
+    alert(`Enter an amount between $${min} and $${max}.`);
+    return;
+  }
+
+  const alreadyPayg = !!(lastBillingSub?.payg_enabled || lastBillingSub?.credit_wallet);
+  const action = alreadyPayg ? "top_up" : "enable_payg";
+
   try {
     const data = await apiFetch("/api/billing", {
       method: "POST",
-      body: JSON.stringify({ action: "enable_payg" }),
+      body: JSON.stringify({
+        action,
+        credit_limit_usd: amount,
+        auto_recharge: autoRecharge,
+        force_topup: alreadyPayg,
+      }),
     });
 
     if (data.url) {
       window.location.href = data.url;
     }
   } catch (err) {
-    alert(err.message || "Failed to start checkout");
+    const box = $("credits-error");
+    if (box) {
+      box.textContent = err.message || "Failed to start checkout";
+      box.classList.remove("hidden");
+    } else {
+      alert(err.message || "Failed to start checkout");
+    }
   }
 }
 
@@ -963,7 +1168,7 @@ async function handleManageBilling() {
 }
 
 async function handleCancelSubscription() {
-  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 5M token allowance.")) {
+  if (!confirm("Disable pay-as-you-go? You'll keep access until the end of the current billing period, then return to the free 1M token allowance.")) {
     return;
   }
   try {
@@ -992,14 +1197,27 @@ async function handleReactivateSubscription() {
 }
 
 function initBilling() {
+  initCreditsModal();
   // Check URL params for billing success/cancel
   const params = new URLSearchParams(window.location.search);
   if (params.get("billing") === "success") {
+    const sessionId = params.get("session_id") || "";
     // Switch to billing panel on next render
     setTimeout(() => {
       const btn = document.querySelector('.dash-topnav-item[data-panel="billing"]');
       if (btn) btn.click();
     }, 500);
+    // Webhook fallback: apply credits from Checkout session if Stripe delivery failed
+    if (sessionId.startsWith("cs_")) {
+      apiFetch("/api/billing", {
+        method: "POST",
+        body: JSON.stringify({ action: "reconcile_checkout", session_id: sessionId }),
+      })
+        .then(() => loadSubscription())
+        .catch((err) => console.warn("Checkout reconcile:", err?.message || err));
+    } else {
+      setTimeout(() => loadSubscription(), 800);
+    }
     // Clean URL
     window.history.replaceState({}, document.title, window.location.pathname);
   }
@@ -1283,10 +1501,13 @@ async function initFirebaseAuth() {
       if (subtitle) {
         subtitle.textContent =
           authTab === "signup"
-            ? "5M free tokens/mo · then $1/1M. Google takes one click — your key is ready instantly."
+            ? "1M free tokens/mo · then $0.30/1M. Google takes one click — your key is ready instantly."
             : "Sign in to manage API keys, usage, and billing.";
       }
       if (perks) perks.classList.toggle("hidden", authTab !== "signup");
+      document.querySelectorAll(".dash-auth-tab").forEach((t) => {
+        t.setAttribute("aria-selected", t.dataset.tab === authTab ? "true" : "false");
+      });
     }
   };
 

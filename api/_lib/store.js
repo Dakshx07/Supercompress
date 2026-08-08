@@ -23,6 +23,15 @@ let writeCache = null;
 let firestoreUnavailable = false;
 let useGistStore = false;
 
+/** Gist is the real prod store while Firestore API is disabled on this project.
+ * Set SUPERCOMPRESS_DISABLE_GIST=1 to force Firestore-only (fails closed). */
+function gistAllowed() {
+  if (String(process.env.SUPERCOMPRESS_DISABLE_GIST || "").trim() === "1") {
+    return false;
+  }
+  return gistConfigured();
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -46,7 +55,11 @@ function emptyStore() {
     affiliate_conversions: {},
     connections: {},
     coding_agent_usage: {},
+    agent_links: {},
     welcome_emails: {},
+    weekly_emails: {},
+    weekly_unsubscribes: {},
+    compress_logs: {},
     _version: 0,
   };
 }
@@ -67,7 +80,11 @@ function normalizeStore(raw) {
     affiliate_conversions: raw.affiliate_conversions && typeof raw.affiliate_conversions === "object" ? raw.affiliate_conversions : {},
     connections: raw.connections && typeof raw.connections === "object" ? raw.connections : {},
     coding_agent_usage: raw.coding_agent_usage && typeof raw.coding_agent_usage === "object" ? raw.coding_agent_usage : {},
+    agent_links: raw.agent_links && typeof raw.agent_links === "object" ? raw.agent_links : {},
     welcome_emails: raw.welcome_emails && typeof raw.welcome_emails === "object" ? raw.welcome_emails : {},
+    weekly_emails: raw.weekly_emails && typeof raw.weekly_emails === "object" ? raw.weekly_emails : {},
+    weekly_unsubscribes: raw.weekly_unsubscribes && typeof raw.weekly_unsubscribes === "object" ? raw.weekly_unsubscribes : {},
+    compress_logs: raw.compress_logs && typeof raw.compress_logs === "object" ? raw.compress_logs : {},
     _version: typeof raw._version === "number" ? raw._version : 0,
     _updated_at: raw._updated_at || null,
   };
@@ -207,27 +224,53 @@ async function saveStoreToAuth() {
 // ---------------------------------------------------------------------------
 
 async function loadStoreRemote() {
-  if (gistConfigured()) {
+  // Prefer Firestore whenever Admin credentials exist. Gist is emergency-only —
+  // using it for every write burns GitHub rate limits and breaks connect/setup.
+  if (!firestoreUnavailable) {
+    try {
+      const snap = await db().doc("config/store").get();
+      if (snap.exists) {
+        useGistStore = false;
+        return normalizeStore(snap.data());
+      }
+
+      // Empty Firestore: one-time seed from gist only when explicitly allowed.
+      if (gistAllowed()) {
+        try {
+          const fromGist = normalizeStore(await loadGistStore());
+          const hasData =
+            Object.keys(fromGist.keys || {}).length > 0 ||
+            Object.keys(fromGist.connections || {}).length > 0 ||
+            Object.keys(fromGist.affiliates || {}).length > 0;
+          if (hasData) {
+            await db().doc("config/store").set(fromGist);
+            console.warn("store: seeded Firestore from gist backup");
+            useGistStore = false;
+            return fromGist;
+          }
+        } catch (gistErr) {
+          console.warn("store: gist seed skipped:", gistErr.message);
+        }
+      }
+
+      useGistStore = false;
+      return emptyStore();
+    } catch (err) {
+      console.warn("store: Firestore read failed:", err.message);
+      if (isFirestoreUnavailable(err)) {
+        firestoreUnavailable = true;
+      } else {
+        throw err.status ? err : storageError();
+      }
+    }
+  }
+
+  if (gistAllowed()) {
     useGistStore = true;
     return normalizeStore(await loadGistStore());
   }
 
-  if (firestoreUnavailable) {
-    return loadStoreFromAuth();
-  }
-
-  try {
-    const snap = await db().doc("config/store").get();
-    if (snap.exists) return normalizeStore(snap.data());
-  } catch (err) {
-    console.warn("store: Firestore read failed:", err.message);
-    if (isFirestoreUnavailable(err)) {
-      firestoreUnavailable = true;
-      return loadStoreFromAuth();
-    }
-    throw storageError();
-  }
-  return emptyStore();
+  return loadStoreFromAuth();
 }
 
 /**
@@ -260,32 +303,27 @@ async function saveStore(data) {
   // Update in-memory cache immediately so the current lambda sees its writes.
   writeCache = cloneStore(normalized);
 
-  if (useGistStore || (firestoreUnavailable && gistConfigured())) {
+  if (!firestoreUnavailable && !useGistStore) {
+    try {
+      await db().doc("config/store").set(normalized);
+      return normalized;
+    } catch (err) {
+      console.warn("store: Firestore write failed:", err.message);
+      if (isFirestoreUnavailable(err)) {
+        firestoreUnavailable = true;
+      } else {
+        throw storageError();
+      }
+    }
+  }
+
+  if (gistAllowed()) {
     useGistStore = true;
     await saveGistStore(normalized);
     return normalized;
   }
 
-  if (firestoreUnavailable) {
-    throw storageError();
-  }
-
-  try {
-    await db().doc("config/store").set(normalized);
-  } catch (err) {
-    console.warn("store: Firestore write failed:", err.message);
-    if (isFirestoreUnavailable(err)) {
-      firestoreUnavailable = true;
-      if (gistConfigured()) {
-        useGistStore = true;
-        await saveGistStore(normalized);
-        return normalized;
-      }
-    }
-    throw storageError();
-  }
-
-  return normalized;
+  throw storageError();
 }
 
 /**
@@ -296,8 +334,14 @@ async function saveStore(data) {
  * @returns {Promise<any>} whatever `mutator` returns.
  */
 async function mutateStore(mutator) {
-  if (gistConfigured() || useGistStore || firestoreUnavailable) {
-    if (gistConfigured()) useGistStore = true;
+  // Reset sticky gist flag when gist is disabled — warm lambdas may still have it set.
+  if (!gistAllowed()) {
+    useGistStore = false;
+  }
+
+  // Gist path only when explicitly allowed AND Firestore is known-down.
+  if (gistAllowed() && (useGistStore || firestoreUnavailable)) {
+    useGistStore = true;
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const store = await loadStore({ forceRemote: true });
@@ -354,6 +398,10 @@ async function mutateStore(mutator) {
       if (isFirestoreUnavailable(err)) {
         console.warn("store: Firestore transaction unavailable:", err.message);
         firestoreUnavailable = true;
+        if (gistAllowed()) {
+          useGistStore = true;
+          return mutateStore(mutator);
+        }
         throw storageError();
       }
       throw err;
@@ -421,28 +469,55 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
   const tokensIn = Math.max(0, Number(stats.original_tokens) || 0);
   const tokensOut = Math.max(0, Number(stats.kept_tokens) || 0);
   const tokensSaved = Math.max(0, Number(stats.tokens_saved) || Math.max(0, tokensIn - tokensOut));
+  const latencyMs =
+    stats.latency_ms != null && Number.isFinite(Number(stats.latency_ms))
+      ? Math.max(0, Math.round(Number(stats.latency_ms)))
+      : null;
+  const cutPct = tokensIn > 0 ? Math.round((tokensSaved / tokensIn) * 10000) / 100 : 0;
+  const lastQuery = String(stats.query || "").trim().slice(0, 160);
+  const source = stats.source
+    ? String(stats.source).toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 32)
+    : null;
   const now = new Date().toISOString();
+
+  const bump = (prev) => {
+    const next = {
+      requests: (prev.requests || 0) + 1,
+      tokens_in: (prev.tokens_in || 0) + tokensIn,
+      tokens_out: (prev.tokens_out || 0) + tokensOut,
+      tokens_saved: (prev.tokens_saved || 0) + tokensSaved,
+      first_seen: prev.first_seen || now,
+      last_seen: now,
+      last_pct: cutPct,
+      last_query: lastQuery || prev.last_query || null,
+      last_source: source || prev.last_source || null,
+      latency_sum_ms: prev.latency_sum_ms || 0,
+      latency_samples: prev.latency_samples || 0,
+      last_latency_ms: prev.last_latency_ms || null,
+      avg_latency_ms: prev.avg_latency_ms || null,
+    };
+    if (latencyMs != null) {
+      next.latency_sum_ms = (prev.latency_sum_ms || 0) + latencyMs;
+      next.latency_samples = (prev.latency_samples || 0) + 1;
+      next.last_latency_ms = latencyMs;
+      next.avg_latency_ms = Math.round(next.latency_sum_ms / next.latency_samples);
+    }
+    return next;
+  };
 
   if (firestoreUnavailable) {
     await mutateStore((store) => {
       if (!store.coding_agent_usage) store.coding_agent_usage = {};
       if (!store.coding_agent_usage[ownerUid]) store.coding_agent_usage[ownerUid] = {};
-      if (!store.coding_agent_usage[ownerUid][agentName]) {
-        store.coding_agent_usage[ownerUid][agentName] = {
-          requests: 0,
-          tokens_in: 0,
-          tokens_out: 0,
-          tokens_saved: 0,
-          first_seen: now,
-          last_seen: now,
-        };
-      }
-      const agent = store.coding_agent_usage[ownerUid][agentName];
-      agent.requests += 1;
-      agent.tokens_in += tokensIn;
-      agent.tokens_out += tokensOut;
-      agent.tokens_saved += tokensSaved;
-      agent.last_seen = now;
+      const prev = store.coding_agent_usage[ownerUid][agentName] || {
+        requests: 0,
+        tokens_in: 0,
+        tokens_out: 0,
+        tokens_saved: 0,
+        first_seen: now,
+        last_seen: now,
+      };
+      store.coding_agent_usage[ownerUid][agentName] = bump(prev);
       return true;
     });
     return true;
@@ -461,14 +536,7 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
       first_seen: now,
       last_seen: now,
     };
-    agents[agentName] = {
-      requests: (prev.requests || 0) + 1,
-      tokens_in: (prev.tokens_in || 0) + tokensIn,
-      tokens_out: (prev.tokens_out || 0) + tokensOut,
-      tokens_saved: (prev.tokens_saved || 0) + tokensSaved,
-      first_seen: prev.first_seen || now,
-      last_seen: now,
-    };
+    agents[agentName] = bump(prev);
     tx.set(docRef, { agents, updated_at: now }, { merge: true });
   });
   return true;
@@ -492,6 +560,65 @@ async function loadCodingAgentUsage(ownerUid) {
   return store.coding_agent_usage?.[ownerUid] || {};
 }
 
+/**
+ * OAuth / device-link status for coding-agent installs.
+ * Prefer explicit agent_links[uid]; fall back to any linked connections for this owner
+ * so users who already completed browser sign-in show as connected without re-linking.
+ */
+async function loadAgentPluginLink(ownerUid) {
+  if (!ownerUid) return { linked: false };
+  const store = await loadStore({ forceRemote: true });
+  const explicit = store.agent_links?.[ownerUid];
+  if (explicit && explicit.linked) {
+    return {
+      linked: true,
+      linked_at: explicit.linked_at || null,
+      source: explicit.source || "oauth",
+      agents: Array.isArray(explicit.agents) ? explicit.agents : [],
+    };
+  }
+
+  const connections = store.connections || {};
+  let latest = null;
+  for (const rec of Object.values(connections)) {
+    if (!rec || rec.owner_uid !== ownerUid || !rec.secret) continue;
+    const at = rec.linked_at || rec.created_at || null;
+    if (!latest || (at && (!latest.linked_at || at > latest.linked_at))) {
+      latest = { linked_at: at, source: rec.source || "oauth" };
+    }
+  }
+  if (latest) {
+    return {
+      linked: true,
+      linked_at: latest.linked_at,
+      source: latest.source || "oauth",
+      agents: [],
+    };
+  }
+  return { linked: false };
+}
+
+async function markAgentPluginLinked(ownerUid, meta = {}) {
+  if (!ownerUid) return null;
+  const now = new Date().toISOString();
+  await mutateStore((store) => {
+    if (!store.agent_links) store.agent_links = {};
+    const prev = store.agent_links[ownerUid] || {};
+    const agents = Array.isArray(meta.agents)
+      ? [...new Set([...(prev.agents || []), ...meta.agents])]
+      : (prev.agents || []);
+    store.agent_links[ownerUid] = {
+      linked: true,
+      linked_at: prev.linked_at || now,
+      updated_at: now,
+      source: meta.source || prev.source || "oauth",
+      agents,
+    };
+    return true;
+  });
+  return loadAgentPluginLink(ownerUid);
+}
+
 module.exports = {
   loadStore,
   saveStore,
@@ -503,6 +630,8 @@ module.exports = {
   publicKey,
   trackCodingAgentUsage,
   loadCodingAgentUsage,
+  loadAgentPluginLink,
+  markAgentPluginLinked,
   importAuthStoreRecordsInto,
   recordUid,
 };

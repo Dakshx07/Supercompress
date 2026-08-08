@@ -34,26 +34,49 @@ function ask(query) {
 }
 
 async function connectViaBrowser() {
-  const code = crypto.randomBytes(4).toString("hex");
-  const connectUrl = `https://supercompress.dev/dashboard?connect=${code}&source=setup`;
+  // 128-bit pairing code (was 32-bit) — hardens device-link against enumeration
+  const code = crypto.randomBytes(16).toString("hex");
+  const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=setup`;
   const openCommand = process.platform === "darwin" ? "open" :
     process.platform === "win32" ? "start" : "xdg-open";
   try {
-    execSync(`${openCommand} ${connectUrl}`, { stdio: "ignore" });
+    execSync(`${openCommand} "${connectUrl}"`, { stdio: "ignore" });
   } catch {}
 
   console.log("  → Finish sign-in in the browser to connect your account.");
+  console.log(`  → If the tab is already open on the dashboard, refresh it.`);
   console.log(`  → Connection code: ${code}`);
+  console.log(`  → Link: ${connectUrl}`);
 
   const started = Date.now();
-  while (Date.now() - started < 120000) {
-    const response = await fetch(`https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`);
-    const body = await response.json().catch(() => ({}));
-    if (response.ok && body.status === "linked" && body.secret) {
-      return body.secret;
+  const timeoutMs = 180000;
+  let lastTick = 0;
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const response = await fetch(
+        `https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`
+      );
+      const body = await response.json().catch(() => ({}));
+      if (response.ok && body.status === "linked" && body.secret) {
+        return body.secret;
+      }
+    } catch (err) {
+      // network blip — keep polling
+    }
+    const elapsed = Date.now() - started;
+    if (elapsed - lastTick >= 8000) {
+      lastTick = elapsed;
+      const left = Math.max(0, Math.ceil((timeoutMs - elapsed) / 1000));
+      console.log(`  → Still waiting for browser link… (${left}s left)`);
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
+
+  console.log("");
+  console.log("  ✗ Timed out waiting for browser sign-in.");
+  console.log("  → Paste an API key from https://www.supercompress.dev/dashboard (Keys) instead.");
+  const pasted = await ask("  → API key (sc_…), or Enter to abort: ");
+  if (pasted && pasted.startsWith("sc_")) return pasted.trim();
   throw new Error("Timed out waiting for browser sign-in.");
 }
 

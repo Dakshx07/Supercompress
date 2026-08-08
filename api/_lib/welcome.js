@@ -154,6 +154,7 @@ async function listPendingWelcomes() {
         first_name: r.first_name || "",
         subject: copy.subject,
         body: copy.text,
+        html: copy.html,
         queued_at: r.queued_at || null,
       };
     });

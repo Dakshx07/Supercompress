@@ -1,7 +1,7 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.8",
-  "description": "SuperCompress \u2014 MCP-first coding-agent plugin. Every submit with context auto-compresses (Headroom-parity); tiny asks skip. Optional local API proxy.",
+  "version": "0.5.12",
+  "description": "SuperCompress \u2014 MCP-first coding-agent plugin. Fast global install (no heavy MCP SDK). Every submit with context auto-compresses; tiny asks skip. Optional local API proxy.",
   "keywords": [
     "supercompress",
     "prompt-compression",
@@ -11,6 +11,8 @@
     "codex",
     "freebuff",
     "opencode",
+    "hermes",
+    "openclaw",
     "token-compression",
     "llm-cost"
   ],
@@ -42,6 +44,7 @@
     "test:compress": "node test/compress-deep.js",
     "test:launch": "node test/launch-ready.js",
     "test:bugs": "node test/bug-hunt.js",
+    "test:hermes": "node test/hermes-comprehensive.js",
     "test:all": "node test/run-all.js",
     "setup": "node bin/supercompress.js setup",
     "start": "node bin/supercompress.js start",
@@ -50,9 +53,7 @@
     "postinstall": "node bin/install.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "express": "^4.21.0",
-    "node-fetch": "^2.7.0"
+    "express": "4.22.2"
   },
   "engines": {
     "node": ">=18.0.0"

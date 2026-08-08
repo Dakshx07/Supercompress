@@ -2,9 +2,9 @@
  * Shared HTTP helpers for Vercel serverless routes.
  * Includes rate limiting, body size enforcement, and security headers.
  *
- * Rate limiter uses an in-process Map (best-effort; resets on cold starts).
- * For production-critical rate enforcement, pair with Vercel WAF or add
- * a Vercel KV-backed limiter.
+ * Rate limiter: in-process Map (fast) + optional Firestore durable limiter
+ * (see rate-limit-durable.js) for multi-instance enforcement.
+ * Pair with Vercel Spend Management + Firewall for hard budget caps.
  */
 
 const RATE_LIMIT_WINDOW_MS = 60_000;  // 1-minute window

@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 /**
- * SuperCompress MCP server (stdio).
+ * SuperCompress MCP server (stdio) — zero heavy deps.
  *
- * stdout is reserved for JSON-RPC — never write logs there.
- * Crash / Connection closed usually means the process exited or stdout was corrupted.
+ * Uses MCP JSON-RPC over stdio with Content-Length framing (and newline JSON
+ * as a fallback). Avoids @modelcontextprotocol/sdk so `npm install -g` stays
+ * fast and does not hang on a 100-package dependency tree.
  */
 
-const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
-const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
-const { ListToolsRequestSchema, CallToolRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -18,14 +16,13 @@ const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(
 
 const API_URL = "https://www.supercompress.dev/api/v1/compress";
 const USAGE_URL = "https://www.supercompress.dev/api/usage";
-const CONNECT_URL = "https://supercompress.dev/dashboard?source=mcp&connect=";
+const CONNECT_URL = "https://www.supercompress.dev/dashboard?source=mcp&connect=";
+const PROTOCOL_VERSION = "2024-11-05";
 
 function log(...args) {
-  // stderr only — stdout is the MCP protocol stream
   console.error("[supercompress-mcp]", ...args);
 }
 
-// Keep the process alive through tool failures; clients show "Connection closed" if we exit.
 process.on("uncaughtException", (err) => {
   log("uncaughtException:", err && err.stack ? err.stack : err);
 });
@@ -60,7 +57,6 @@ async function httpJson(url, options = {}) {
 function loadApiKey() {
   let apiKey = "";
   const envKey = (process.env.SUPERCOMPRESS_API_KEY || "").trim();
-  // Cursor previously received a literal "${SUPERCOMPRESS_API_KEY}" placeholder.
   if (envKey && !envKey.includes("${") && envKey.startsWith("sc_")) {
     apiKey = envKey;
   }
@@ -81,151 +77,330 @@ function toolText(message) {
   return { content: [{ type: "text", text: message }] };
 }
 
-const server = new Server(
-  { name: "supercompress", version: VERSION },
-  { capabilities: { tools: {} } }
-);
-
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [{
+const TOOLS = [
+  {
     name: "connect_account",
-    description: "Connect this MCP installation to a SuperCompress account. Opens the dashboard so the user can sign in and link this install with a one-time code.",
+    description:
+      "Connect this MCP installation to a SuperCompress account. Opens the dashboard so the user can sign in and link this install with a one-time code.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
-  }, {
+  },
+  {
     name: "compress_context",
-    description: "Compress long coding context before using it in your answer. Preserve code and facts relevant to the query. Call this for large file dumps, search results, logs, tickets, or conversation history. Return the compressed context and savings metadata.",
+    description:
+      "Compress *new* coding context into rolling session memory (Headroom-parity). Already-seen chunks are skipped; when memory grows large it is compacted. Pass only the new dump — not the whole history. Preserve code and facts relevant to the query.",
     inputSchema: {
       type: "object",
       properties: {
-        context: { type: "string", description: "The context to compress" },
-        query: { type: "string", description: "The coding task or question" },
+        context: { type: "string", description: "New context to compress (not previously seen this session)" },
+        query: { type: "string", description: "The coding task or question (never compressed)" },
+        session_id: { type: "string", description: "Optional session id for rolling memory (defaults to mcp)" },
       },
       required: ["context", "query"],
     },
-  }, {
+  },
+  {
     name: "usage_summary",
     description: "Fetch per-coding-agent token savings tracked for the connected SuperCompress account.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-      additionalProperties: false,
-    },
-  }],
-}));
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+];
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  try {
-    const name = request.params?.name;
-    if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
-      return toolError(`Unknown tool: ${name}`);
+async function handleToolCall(name, args = {}) {
+  if (!["compress_context", "connect_account", "usage_summary"].includes(name)) {
+    return toolError(`Unknown tool: ${name}`);
+  }
+
+  let apiKey = loadApiKey();
+  const context = String(args.context || "");
+  const query = String(args.query || "");
+  const sessionId =
+    String(args.session_id || process.env.SUPERCOMPRESS_SESSION_ID || "mcp").trim() || "mcp";
+
+  if (name === "connect_account") {
+    // 128-bit pairing code (was 32-bit) — must match server normalizeCode length rules
+    const code = require("crypto").randomBytes(16).toString("hex");
+    const url = `${CONNECT_URL}${code}`;
+    const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+    try {
+      execFile(opener, [url]);
+    } catch (err) {
+      log("open browser failed:", err.message || err);
     }
-
-    let apiKey = loadApiKey();
-    const context = String(request.params.arguments?.context || "");
-    const query = String(request.params.arguments?.query || "");
-
-    if (name === "connect_account") {
-      const code = require("crypto").randomBytes(4).toString("hex");
-      const url = `${CONNECT_URL}${code}`;
-      const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-      try { execFile(opener, [url]); } catch (err) { log("open browser failed:", err.message || err); }
-      const started = Date.now();
-      // Cap wait so agents don't treat a long poll as a dead MCP process.
-      const maxWaitMs = 90_000;
-      while (Date.now() - started < maxWaitMs) {
-        try {
-          const { response, body } = await httpJson(
-            `https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`,
-            { method: "GET", timeoutMs: 15_000 }
-          );
-          if (response.ok && body.status === "linked" && body.secret) {
-            const configPath = path.join(CONFIG_DIR, "config.json");
-            let config = {};
-            try { config = JSON.parse(fs.readFileSync(configPath, "utf8")); } catch {}
-            fs.mkdirSync(path.dirname(configPath), { recursive: true });
-            fs.writeFileSync(
-              configPath,
-              JSON.stringify({ ...config, api_key: body.secret, connected_at: new Date().toISOString() }, null, 2)
-            );
-            return toolText("SuperCompress account connected. Future compression usage is metered to this account.");
-          }
-        } catch (err) {
-          log("connect poll failed:", err.message || err);
-        }
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-      return toolError(
-        `Timed out waiting for browser sign-in. Open ${url} , finish linking, then call connect_account again (or run: supercompress connect).`
-      );
-    }
-
-    if (name === "usage_summary") {
-      if (!apiKey) return toolError("SuperCompress account is not connected. Call connect_account first.");
+    const started = Date.now();
+    const maxWaitMs = 180_000;
+    while (Date.now() - started < maxWaitMs) {
       try {
-        const { response, body } = await httpJson(USAGE_URL, {
-          method: "GET",
-          headers: { "X-API-Key": apiKey },
-          timeoutMs: 30_000,
-        });
-        if (!response.ok) {
-          return toolError(body.detail || `Usage summary request failed (${response.status})`);
+        const { response, body } = await httpJson(
+          `https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`,
+          { method: "GET", timeoutMs: 15_000 }
+        );
+        if (response.ok && body.status === "linked" && body.secret) {
+          const configPath = path.join(CONFIG_DIR, "config.json");
+          let config = {};
+          try {
+            config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+          } catch {}
+          fs.mkdirSync(path.dirname(configPath), { recursive: true });
+          fs.writeFileSync(
+            configPath,
+            JSON.stringify(
+              { ...config, api_key: body.secret, connected_at: new Date().toISOString() },
+              null,
+              2
+            )
+          );
+          return toolText("SuperCompress account connected. Future compression usage is metered to this account.");
         }
-        return toolText(JSON.stringify({
+      } catch (err) {
+        log("connect poll failed:", err.message || err);
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    return toolError(
+      `Timed out waiting for browser sign-in. Open ${url} , finish linking, then call connect_account again (or run: supercompress connect).`
+    );
+  }
+
+  if (name === "usage_summary") {
+    if (!apiKey) return toolError("SuperCompress account is not connected. Call connect_account first.");
+    try {
+      const { response, body } = await httpJson(USAGE_URL, {
+        method: "GET",
+        headers: { "X-API-Key": apiKey },
+        timeoutMs: 30_000,
+      });
+      if (!response.ok) {
+        return toolError(body.detail || `Usage summary request failed (${response.status})`);
+      }
+      return toolText(
+        JSON.stringify({
           owner_uid: body.owner_uid,
           total_requests: body.total_requests,
           total_tokens_in: body.total_tokens_in,
           total_tokens_out: body.total_tokens_out,
           total_tokens_saved: body.total_tokens_saved,
           coding_agent_usage: body.coding_agent_usage,
-        }));
-      } catch (err) {
-        return toolError(`Usage summary failed: ${err.message}`);
-      }
+        })
+      );
+    } catch (err) {
+      return toolError(`Usage summary failed: ${err.message}`);
     }
+  }
 
-    if (!context.trim()) return toolError("context is required");
-    if (!apiKey) {
+  if (!context.trim()) return toolError("context is required");
+  if (!apiKey) {
+    return toolError(
+      "SuperCompress account is not connected. Call connect_account, finish sign-in in the browser, then retry compress_context (or run: supercompress setup)."
+    );
+  }
+
+  try {
+    const { compressIncremental, writeInbox } = require("./cursor-hooks/compress-prompt-lib");
+    const result = await compressIncremental({
+      context,
+      query,
+      codingAgent: "mcp",
+      sessionId,
+      kind: "mcp",
+    });
+    if (result.skipped === "no_key") {
       return toolError(
         "SuperCompress account is not connected. Call connect_account, finish sign-in in the browser, then retry compress_context (or run: supercompress setup)."
       );
     }
-
-    try {
-      const { response, body } = await httpJson(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
-        body: JSON.stringify({ context, query, mode: "compiler", coding_agent: "mcp" }),
-        timeoutMs: 120_000,
-      });
-      if (!response.ok) {
-        throw new Error(body.detail || body.error?.message || `Compression failed (${response.status})`);
-      }
-      return toolText(JSON.stringify({
-        compressed_context: body.compressed_text || body.compressed_context,
-        compressed_text: body.compressed_text || body.compressed_context,
-        original_tokens: body.original_tokens,
-        compressed_tokens: body.kept_tokens || body.compressed_tokens,
-        kept_tokens: body.kept_tokens || body.compressed_tokens,
-        tokens_saved: body.tokens_saved ?? Math.max(0, (body.original_tokens || 0) - (body.kept_tokens || body.compressed_tokens || 0)),
-        savings_pct: body.tokens_saved_pct ?? body.kv_savings_pct ?? body.savings_pct,
-        tokens_saved_pct: body.tokens_saved_pct ?? body.kv_savings_pct ?? body.savings_pct,
-        risk: body.compression_risk || body.risk,
-      }));
-    } catch (err) {
-      const msg = err?.name === "AbortError"
+    if (String(result.skipped || "").startsWith("http_")) {
+      return toolError(`Compression failed (${result.skipped})`);
+    }
+    if (!result.compressed) {
+      return toolError("Nothing new to compress (empty or already in session memory).");
+    }
+    const meta =
+      result.skipped === "already_seen"
+        ? `memory replay · session ${sessionId}`
+        : `${result.original_tokens}→${result.compressed_tokens} (−${result.savings_pct}%)${
+            result.compacted ? " · compacted" : " · delta-only"
+          }`;
+    writeInbox(query, result.compressed, meta, {
+      kind: result.skipped === "already_seen" ? "session-memory" : "mcp",
+      session_id: sessionId,
+      compacted: Boolean(result.compacted),
+    });
+    return toolText(
+      JSON.stringify({
+        compressed_context: result.compressed,
+        compressed_text: result.compressed,
+        delta: result.delta || "",
+        original_tokens: result.original_tokens,
+        compressed_tokens: result.compressed_tokens,
+        kept_tokens: result.compressed_tokens,
+        tokens_saved: Math.max(0, (result.original_tokens || 0) - (result.compressed_tokens || 0)),
+        savings_pct: result.savings_pct,
+        tokens_saved_pct: result.savings_pct,
+        session_id: sessionId,
+        compacted: Boolean(result.compacted),
+        skipped: result.skipped || null,
+      })
+    );
+  } catch (err) {
+    const msg =
+      err?.name === "AbortError"
         ? "Compression timed out. Try a smaller context chunk."
         : `SuperCompress error: ${err.message}`;
-      return toolError(msg);
-    }
-  } catch (err) {
-    log("tool handler crash:", err && err.stack ? err.stack : err);
-    return toolError(`SuperCompress MCP internal error: ${err.message || String(err)}`);
+    return toolError(msg);
   }
-});
+}
+
+async function dispatch(msg) {
+  if (!msg || typeof msg !== "object") return null;
+  const { id, method, params } = msg;
+
+  // Notifications — no response
+  if (id === undefined || id === null) {
+    return null;
+  }
+
+  try {
+    if (method === "initialize") {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: PROTOCOL_VERSION,
+          capabilities: { tools: {} },
+          serverInfo: { name: "supercompress", version: VERSION },
+        },
+      };
+    }
+    if (method === "ping") {
+      return { jsonrpc: "2.0", id, result: {} };
+    }
+    if (method === "tools/list") {
+      return { jsonrpc: "2.0", id, result: { tools: TOOLS } };
+    }
+    if (method === "tools/call") {
+      const name = params?.name;
+      const args = params?.arguments || {};
+      const result = await handleToolCall(name, args);
+      return { jsonrpc: "2.0", id, result };
+    }
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32601, message: `Method not found: ${method}` },
+    };
+  } catch (err) {
+    log("dispatch crash:", err && err.stack ? err.stack : err);
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32603, message: err.message || String(err) },
+    };
+  }
+}
+
+function writeMessage(obj) {
+  const json = JSON.stringify(obj);
+  const frame = `Content-Length: ${Buffer.byteLength(json, "utf8")}\r\n\r\n${json}`;
+  process.stdout.write(frame);
+  // Also emit newline-delimited form for lightweight checkers / older clients
+  // Only when SUPERCOMPRESS_MCP_NDJSON=1 to avoid double replies in production.
+  if (process.env.SUPERCOMPRESS_MCP_NDJSON === "1") {
+    process.stdout.write(json + "\n");
+  }
+}
+
+function writeNdjson(obj) {
+  process.stdout.write(JSON.stringify(obj) + "\n");
+}
+
+/** Prefer Content-Length; also accept newline-delimited JSON (mcp-check / tests). */
+function createStdioReader(onMessage) {
+  let buf = Buffer.alloc(0);
+  let mode = null; // "cl" | "ndjson"
+
+  process.stdin.on("data", (chunk) => {
+    buf = Buffer.concat([buf, chunk]);
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (!mode) {
+        const asStr = buf.toString("utf8", 0, Math.min(buf.length, 64));
+        if (/Content-Length:/i.test(asStr)) {
+          mode = "cl";
+        } else if (buf.includes(0x0a) /* \n */) {
+          mode = "ndjson";
+        } else {
+          break;
+        }
+      }
+
+      if (mode === "cl") {
+        const headerEnd = buf.indexOf("\r\n\r\n");
+        if (headerEnd === -1) {
+          // Some clients use \n\n
+          const alt = buf.indexOf("\n\n");
+          if (alt === -1) break;
+          const header = buf.slice(0, alt).toString("utf8");
+          const match = header.match(/Content-Length:\s*(\d+)/i);
+          if (!match) {
+            mode = "ndjson";
+            continue;
+          }
+          const len = Number(match[1]);
+          const start = alt + 2;
+          if (buf.length < start + len) break;
+          const body = buf.slice(start, start + len).toString("utf8");
+          buf = buf.slice(start + len);
+          try {
+            onMessage(JSON.parse(body), "cl");
+          } catch (err) {
+            log("bad JSON frame:", err.message);
+          }
+          continue;
+        }
+        const header = buf.slice(0, headerEnd).toString("utf8");
+        const match = header.match(/Content-Length:\s*(\d+)/i);
+        if (!match) {
+          mode = "ndjson";
+          continue;
+        }
+        const len = Number(match[1]);
+        const start = headerEnd + 4;
+        if (buf.length < start + len) break;
+        const body = buf.slice(start, start + len).toString("utf8");
+        buf = buf.slice(start + len);
+        try {
+          onMessage(JSON.parse(body), "cl");
+        } catch (err) {
+          log("bad JSON frame:", err.message);
+        }
+        continue;
+      }
+
+      // ndjson
+      const nl = buf.indexOf("\n");
+      if (nl === -1) break;
+      const line = buf.slice(0, nl).toString("utf8").trim();
+      buf = buf.slice(nl + 1);
+      if (!line) continue;
+      try {
+        onMessage(JSON.parse(line), "ndjson");
+      } catch (err) {
+        log("bad ndjson:", err.message);
+      }
+    }
+  });
+}
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  let replyStyle = "cl"; // updated per inbound message
+  createStdioReader(async (msg, style) => {
+    replyStyle = style;
+    const res = await dispatch(msg);
+    if (!res) return;
+    if (replyStyle === "ndjson") writeNdjson(res);
+    else writeMessage(res);
+  });
+  process.stdin.resume();
   log(`ready v${VERSION} node=${process.version}`);
 }
 
