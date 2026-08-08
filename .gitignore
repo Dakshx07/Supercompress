@@ -63,6 +63,14 @@ web/ab-compare.html
 web/ab-comparison.html
 web/assets/css/pitch.css
 
+# Private enterprise / customer commercial pack — LOCAL ONLY (never commit/push)
+docs/enterprise/
+web/local-enterprise-brief.html
+web/local-only/
+scripts/build_local_enterprise_brief.py
+scripts/serve_local_enterprise_brief.sh
+exports/
+
 # Ops / outreach / SEO generator scripts
 scripts/send_batch_*.py
 scripts/generate_seo_batch*.py
