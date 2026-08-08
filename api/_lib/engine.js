@@ -1,5 +1,7 @@
 /**
- * Server-side compression — reuses web/assets/js/compress-engine.js + model.json.
+ * Server-side compression — loads web compress-engine.js + model.json via vm.
+ * Neural/BGE boost is opt-in (SC_NEURAL=1) and excluded from Vercel lambdas
+ * (onnx/transformers exceed Hobby size limits). Default path is the local policy.
  */
 
 const fs = require("fs");
@@ -37,31 +39,47 @@ function getModel() {
   return model;
 }
 
+async function loadNeuralBoost(context, query) {
+  // Hosted Vercel functions exclude onnx/transformers (too large). Opt in only
+  // when SC_NEURAL=1 and the optional deps are present.
+  const on = process.env.SC_NEURAL === "1" || process.env.SC_NEURAL === "true";
+  if (!on) return null;
+  try {
+    // Dynamic path so file-tracers don't always pull onnx into every lambda.
+    const neuralPath = "./neural" + "-rerank.js";
+    const neural = require(neuralPath);
+    if (!neural.neuralEnabled()) return null;
+    const E = getEngine();
+    if (typeof E.prepareNeuralBlocks !== "function") return null;
+    const prep = E.prepareNeuralBlocks(context, query, getModel());
+    if (!prep.blocks || !prep.blocks.length) return null;
+    return await neural.scoreBlocks(prep.question || query, prep.blocks);
+  } catch (err) {
+    console.warn("[supercompress] neural boost skipped:", err.message);
+    return null;
+  }
+}
+
 function compress(context, query, budgetRatio = 0.35) {
   const E = getEngine();
   return E.compressContext(context, query, budgetRatio, "SuperCompress", getModel());
 }
 
-function compressAdaptive(context, query) {
+async function compressAdaptive(context, query) {
   const E = getEngine();
-  return E.compressAdaptive(context, query, getModel());
+  const neuralBoost = await loadNeuralBoost(context, query);
+  return E.compressAdaptive(context, query, getModel(), neuralBoost ? { neuralBoost } : null);
 }
 
-/**
- * CCR compression: uses the browser engine's compressCCR which properly intersperses
- * [SC-Retrieve: hash] markers at the exact positions where blocks were dropped.
- *
- * This is the CacheAligner path — aligns server-side CCR behavior with browser-side CCR.
- */
-function compressCCR(context, query) {
+async function compressCCR(context, query) {
   const E = getEngine();
-  return E.compressCCR(context, query, getModel(), { enableMarkers: true });
+  const neuralBoost = await loadNeuralBoost(context, query);
+  return E.compressCCR(context, query, getModel(), {
+    enableMarkers: true,
+    neuralBoost: neuralBoost || undefined,
+  });
 }
 
-/**
- * Simple hash function — MUST match web/assets/js/compress-engine.js simpleHash exactly.
- * If the two diverge, client-side hashes won't match server-side hashes and CCR retrieval will fail.
- */
 function simpleHash(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
@@ -69,41 +87,61 @@ function simpleHash(str) {
     h = ((h << 5) - h) + c;
     h = h & h;
   }
-  return Math.abs(h).toString(16).padStart(8, '0') + '_' + str.length.toString(16);
+  return Math.abs(h).toString(16).padStart(8, "0") + "_" + str.length.toString(16);
+}
+
+/** Tenant-scoped CCR doc path — prevents cross-tenant hash collisions / reads. */
+function ccrOwnerDocPath(ownerUid, hash) {
+  return `ccr/${ownerUid}/blocks/${hash}`;
 }
 
 /**
- * Store CCR data to Firestore for retrieval.
+ * Persist a CCR block under the owning account.
+ * @param {string} hash
+ * @param {string} originalText
+ * @param {{ ownerUid?: string, keyId?: string }} [meta]
  */
-async function ccrStoreFirestore(hash, originalText) {
+async function ccrStoreFirestore(hash, originalText, meta = {}) {
   try {
     const admin = require("firebase-admin");
     const { initFirebaseAdmin } = require("./auth");
     initFirebaseAdmin();
-    await admin.firestore().doc(`ccr/${hash}`).set({
+    const ownerUid = meta.ownerUid ? String(meta.ownerUid) : "";
+    if (!ownerUid) {
+      console.warn("CCR store skipped: missing ownerUid");
+      return false;
+    }
+    const payload = {
       original: originalText,
       hash,
+      owner_uid: ownerUid,
+      key_id: meta.keyId ? String(meta.keyId) : null,
       stored_at: new Date().toISOString(),
       token_count: originalText.split(/\s+/).length,
-    });
+    };
+    // Owner-scoped path (canonical). Never write a shared flat ccr/{hash} — that leaked across tenants.
+    await admin.firestore().doc(ccrOwnerDocPath(ownerUid, hash)).set(payload);
     return true;
   } catch (err) {
-    console.error("CCR store failed:", err.message);
+    console.warn("CCR store failed:", err.message);
     return false;
   }
 }
 
-async function storeCcrBlocks(ccr, fullText) {
+/** Alias used by older call sites. */
+const ccrStoreBlob = ccrStoreFirestore;
+
+async function storeCcrBlocks(ccr, fullText, meta = {}) {
   const hashes = Array.isArray(ccr?.marker_hashes) ? ccr.marker_hashes : [];
   const storedHashes = [];
   const E = getEngine();
 
   for (const hash of hashes) {
     const original = E.ccrRetrieve(hash);
-    if (original && await ccrStoreFirestore(hash, original)) storedHashes.push(hash);
+    if (original && (await ccrStoreFirestore(hash, original, meta))) storedHashes.push(hash);
   }
 
-  const fullStored = Boolean(ccr?.hash) && await ccrStoreFirestore(ccr.hash, fullText);
+  const fullStored = Boolean(ccr?.hash) && (await ccrStoreFirestore(ccr.hash, fullText, meta));
   return {
     stored: fullStored || storedHashes.length > 0,
     stored_hashes: storedHashes,
@@ -111,21 +149,21 @@ async function storeCcrBlocks(ccr, fullText) {
   };
 }
 
-/**
- * CacheAligner: wrap compressed text in a stable XML preamble/postamble
- * to maximize KV cache hits on the provider side (OpenAI, Anthropic, vLLM).
- *
- * The preamble is byte-for-byte identical across all calls, creating a
- * cacheable prefix that providers can reuse without recomputation.
- *
- * @param {string} compressedText
- * @param {string} query
- * @param {{ addAnthropicMarkers?: boolean }} [options]
- * @returns {{ wrapped: string, preambleTokens: number, totalTokens: number }}
- */
 function wrapCompressedForCache(compressedText, query) {
   const E = getEngine();
   return E.cacheWrap(compressedText, query);
 }
 
-module.exports = { compress, compressAdaptive, compressCCR, getEngine, getModel, simpleHash,  ccrStoreFirestore, storeCcrBlocks, wrapCompressedForCache };
+module.exports = {
+  compress,
+  compressAdaptive,
+  compressCCR,
+  getEngine,
+  getModel,
+  simpleHash,
+  ccrOwnerDocPath,
+  ccrStoreFirestore,
+  ccrStoreBlob,
+  storeCcrBlocks,
+  wrapCompressedForCache,
+};

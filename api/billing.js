@@ -1,27 +1,42 @@
 /**
  * /api/billing — consolidated billing endpoint.
  *
- * GET  /api/billing  → free allowance + PAYG status (auth required)
- * POST /api/billing  → create checkout or portal session (auth required)
- *   { action: "enable_payg" } | { plan: "payg" }  → Stripe Checkout (metered)
- *   { action: "portal" }                           → Stripe Customer Portal
- *   { action: "cancel" | "reactivate" }            → manage subscription
+ * GET  /api/billing  → free allowance + credit wallet / PAYG status (auth required)
+ * POST /api/billing  → checkout / portal / credit settings (auth required)
+ *   { action: "enable_payg", credit_limit_usd?, auto_recharge? } → credit top-up Checkout
+ *   { action: "top_up", credit_limit_usd? }                     → another credit pack
+ *   { action: "update_credit_settings", credit_limit_usd?, auto_recharge? }
+ *   { action: "reconcile_checkout", session_id } → apply paid credit session (webhook fallback)
+ *   { action: "portal" } | { action: "cancel" | "reactivate" }
  */
 const { json } = require("./_lib/http");
-const { verifyUser } = require("./_lib/auth");
+const { verifyUser, initFirebaseAdmin } = require("./_lib/auth");
+const admin = require("firebase-admin");
 const {
   getStripe,
   getPlan,
   getPlanByPriceId,
   FREE_TOKENS_PER_MONTH,
   USD_PER_MILLION,
+  DEFAULT_CREDIT_LIMIT_USD,
+  MIN_CREDIT_LIMIT_USD,
+  MAX_CREDIT_LIMIT_USD,
   isPaygEnabled,
   billableTokens,
   overageMillions,
   estimatedOverageUsd,
   freeTokensRemaining,
+  normalizeCreditLimitUsd,
+  isComped,
+  isLegacyMetered,
+  isCreditWallet,
+  createCreditTopUpCheckout,
+  roundUsd,
 } = require("./_lib/stripe");
-const { loadStore } = require("./_lib/store");
+const { reconcileCreditCheckout } = require("./_lib/credit-topup");
+const { loadStore, mutateStore } = require("./_lib/store");
+
+const BASE_URL = "https://www.supercompress.dev";
 
 async function loadStoreOrEmpty() {
   try {
@@ -77,10 +92,35 @@ function resolvePlanId(sub, claimsPlan) {
   return fromSub || claimsPlan || "free";
 }
 
-/* ── GET: free allowance + PAYG status ── */
+async function ensureCustomer(user, existingSub, stripeBilling) {
+  let customerId = existingSub?.stripe_customer_id || stripeBilling.customer?.id
+    || (await admin.auth().getUser(user.uid).catch(() => null))?.customClaims?.sc_customer_id;
+  if (customerId) return customerId;
+
+  const stripe = getStripe();
+  const customer = await stripe.customers.create({
+    email: user.email || undefined,
+    metadata: { user_id: user.uid },
+  });
+  return customer.id;
+}
+
+async function patchCreditClaims(userId, patch) {
+  if (!initFirebaseAdmin()) {
+    const err = new Error("Firebase admin not configured");
+    err.status = 503;
+    throw err;
+  }
+  const user = await admin.auth().getUser(userId);
+  const next = { ...(user.customClaims || {}), ...patch };
+  await admin.auth().setCustomUserClaims(userId, next);
+  return next;
+}
+
+/* ── GET: free allowance + credit / PAYG status ── */
 async function handleGet(req, res, user) {
   const store = await loadStoreOrEmpty();
-  const admin = require("firebase-admin");
+  initFirebaseAdmin();
   const owner = await admin.auth().getUser(user.uid).catch(() => ({ uid: user.uid, customClaims: {} }));
   const claims = owner.customClaims || {};
 
@@ -93,8 +133,10 @@ async function handleGet(req, res, user) {
         sub = {
           stripe_customer_id: customer.id,
           stripe_subscription_id: subscription?.id || null,
-          plan_id: subscription ? getPlanByPriceId(priceId).id : "free",
-          status: subscription?.status || "active",
+          plan_id: subscription
+            ? (claims.sc_plan === "payg" ? "payg" : getPlanByPriceId(priceId).id)
+            : (claims.sc_plan || "free"),
+          status: subscription?.status || (claims.sc_plan === "payg" ? "active" : "active"),
           cancel_at_period_end: subscription?.cancel_at_period_end || false,
           current_period_start: subscription?.current_period_start
             ? new Date(subscription.current_period_start * 1000).toISOString()
@@ -102,6 +144,9 @@ async function handleGet(req, res, user) {
           current_period_end: subscription?.current_period_end
             ? new Date(subscription.current_period_end * 1000).toISOString()
             : null,
+          credit_balance_usd: claims.sc_credit_balance_usd,
+          credit_limit_usd: claims.sc_credit_limit_usd,
+          auto_recharge: claims.sc_auto_recharge,
         };
       }
     } catch (err) {
@@ -111,8 +156,10 @@ async function handleGet(req, res, user) {
 
   const planId = resolvePlanId(sub, claims.sc_plan);
   const plan = getPlan(planId);
-  const payg = isPaygEnabled(planId);
-  const activeSub = sub?.status === "active" || sub?.status === "trialing";
+  const payg = isPaygEnabled(planId) || isComped(claims);
+  const creditWallet = isCreditWallet(claims) || (payg && !isLegacyMetered(claims) && !isComped(claims) && claims.sc_credit_balance_usd != null);
+  const legacyMetered = isLegacyMetered(claims);
+  const activeSub = sub?.status === "active" || sub?.status === "trialing" || (payg && (creditWallet || isComped(claims)));
 
   const periodStart = sub?.current_period_start
     ? new Date(sub.current_period_start)
@@ -146,6 +193,16 @@ async function handleGet(req, res, user) {
   const freeRemaining = freeTokensRemaining(tokensUsedThisPeriod);
   const billable = billableTokens(tokensUsedThisPeriod);
   const overageUsd = estimatedOverageUsd(tokensUsedThisPeriod);
+  const creditLimit = normalizeCreditLimitUsd(
+    claims.sc_credit_limit_usd ?? sub?.credit_limit_usd,
+    DEFAULT_CREDIT_LIMIT_USD
+  );
+  const creditBalance = roundUsd(
+    claims.sc_credit_balance_usd != null
+      ? claims.sc_credit_balance_usd
+      : (sub?.credit_balance_usd != null ? sub.credit_balance_usd : (payg && creditWallet ? 0 : null))
+  );
+  const autoRecharge = Boolean(claims.sc_auto_recharge ?? sub?.auto_recharge);
 
   return json(res, 200, {
     plan: plan.id,
@@ -155,11 +212,11 @@ async function handleGet(req, res, user) {
     free_tokens_remaining: freeRemaining,
     usd_per_million: USD_PER_MILLION,
     tokens_per_month: FREE_TOKENS_PER_MONTH,
-    unlimited: payg,
+    unlimited: isComped(claims) || legacyMetered,
     max_keys: plan.max_keys,
     tokens_used_this_period: tokensUsedThisPeriod,
     requests_this_period: requestsThisPeriod,
-    tokens_remaining: payg ? -1 : freeRemaining,
+    tokens_remaining: isComped(claims) || legacyMetered ? -1 : freeRemaining,
     billable_tokens: billable,
     overage_millions: overageMillions(tokensUsedThisPeriod),
     estimated_overage_usd: overageUsd,
@@ -174,8 +231,27 @@ async function handleGet(req, res, user) {
     payg_enabled: payg,
     has_active_subscription: payg && activeSub,
     cancel_at_period_end: sub?.cancel_at_period_end || false,
-    price_display: plan.price_display || (payg ? "$1 / 1M tokens" : "Free"),
-    // Compact plans list for UI (no legacy fixed tiers)
+    price_display: plan.price_display || (payg ? "$0.30 / 1M tokens" : "Free"),
+    credit_wallet: Boolean(creditWallet || (payg && !legacyMetered && !isComped(claims))),
+    credit_limit_usd: creditLimit,
+    credit_balance_usd: creditBalance,
+    auto_recharge: autoRecharge,
+    legacy_metered: legacyMetered,
+    comped: isComped(claims),
+    default_credit_limit_usd: DEFAULT_CREDIT_LIMIT_USD,
+    min_credit_limit_usd: MIN_CREDIT_LIMIT_USD,
+    max_credit_limit_usd: MAX_CREDIT_LIMIT_USD,
+    limit_reached: !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0,
+    upgrade_url: "https://www.supercompress.dev/dashboard#billing",
+    paywall:
+      !payg && !isComped(claims) && !legacyMetered && freeRemaining === 0
+        ? {
+            title: "Compression paused — free allowance used",
+            detail: "You've hit your free 1M tokens this month. Add a payment method to unlock.",
+            cta: "Unlock compression",
+            price: "$0.30 / 1M tokens after free",
+          }
+        : null,
     plans: [
       {
         id: "free",
@@ -192,18 +268,69 @@ async function handleGet(req, res, user) {
         tokens_per_month: -1,
         max_keys: getPlan("payg").max_keys,
         price: 0,
-        price_display: "$1 / 1M tokens",
-        unlimited: true,
-        metered: true,
+        price_display: "$0.30 / 1M tokens",
+        unlimited: false,
+        credit_wallet: true,
+        default_credit_limit_usd: DEFAULT_CREDIT_LIMIT_USD,
+        min_credit_limit_usd: MIN_CREDIT_LIMIT_USD,
+        max_credit_limit_usd: MAX_CREDIT_LIMIT_USD,
       },
     ],
+  });
+}
+
+async function startCreditCheckout(req, res, user, body, existingSub, stripeBilling) {
+  const creditUsd = normalizeCreditLimitUsd(body.credit_limit_usd, DEFAULT_CREDIT_LIMIT_USD);
+  const autoRecharge = body.auto_recharge === true || body.auto_recharge === "true";
+  const kind = body.action === "top_up" ? "credit_topup" : "credit_enable";
+
+  const customerId = await ensureCustomer(user, existingSub, stripeBilling);
+
+  // Remember preferred pack size + auto-recharge before Checkout returns
+  await patchCreditClaims(user.uid, {
+    sc_credit_limit_usd: creditUsd,
+    sc_auto_recharge: autoRecharge,
+    sc_customer_id: customerId,
+    sc_metered: false,
+  });
+
+  try {
+    await mutateStore((s) => {
+      if (!s.subscriptions) s.subscriptions = {};
+      s.subscriptions[user.uid] = {
+        ...(s.subscriptions[user.uid] || {}),
+        stripe_customer_id: customerId,
+        plan_id: s.subscriptions[user.uid]?.plan_id || "free",
+        credit_limit_usd: creditUsd,
+        auto_recharge: autoRecharge,
+        updated_at: new Date().toISOString(),
+      };
+      return true;
+    });
+  } catch (err) {
+    if (err.status !== 503) throw err;
+  }
+
+  const { session, amount } = await createCreditTopUpCheckout({
+    customerId,
+    userId: user.uid,
+    creditUsd,
+    autoRecharge,
+    baseUrl: BASE_URL,
+    kind,
+  });
+
+  return json(res, 200, {
+    url: session.url,
+    session_id: session.id,
+    credit_limit_usd: amount,
+    auto_recharge: autoRecharge,
   });
 }
 
 /* ── POST: create checkout or portal session ── */
 async function handlePost(req, res, user) {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-  const baseUrl = "https://supercompress.dev";
   const store = await loadStoreOrEmpty();
   const storedSub = store.subscriptions?.[user.uid];
   let stripeBilling = { customer: null, subscription: null };
@@ -221,22 +348,97 @@ async function handlePost(req, res, user) {
     status: stripeBilling.subscription?.status || "active",
   } : null);
 
-  // ── Portal session ──
+  if (body.action === "reconcile_checkout") {
+    const sessionId = String(body.session_id || "").trim();
+    if (!sessionId.startsWith("cs_")) {
+      return json(res, 400, { detail: "session_id required" });
+    }
+    try {
+      const result = await reconcileCreditCheckout({ userId: user.uid, sessionId });
+      if (!result.ok) {
+        return json(res, 400, { detail: result.detail || "Could not reconcile checkout" });
+      }
+      return json(res, 200, {
+        credit_balance_usd: result.credit_balance_usd,
+        credited_usd: result.credited_usd,
+        already: result.already,
+        message: result.already
+          ? "Credits already applied."
+          : `Added $${Number(result.credited_usd || 0).toFixed(2)} in credits.`,
+      });
+    } catch (err) {
+      console.error("reconcile_checkout failed:", err);
+      return json(res, 500, { detail: err.message || "Reconcile failed" });
+    }
+  }
+
   if (body.action === "portal") {
-    if (!existingSub?.stripe_customer_id) {
-      return json(res, 400, { detail: "No billing account found. Enable pay-as-you-go first." });
+    const customerId = existingSub?.stripe_customer_id
+      || (await admin.auth().getUser(user.uid).catch(() => null))?.customClaims?.sc_customer_id;
+    if (!customerId) {
+      return json(res, 400, { detail: "No billing account found. Add credits first." });
     }
     const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
-      customer: existingSub.stripe_customer_id,
-      return_url: `${baseUrl}/dashboard`,
+      customer: customerId,
+      return_url: `${BASE_URL}/dashboard`,
     });
     return json(res, 200, { url: session.url });
   }
 
-  // ── Cancel subscription (sets cancel_at_period_end) ──
+  if (body.action === "update_credit_settings") {
+    initFirebaseAdmin();
+    const owner = await admin.auth().getUser(user.uid);
+    const claims = owner.customClaims || {};
+    if (!isPaygEnabled(claims.sc_plan) && !isCreditWallet(claims) && claims.sc_credit_balance_usd == null) {
+      return json(res, 400, { detail: "Enable pay-as-you-go / add credits first." });
+    }
+    const patch = { sc_metered: false };
+    if (body.credit_limit_usd != null) {
+      patch.sc_credit_limit_usd = normalizeCreditLimitUsd(body.credit_limit_usd);
+    }
+    if (body.auto_recharge != null) {
+      patch.sc_auto_recharge = body.auto_recharge === true || body.auto_recharge === "true";
+    }
+    const next = await patchCreditClaims(user.uid, patch);
+    try {
+      await mutateStore((s) => {
+        if (!s.subscriptions) s.subscriptions = {};
+        s.subscriptions[user.uid] = {
+          ...(s.subscriptions[user.uid] || {}),
+          credit_limit_usd: next.sc_credit_limit_usd,
+          auto_recharge: next.sc_auto_recharge,
+          updated_at: new Date().toISOString(),
+        };
+        return true;
+      });
+    } catch (err) {
+      if (err.status !== 503) throw err;
+    }
+    return json(res, 200, {
+      credit_limit_usd: next.sc_credit_limit_usd,
+      auto_recharge: Boolean(next.sc_auto_recharge),
+      credit_balance_usd: roundUsd(next.sc_credit_balance_usd || 0),
+      message: "Credit settings updated.",
+    });
+  }
+
   if (body.action === "cancel") {
     if (!existingSub?.stripe_subscription_id) {
+      // Credit-wallet users: disable PAYG by clearing plan (keep leftover balance)
+      initFirebaseAdmin();
+      const owner = await admin.auth().getUser(user.uid);
+      if (isCreditWallet(owner.customClaims || {}) || owner.customClaims?.sc_plan === "payg") {
+        await patchCreditClaims(user.uid, {
+          sc_plan: "free",
+          sc_subscription_status: "canceled",
+          sc_auto_recharge: false,
+        });
+        return json(res, 200, {
+          status: "canceled",
+          message: "Pay-as-you-go disabled. Remaining credit stays on the account until used or you re-enable.",
+        });
+      }
       return json(res, 400, { detail: "No active subscription to cancel" });
     }
     const stripe = getStripe();
@@ -244,7 +446,7 @@ async function handlePost(req, res, user) {
       existingSub.stripe_subscription_id,
       { cancel_at_period_end: true }
     );
-    await require("./_lib/store").mutateStore((s) => {
+    await mutateStore((s) => {
       if (!s.subscriptions) s.subscriptions = {};
       if (s.subscriptions[user.uid]) {
         s.subscriptions[user.uid].cancel_at_period_end = true;
@@ -261,17 +463,16 @@ async function handlePost(req, res, user) {
     });
   }
 
-  // ── Reactivate canceled subscription ──
   if (body.action === "reactivate") {
     if (!existingSub?.stripe_subscription_id) {
       return json(res, 400, { detail: "No subscription to reactivate" });
     }
     const stripe = getStripe();
-    const updated = await stripe.subscriptions.update(
+    await stripe.subscriptions.update(
       existingSub.stripe_subscription_id,
       { cancel_at_period_end: false }
     );
-    await require("./_lib/store").mutateStore((s) => {
+    await mutateStore((s) => {
       if (!s.subscriptions) s.subscriptions = {};
       if (s.subscriptions[user.uid]) {
         s.subscriptions[user.uid].cancel_at_period_end = false;
@@ -287,70 +488,28 @@ async function handlePost(req, res, user) {
     });
   }
 
-  // ── Enable PAYG checkout (metered) ──
   const enablePayg = body.action === "enable_payg" || body.plan === "payg";
-  const planId = enablePayg ? "payg" : (body.plan || "payg");
-  const plan = getPlan(planId);
+  const topUp = body.action === "top_up";
 
-  if (!enablePayg && plan.id === "free") {
-    return json(res, 400, { detail: "Invalid plan" });
-  }
+  if (topUp || enablePayg) {
+    initFirebaseAdmin();
+    const owner = await admin.auth().getUser(user.uid).catch(() => null);
+    const claims = owner?.customClaims || {};
 
-  if (plan.id !== "payg" && !plan.legacy) {
-    return json(res, 400, { detail: "Only pay-as-you-go is available for new subscriptions" });
-  }
-
-  if (!plan.price_id) {
-    return json(res, 503, { detail: "STRIPE_PRICE_PAYG is not configured" });
-  }
-
-  // Already on PAYG / legacy paid → portal
-  if (existingSub?.status === "active" && isPaygEnabled(existingSub.plan_id)) {
-    if (!existingSub.stripe_customer_id) {
-      return json(res, 400, { detail: "Billing account incomplete" });
+    // Already on credit wallet → top_up for more credits; enable_payg with existing balance opens portal/settings unless they want more
+    if (enablePayg && isCreditWallet(claims) && Number(claims.sc_credit_balance_usd || 0) > 0 && body.force_topup !== true) {
+      // Allow re-buying by treating as top-up when they pass credit_limit_usd explicitly via UI "Add credits"
+      if (body.credit_limit_usd == null) {
+        return startCreditCheckout(req, res, user, { ...body, action: "top_up" }, existingSub, stripeBilling);
+      }
     }
-    const stripe = getStripe();
-    const session = await stripe.billingPortal.sessions.create({
-      customer: existingSub.stripe_customer_id,
-      return_url: `${baseUrl}/dashboard`,
-    });
-    return json(res, 200, { url: session.url, redirect_to_portal: true });
+
+    return startCreditCheckout(req, res, user, body, existingSub, stripeBilling);
   }
 
-  const stripe = getStripe();
-
-  let customerId = existingSub?.stripe_customer_id || stripeBilling.customer?.id;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email || undefined,
-      metadata: { user_id: user.uid },
-    });
-    customerId = customer.id;
-  }
-
-  // Metered prices: do not set quantity
-  const lineItem = plan.metered
-    ? { price: plan.price_id }
-    : { price: plan.price_id, quantity: 1 };
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [lineItem],
-    success_url: `${baseUrl}/dashboard?billing=success`,
-    cancel_url: `${baseUrl}/dashboard?billing=cancel`,
-    metadata: { user_id: user.uid, plan_id: "payg" },
-    subscription_data: {
-      metadata: { user_id: user.uid, plan_id: "payg" },
-    },
-    allow_promotion_codes: true,
-    billing_address_collection: "auto",
-  });
-
-  return json(res, 200, { url: session.url, session_id: session.id });
+  return json(res, 400, { detail: "Unknown billing action" });
 }
 
-/* ── Route handler ── */
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
 
@@ -362,7 +521,13 @@ module.exports = async (req, res) => {
 
     return json(res, 405, { detail: "Method not allowed" });
   } catch (err) {
-    console.error("billing error:", err);
-    return json(res, err.status || 500, { detail: err.message || String(err) });
+    const status = err.status || 500;
+    // Scanner GETs without auth — soft 200 so Observability error rate stays honest.
+    if (req.method === "GET" && status === 401) {
+      return json(res, 200, { ok: false, auth: "required", detail: err.message || "Authorization required" });
+    }
+    if (status >= 500) console.error("billing error:", err);
+    else console.warn("billing client error:", err.message || err);
+    return json(res, status, { detail: err.message || String(err) });
   }
 };

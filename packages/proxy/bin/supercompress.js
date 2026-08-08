@@ -8,6 +8,7 @@
  *   start     Start the background proxy
  *   stop      Stop the background proxy
  *   status    Check if the proxy is running
+ *   usage     Show plan + token savings / per-agent stats
  *   uninstall Remove the proxy and revert agent configs
  */
 
@@ -18,6 +19,8 @@ const http = require("http");
 const crypto = require("crypto");
 const VERSION = require("../package.json").version;
 const USAGE_URL = process.env.SUPERCOMPRESS_USAGE_URL || "https://www.supercompress.dev/api/usage";
+const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/me";
+const ACTIVITY_URL = process.env.SUPERCOMPRESS_ACTIVITY_URL || "https://www.supercompress.dev/api/compress-log";
 
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress");
 const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
@@ -57,10 +60,15 @@ function printHelp() {
   console.log("  plugin      Auto-install MCP + hooks + agent instructions for every detected agent");
   console.log("  wrap        Headroom-style: start proxy + launch agent (claude|codex|aider|…) with auto-compress");
   console.log("  connect     Link this install to your SuperCompress account");
+  console.log("  account     Show the connected SuperCompress account");
+  console.log("  usage       Plan, quota, and token savings by coding agent");
   console.log("  start       Start the proxy server (if not running)");
   console.log("  stop        Stop the proxy server");
   console.log("  status      Check if the proxy is running");
   console.log("  agents      Show supported agents and detected integrations");
+  console.log("  agents add  Register a custom MCP-capable agent (pluggable)");
+  console.log("  agents rm   Remove a custom agent plugin");
+  console.log("  mcp-check   Verify the SuperCompress MCP server responds");
   console.log("  restart     Restart the proxy server");
   console.log("  uninstall   Remove proxy and revert all agent configs");
   console.log("");
@@ -68,16 +76,22 @@ function printHelp() {
   console.log("  supercompress plugin");
   console.log("  supercompress wrap claude");
   console.log("  supercompress setup");
+  console.log("  supercompress account");
+  console.log("  supercompress usage");
+  console.log("  supercompress usage --json");
   console.log("  supercompress status");
 }
 
 async function connectAccount() {
-  const code = crypto.randomBytes(4).toString("hex");
-  const connectUrl = `https://supercompress.dev/dashboard?connect=${code}&source=cli`;
+  // 128-bit pairing code (was 32-bit) — hardens device-link against enumeration
+  const code = crypto.randomBytes(16).toString("hex");
+  const connectUrl = `https://www.supercompress.dev/dashboard?connect=${code}&source=cli`;
   const openCommand = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
   try { require("child_process").execFileSync(openCommand, [connectUrl], { stdio: "ignore" }); } catch {}
   console.log(`  → Finish sign-in in the browser to link this install.`);
+  console.log(`  → If the dashboard is already open, refresh that tab.`);
   console.log(`  → Connection code: ${code}`);
+  console.log(`  → Link: ${connectUrl}`);
   const apiKey = await waitForDeviceConnect(code);
   const config = loadConfig() || {};
   saveConfig({ ...config, api_key: apiKey, connected_at: new Date().toISOString() });
@@ -92,6 +106,19 @@ async function main() {
   switch (cmd) {
     case "connect":
       try { await connectAccount(); } catch (err) { console.error(`  ✗ ${err.message}`); process.exit(1); }
+      break;
+    case "account":
+    case "whoami":
+      try { await printAccount(); } catch (err) { console.error(`  ✗ ${err.message}`); process.exit(1); }
+      break;
+    case "usage":
+    case "stats":
+      try {
+        await printUsageCommand(process.argv.slice(3));
+      } catch (err) {
+        console.error(`  ✗ ${err.message}`);
+        process.exit(1);
+      }
       break;
     case "plugin": {
       const detector = require("../src/detector");
@@ -114,6 +141,10 @@ async function main() {
       }
       if (result.instructions.length) {
         console.log(`  ✓ Always-on instructions: ${result.instructions.join(", ")}`);
+      }
+      if (result.hermes?.installed?.length) {
+        console.log(`  ✓ Hermes auto-compress: ${result.hermes.installed.join(", ")}`);
+        console.log("    → pre_llm_call + post_tool_call hooks + transform plugin + native compact");
       }
       if (result.cleared.length) {
         console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
@@ -174,30 +205,167 @@ async function main() {
         if (agents.length > 0) {
           console.log(`  → Configured for: ${agents.join(", ")}`);
         }
-        await printUsageSummary(config.api_key).catch((err) => {
+        await printAccountSummary(config.api_key).catch(() => {});
+        await printUsageSummary(config.api_key, { compact: true }).catch((err) => {
           console.log(`  → Usage summary unavailable: ${err.message}`);
         });
+        console.log("  → Full stats: `supercompress usage`");
       } else {
         console.log(`  ○ Proxy is STOPPED (configured for localhost:${port})`);
         console.log("  → Run `supercompress setup` to reconnect and start it, or `supercompress start` to restart manually.");
+        await printAccountSummary(config.api_key).catch(() => {});
+        await printUsageSummary(config.api_key, { compact: true }).catch((err) => {
+          console.log(`  → Usage summary unavailable: ${err.message}`);
+        });
+        console.log("  → Full stats: `supercompress usage`");
       }
       break;
     }
 
     case "agents": {
-      const { AGENT_CATALOG, detectAll } = require("../src/detector");
+      const sub = process.argv[3];
+      if (sub === "add") {
+        const args = process.argv.slice(4);
+        const opts = {};
+        for (let i = 0; i < args.length; i++) {
+          const a = args[i];
+          if (a === "--id" || a === "--name") opts[a.slice(2)] = args[++i];
+          else if (a === "--format") opts.format = args[++i];
+          else if (a === "--config") opts.configPath = args[++i];
+          else if (a === "--cmd") {
+            opts.detectCommands = opts.detectCommands || [];
+            opts.detectCommands.push(args[++i]);
+          } else if (a === "--dir") {
+            opts.detectDirs = opts.detectDirs || [];
+            opts.detectDirs.push(args[++i]);
+          } else if (a === "--instructions") opts.instructionPath = args[++i];
+          else if (a === "--wrap-bin") opts.wrapBin = args[++i];
+        }
+        if (!opts.id && !opts.name) {
+          console.log("  Usage: supercompress agents add --name MyAgent [--format mcp-json] [--config ~/.myagent/mcp.json]");
+          console.log("  Formats: mcp-json | hermes-yaml | openclaw-json | opencode-json | codex-toml | instruction-only");
+          console.log("  Optional: --cmd <bin> --dir .<folder> --instructions ~/.../AGENTS.md --wrap-bin <bin>");
+          console.log("  Drop-in:  put JSON in ~/.supercompress/plugins/<id>.json then run `supercompress plugin`");
+          process.exit(1);
+        }
+        if (!opts.id) opts.id = opts.name;
+        try {
+          const { addCustomPlugin } = require("../src/agent-plugins");
+          const { plugin, file } = addCustomPlugin(opts);
+          console.log(`  ✓ Registered custom agent plugin: ${plugin.name} (${plugin.format})`);
+          console.log(`  → Registry: ${file}`);
+          if (plugin.configPath) console.log(`  → MCP config: ${plugin.configPath}`);
+          if (plugin.instructionPath) console.log(`  → Instructions: ${plugin.instructionPath}`);
+          console.log("  → Re-run `supercompress plugin` anytime to refresh all agents.");
+        } catch (err) {
+          console.error(`  ✗ ${err.message}`);
+          process.exit(1);
+        }
+        break;
+      }
+      if (sub === "rm" || sub === "remove") {
+        const id = process.argv[4];
+        if (!id) {
+          console.log("  Usage: supercompress agents rm <id>");
+          process.exit(1);
+        }
+        try {
+          const { removeCustomPlugin } = require("../src/agent-plugins");
+          const { removed } = removeCustomPlugin(id);
+          console.log(`  ✓ Removed plugin: ${removed.name}`);
+        } catch (err) {
+          console.error(`  ✗ ${err.message}`);
+          process.exit(1);
+        }
+        break;
+      }
+      const { AGENT_CATALOG, detectAll, agentPlugins } = require("../src/detector");
       const detected = new Map(detectAll().map((agent) => [agent.name, agent]));
       console.log(`  Supported coding agents (${AGENT_CATALOG.length} catalogued):`);
       for (const agent of AGENT_CATALOG) {
         const state = detected.get(agent.name);
         console.log(`    ${state ? "✓" : "·"} ${agent.name}${state ? ` — ${state.autoConfigurable ? "detected and configurable" : "detected; manual setup"}` : " — not detected"}`);
       }
+      const customs = agentPlugins.loadCustomPlugins();
+      if (customs.length) {
+        console.log("\n  Custom plugins:");
+        for (const p of customs) {
+          console.log(`    • ${p.name} (${p.id}) — ${p.format} → ${p.configPath}`);
+        }
+      }
       console.log("    ✓ Any new MCP-compatible client — use `supercompress-mcp`");
       console.log("\n  New or unlisted agent:");
-      console.log("    Point its OpenAI-compatible base URL to http://localhost:8080/v1");
-      console.log("    Or point its Anthropic-compatible base URL to http://localhost:8080");
-      console.log("    Then run `supercompress status` to verify the proxy.");
-      console.log("\n  Limits and upgrade status: run `supercompress status`.");
+      console.log("    supercompress agents add --name MyAgent --format mcp-json --config ~/.myagent/mcp.json");
+      console.log("    Or point its OpenAI-compatible base URL to http://localhost:8080/v1");
+      console.log("\n  Limits and upgrade status: run `supercompress usage`.");
+      break;
+    }
+
+    case "mcp-check": {
+      const { spawn } = require("child_process");
+      const mcpPath = path.join(__dirname, "../src/mcp.js");
+      const child = spawn(process.execPath, [mcpPath], {
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR },
+      });
+      let out = "";
+      let err = "";
+      child.stdout.on("data", (d) => { out += d; });
+      child.stderr.on("data", (d) => { err += d; });
+      const send = (obj) => child.stdin.write(JSON.stringify(obj) + "\n");
+      const timer = setTimeout(() => {
+        child.kill();
+        console.error("  ✗ MCP check timed out");
+        if (err) console.error(err.slice(0, 500));
+        process.exit(1);
+      }, 8000);
+      child.on("error", (e) => {
+        clearTimeout(timer);
+        console.error(`  ✗ Failed to start MCP: ${e.message}`);
+        process.exit(1);
+      });
+      send({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "supercompress-mcp-check", version: "1.0.0" },
+        },
+      });
+      const onData = () => {
+        if (!out.includes('"id":1') && !out.includes('"id": 1')) return;
+        child.stdout.off("data", onData);
+        send({ jsonrpc: "2.0", method: "notifications/initialized" });
+        send({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} });
+      };
+      child.stdout.on("data", onData);
+      const done = setInterval(() => {
+        if (!out.includes('"id":2') && !out.includes('"id": 2')) return;
+        clearInterval(done);
+        clearTimeout(timer);
+        child.kill();
+        try {
+          const lines = out.split("\n").filter(Boolean);
+          const listLine = lines.reverse().find((l) => l.includes("tools") && (l.includes('"id":2') || l.includes('"id": 2')));
+          const parsed = JSON.parse(listLine);
+          const tools = (parsed.result && parsed.result.tools) || [];
+          const names = tools.map((t) => t.name);
+          const need = ["compress_context", "connect_account", "usage_summary"];
+          const missing = need.filter((n) => !names.includes(n));
+          if (missing.length) {
+            console.error(`  ✗ MCP missing tools: ${missing.join(", ")}`);
+            process.exit(1);
+          }
+          console.log(`  ✓ MCP ok — tools: ${names.join(", ")}`);
+          if (/ready v/i.test(err)) console.log(`  → ${err.trim().split("\n").pop()}`);
+        } catch (e) {
+          console.error(`  ✗ MCP response parse failed: ${e.message}`);
+          console.error(out.slice(0, 800));
+          process.exit(1);
+        }
+      }, 50);
       break;
     }
 
@@ -337,13 +505,58 @@ function stopServer() {
   } catch {}
 }
 
-async function printUsageSummary(apiKey) {
-  if (!apiKey) {
-    console.log("  → No linked account found; usage summary unavailable.");
+async function printAccount() {
+  const config = loadConfig();
+  if (!config?.api_key) {
+    console.log("  ○ No linked account. Run `supercompress setup` or `supercompress connect`.");
     return;
   }
+  const data = await fetchJson(ME_URL, config.api_key);
+  console.log("  Connected SuperCompress account");
+  console.log(`  → Email: ${data.email || "(none)"}`);
+  if (data.display_name) console.log(`  → Name: ${data.display_name}`);
+  console.log(`  → Plan: ${data.plan_name || data.plan || "free"}`);
+  console.log(`  → UID: ${data.uid}`);
+  if (data.agent_plugin?.linked) {
+    console.log(`  → Coding agents: linked${data.agent_plugin.linked_at ? ` (${data.agent_plugin.linked_at})` : ""}`);
+  } else {
+    console.log("  → Coding agents: not linked yet (run setup / connect)");
+  }
+  if (config.connected_at) console.log(`  → This machine linked: ${config.connected_at}`);
+  console.log(`  → Key prefix: ${(config.api_key || "").slice(0, 16)}…`);
+  console.log(`  → Dashboard: ${data.dashboard_url || "https://www.supercompress.dev/dashboard"}`);
+  printPlanStatus(data);
 
-  const response = await fetch(USAGE_URL, {
+  try {
+    const log = await fetchJson(`${ACTIVITY_URL}?limit=5`, config.api_key);
+    const entries = log.entries || [];
+    if (entries.length) {
+      console.log("\n  Recent compress activity (previews only):");
+      for (const e of entries.slice(0, 5)) {
+        const pct = Number(e.tokens_saved_pct || 0);
+        console.log(
+          `    • ${e.at || "?"} · ${pct}% · ${formatNum(e.tokens_in)}→${formatNum(e.tokens_out)} · ${(e.query || "").slice(0, 60)}`
+        );
+      }
+      console.log("  → Full log: dashboard → Activity");
+    }
+  } catch (_) {
+    /* optional */
+  }
+}
+
+async function printAccountSummary(apiKey) {
+  if (!apiKey) return;
+  try {
+    const data = await fetchJson(ME_URL, apiKey);
+    console.log(`  → Account: ${data.email || data.uid || "linked"} (${data.plan_name || data.plan || "free"})`);
+  } catch (_) {
+    /* optional */
+  }
+}
+
+async function fetchJson(url, apiKey) {
+  const response = await fetch(url, {
     method: "GET",
     headers: { "X-API-Key": apiKey },
   });
@@ -351,9 +564,101 @@ async function printUsageSummary(apiKey) {
   if (!response.ok) {
     throw new Error(data.detail || `HTTP ${response.status}`);
   }
+  return data;
+}
+
+async function printUsageCommand(args = []) {
+  const jsonOut = args.includes("--json") || args.includes("-j");
+  const config = loadConfig();
+  if (!config?.api_key) {
+    console.log("  ○ No linked account. Run `supercompress setup` or `supercompress connect`.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const data = await fetchJson(USAGE_URL, config.api_key);
+  if (data.auth === "required" || data.ok === false) {
+    throw new Error(data.detail || "Authorization required — reconnect with `supercompress connect`");
+  }
+
+  if (jsonOut) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  console.log("  Usage");
+  printPlanStatus(data);
+
+  const saved = data.total_tokens_saved || 0;
+  const tokensIn = data.total_tokens_in || 0;
+  const tokensOut = data.total_tokens_out || 0;
+  const requests = data.total_requests || 0;
+  const savingsPct = tokensIn > 0 ? Math.round((saved / tokensIn) * 1000) / 10 : 0;
+
+  console.log("");
+  console.log("  Totals");
+  console.log(`  → Requests:      ${formatNum(requests)}`);
+  console.log(`  → Tokens in:     ${formatNum(tokensIn)}`);
+  console.log(`  → Tokens out:    ${formatNum(tokensOut)}`);
+  console.log(`  → Tokens saved:  ${formatNum(saved)}${tokensIn > 0 ? ` (−${savingsPct}%)` : ""}`);
+
+  if (data.payg_enabled && Number(data.billable_tokens || 0) > 0) {
+    console.log(`  → Billable:      ${formatNum(data.billable_tokens)} (~$${Number(data.estimated_overage_usd || 0).toFixed(2)})`);
+  }
+  if (data.credit_wallet) {
+    console.log(
+      `  → Credits:       $${Number(data.credit_balance_usd || 0).toFixed(2)} / $${Number(data.credit_limit_usd || 0).toFixed(2)} limit`
+    );
+  }
+
+  const entries = Object.entries(data.coding_agent_usage || {}).sort(
+    (a, b) => (b[1].tokens_saved || 0) - (a[1].tokens_saved || 0)
+  );
+  console.log("");
+  console.log("  By coding agent");
+  if (!entries.length) {
+    console.log("  → No compress activity yet. Run a coding agent with SuperCompress enabled.");
+  } else {
+    for (const [agent, snap] of entries) {
+      const inTok = snap.tokens_in || 0;
+      const savedTok = snap.tokens_saved || 0;
+      const pct = inTok > 0 ? Math.round((savedTok / inTok) * 1000) / 10 : 0;
+      console.log(
+        `    • ${agent}: ${formatNum(savedTok)} saved (−${pct}%), ${snap.requests || 0} req, ${formatNum(inTok)} → ${formatNum(snap.tokens_out || 0)}`
+      );
+    }
+  }
+
+  if (data.agent_plugin?.linked) {
+    console.log("");
+    console.log(
+      `  → Agent plugin linked${data.agent_plugin.linked_at ? ` (${data.agent_plugin.linked_at})` : ""}`
+    );
+  }
+
+  console.log("");
+  console.log("  → Dashboard: https://www.supercompress.dev/dashboard");
+  console.log("  → Tip: `supercompress usage --json` for machine-readable output");
+}
+
+async function printUsageSummary(apiKey, opts = {}) {
+  if (!apiKey) {
+    console.log("  → No linked account found; usage summary unavailable.");
+    return;
+  }
+
+  const data = await fetchJson(USAGE_URL, apiKey);
+  if (data.auth === "required" || data.ok === false) {
+    throw new Error(data.detail || "Authorization required");
+  }
 
   printPlanStatus(data);
-  console.log(`  → Saved ${formatNum(data.total_tokens_saved || 0)} tokens across ${Object.keys(data.coding_agent_usage || {}).length} coding agents`);
+  const agentCount = Object.keys(data.coding_agent_usage || {}).length;
+  console.log(
+    `  → Saved ${formatNum(data.total_tokens_saved || 0)} tokens across ${agentCount} coding agent${agentCount === 1 ? "" : "s"} (${formatNum(data.total_requests || 0)} requests)`
+  );
+  if (opts.compact) return;
+
   const entries = Object.entries(data.coding_agent_usage || {});
   if (!entries.length) {
     console.log("  → No per-agent usage yet.");
@@ -390,17 +695,27 @@ function formatNum(n) {
   return String(n);
 }
 
-async function waitForDeviceConnect(code, timeoutMs = 120000) {
+async function waitForDeviceConnect(code, timeoutMs = 180000) {
   const start = Date.now();
+  let lastTick = 0;
   while (Date.now() - start < timeoutMs) {
-    const res = await fetch(`https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`);
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.status === "linked" && data.secret) {
-      return data.secret;
+    try {
+      const res = await fetch(`https://www.supercompress.dev/api/connect-device?code=${encodeURIComponent(code)}`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.status === "linked" && data.secret) {
+        return data.secret;
+      }
+    } catch (_) {
+      /* keep polling */
+    }
+    const elapsed = Date.now() - start;
+    if (elapsed - lastTick >= 8000) {
+      lastTick = elapsed;
+      console.log(`  → Still waiting for browser link… (${Math.ceil((timeoutMs - elapsed) / 1000)}s left)`);
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
-  throw new Error("Timed out waiting for browser sign-in. Re-run `supercompress setup`.");
+  throw new Error("Timed out waiting for browser sign-in. Re-run `supercompress setup`, or paste a key from the dashboard.");
 }
 
 main().catch((err) => {

@@ -387,12 +387,10 @@ async function handleList(req, res) {
   try {
     const store = await loadStore();
     const affiliates = store.affiliates || {};
+    // Public list — no PII (email/website/audience). Founder admin view keeps full fields.
     const list = Object.values(affiliates).map((a) => ({
       id: a.id,
       name: a.name,
-      email: a.email,
-      website: a.website,
-      audience: a.audience,
       referral_slug: a.referral_slug,
       referral_link: a.referral_link,
       status: a.status,

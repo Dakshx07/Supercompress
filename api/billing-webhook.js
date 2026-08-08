@@ -1,12 +1,15 @@
 /**
  * POST /api/billing-webhook
- * Stripe webhook handler — processes checkout.completed, subscription.updated/deleted.
- * Separate from billing.js because it needs raw body parsing and no auth.
+ * Stripe webhook handler — credit top-ups, checkout.completed, subscription.updated/deleted.
  */
-const { getStripe, getPlanByPriceId } = require("./_lib/stripe");
-const { mutateStore } = require("./_lib/store");
-const { initFirebaseAdmin } = require("./_lib/auth");
-const admin = require("firebase-admin");
+const {
+  getStripe,
+  getPlanByPriceId,
+} = require("./_lib/stripe");
+const {
+  applyCreditTopUp,
+  persistSubscription,
+} = require("./_lib/credit-topup");
 
 module.exports.config = { api: { bodyParser: false } };
 
@@ -23,32 +26,6 @@ function readRawBody(req) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
-}
-
-async function updateBillingClaims(userId, data) {
-  if (!userId || !initFirebaseAdmin()) return;
-  const user = await admin.auth().getUser(userId);
-  await admin.auth().setCustomUserClaims(userId, {
-    ...(user.customClaims || {}),
-    sc_plan: data.plan_id || "free",
-    sc_subscription_status: data.status || "active",
-    sc_customer_id: data.stripe_customer_id || user.customClaims?.sc_customer_id || null,
-    sc_subscription_id: data.stripe_subscription_id || user.customClaims?.sc_subscription_id || null,
-  });
-}
-
-async function persistSubscription(userId, data) {
-  await updateBillingClaims(userId, data);
-  try {
-    await mutateStore((s) => {
-      if (!s.subscriptions) s.subscriptions = {};
-      s.subscriptions[userId] = { ...(s.subscriptions[userId] || {}), ...data };
-      return true;
-    });
-  } catch (err) {
-    if (err.status !== 503) throw err;
-    console.warn("Subscription saved to Firebase; Blob mirror unavailable:", err.message);
-  }
 }
 
 module.exports = async (req, res) => {
@@ -69,6 +46,12 @@ module.exports = async (req, res) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
+        const kind = session.metadata?.kind || "";
+        if (kind.startsWith("credit_")) {
+          await applyCreditTopUp(session);
+          break;
+        }
+
         const userId = session.metadata?.user_id;
         const planId = session.metadata?.plan_id;
         if (userId && planId) {
@@ -76,9 +59,23 @@ module.exports = async (req, res) => {
           let data = {};
           if (subscriptionId) {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
-            data = { stripe_subscription_id: sub.id, stripe_customer_id: session.customer, plan_id: planId, status: sub.status, current_period_start: new Date(sub.current_period_start * 1000).toISOString(), current_period_end: new Date(sub.current_period_end * 1000).toISOString(), updated_at: new Date().toISOString() };
+            data = {
+              stripe_subscription_id: sub.id,
+              stripe_customer_id: session.customer,
+              plan_id: planId,
+              status: sub.status,
+              sc_metered: planId === "payg",
+              current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+              updated_at: new Date().toISOString(),
+            };
           } else {
-            data = { stripe_customer_id: session.customer, plan_id: planId, status: "active", updated_at: new Date().toISOString() };
+            data = {
+              stripe_customer_id: session.customer,
+              plan_id: planId,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            };
           }
           await persistSubscription(userId, data);
         }
@@ -89,13 +86,10 @@ module.exports = async (req, res) => {
         const sub = event.data.object;
         const priceId = sub.items?.data?.[0]?.price?.id;
         let planId = sub.metadata?.plan_id || getPlanByPriceId(priceId)?.id || "free";
-        // Map any known paid price (incl. legacy starter/pro/business) to payg behavior
-        // while preserving legacy plan_id for existing fixed subs until they cancel.
         if (planId === "free" && priceId) {
           const mapped = getPlanByPriceId(priceId);
           if (mapped?.id && mapped.id !== "free") planId = mapped.id;
         }
-        // New metered price always → payg
         if (getPlanByPriceId(priceId)?.id === "payg") planId = "payg";
         const customer = await stripe.customers.retrieve(sub.customer);
         const userId = sub.metadata?.user_id || customer.metadata?.user_id;
@@ -105,6 +99,7 @@ module.exports = async (req, res) => {
             stripe_subscription_id: sub.id,
             plan_id: planId,
             status: sub.status,
+            sc_metered: planId === "payg",
             cancel_at_period_end: sub.cancel_at_period_end || false,
             current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
             current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
@@ -123,8 +118,30 @@ module.exports = async (req, res) => {
             stripe_subscription_id: sub.id,
             plan_id: "free",
             status: "canceled",
+            sc_metered: false,
             updated_at: new Date().toISOString(),
           });
+        }
+        break;
+      }
+      case "payment_intent.succeeded": {
+        // Auto-recharge credits balance when charged off-session (idempotent via PI id in credited list)
+        const pi = event.data.object;
+        if (pi.metadata?.kind === "credit_auto_recharge" && pi.metadata?.user_id) {
+          const fakeSession = {
+            id: `pi_${pi.id}`,
+            metadata: {
+              user_id: pi.metadata.user_id,
+              kind: "credit_auto_recharge",
+              credit_usd: pi.metadata.credit_usd,
+              auto_recharge: "true",
+            },
+            payment_status: "paid",
+            customer: pi.customer,
+            payment_intent: pi.id,
+            amount_total: pi.amount,
+          };
+          await applyCreditTopUp(fakeSession);
         }
         break;
       }
