@@ -97,6 +97,13 @@ if (!rootLock) {
   } else {
     console.log(`✅ Root package-lock.json supercompress-proxy resolved artifact matches ${proxyVersion}`);
   }
+
+  if (!lockedDep.integrity) {
+    console.error('❌ Missing integrity digest for supercompress-proxy in root package-lock.json');
+    hasErrors = true;
+  } else {
+    console.log('✅ Root package-lock.json supercompress-proxy integrity present');
+  }
 }
 
 if (hasErrors) {
