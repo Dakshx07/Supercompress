@@ -106,6 +106,30 @@ if (!rootLock) {
   }
 }
 
+// 5. Check public docs & site version pins
+const docChecks = [
+  { path: 'web/docs/coding-agents.html', expected: `v${proxyVersion}` },
+  { path: 'web/index.html', expected: `"softwareVersion": "${proxyVersion}"` },
+  { path: 'web/ai-search.json', expected: `supercompress-proxy@${proxyVersion}` },
+  { path: 'web/llms.txt', expected: `supercompress-proxy@${proxyVersion}` },
+];
+
+for (const check of docChecks) {
+  const fullPath = path.join(repoRoot, check.path);
+  if (!fs.existsSync(fullPath)) {
+    console.error(`❌ Could not find public docs file: ${check.path}`);
+    hasErrors = true;
+    continue;
+  }
+  const content = fs.readFileSync(fullPath, 'utf8');
+  if (!content.includes(check.expected)) {
+    console.error(`❌ Mismatch: ${check.path} does not contain expected version pin '${check.expected}'`);
+    hasErrors = true;
+  } else {
+    console.log(`✅ ${check.path} version pin matches '${check.expected}'`);
+  }
+}
+
 if (hasErrors) {
   console.error('\n❌ Version consistency check failed!');
   process.exit(1);

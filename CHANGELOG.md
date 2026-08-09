@@ -13,6 +13,59 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+- **Version consistency check**: `npm run check:version` and release gate checks for package & site version consistency.
+
+---
+
+## [0.5.14] — 2026-08-08
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Manifest & lockfile version alignment**: Synchronized root & package manifests and lockfiles to 0.5.14 with release consistency gates.
+
+---
+
+## [0.5.12] — 2026-08-08
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Security hardening**: Device-link pairing codes upgraded to 128-bit entropy.
+
+---
+
+## [0.5.11] — 2026-08-07
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **CLI `account` / `usage`**: Show linked account, plan/quota, and per-agent token savings (`supercompress usage [--json]`).
+- **Paywall handling**: Clearer error responses for free quota and credit limits.
+
+---
+
+## [0.5.10] — 2026-08-05
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Device reconnect fix**: Reconnect auto-rotates keys when at API plan limit.
+- **CLI setup**: Improved pairing wait, progress feedback, and manual key paste fallback.
+
+---
+
+## [0.5.9] — 2026-08-05
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Fast global install**: Removed heavy dependencies in favor of zero-dependency stdio JSON-RPC MCP server.
+- **Hermes & OpenClaw support**: Auto-wire MCP configuration across Hermes, OpenClaw, and McPorter agents.
+
+---
+
+## [0.5.8] — 2026-08-02
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Headroom parity**: Every-message auto-compress for Cursor, Claude, and Codex with query preservation.
+
 ---
 
 ## [0.5.7] — 2026-08-01
