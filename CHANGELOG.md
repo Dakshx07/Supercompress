@@ -17,11 +17,35 @@ Public page: https://www.supercompress.dev/changelog
 
 ---
 
+## [0.5.16] — 2026-08-09
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Site & documentation version sync**: Synchronized public docs and site npm version pins to 0.5.16.
+
+---
+
+## [0.5.15] — 2026-08-09
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Setup-first UX + Zed MCP auto-wire**: Simplified setup flow and added Zed editor MCP configuration support.
+
+---
+
 ## [0.5.14] — 2026-08-08
 
 ### Coding agent plugin (`supercompress-proxy`)
 
 - **Manifest & lockfile version alignment**: Synchronized root & package manifests and lockfiles to 0.5.14 with release consistency gates.
+
+---
+
+## [0.5.13] — 2026-08-08
+
+### Coding agent plugin (`supercompress-proxy`)
+
+- **Documentation & README updates**: Initial README rewrite and package documentation publish.
 
 ---
 

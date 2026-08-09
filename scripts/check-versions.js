@@ -109,6 +109,7 @@ if (!rootLock) {
 // 5. Check public docs & site version pins
 const docChecks = [
   { path: 'web/docs/coding-agents.html', expected: `v${proxyVersion}` },
+  { path: 'web/docs/coding-agents.html', expected: `# → ${proxyVersion}` },
   { path: 'web/index.html', expected: `"softwareVersion": "${proxyVersion}"` },
   { path: 'web/ai-search.json', expected: `supercompress-proxy@${proxyVersion}` },
   { path: 'web/llms.txt', expected: `supercompress-proxy@${proxyVersion}` },
