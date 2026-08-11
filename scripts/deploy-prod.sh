@@ -18,3 +18,8 @@ fi
 npm ci --omit=optional --ignore-scripts --no-audit --no-fund
 npm run release:check
 vercel deploy --prod --yes
+
+# Critical: api.supercompress.dev (and siblings) must stay aliased or the API
+# returns DEPLOYMENT_NOT_FOUND under wildcard DNS — total outage class.
+bash scripts/ensure-prod-domains.sh
+bash scripts/prod-smoke.sh
