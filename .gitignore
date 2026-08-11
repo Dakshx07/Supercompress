@@ -124,8 +124,6 @@ launch-video/
 .github-org-profile/
 .vercel.supercompress-final.bak/
 
-# Demo build output
-examples/yc-demo/out/
 scripts/cleanup-auth-stubs.js
 graphify-out/
 
