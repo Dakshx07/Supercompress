@@ -14,5 +14,8 @@
     "firebase-admin": "^13.10.0",
     "stripe": "^22.3.0",
     "supercompress-proxy": "^0.5.17"
+  },
+  "overrides": {
+    "ip-address": "10.3.1"
   }
 }
