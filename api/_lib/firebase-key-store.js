@@ -179,15 +179,45 @@ async function listKeys(ownerUid) {
     const owner = await ownerRecord(ownerUid);
     const claims = owner.customClaims || {};
     const month = new Date().toISOString().slice(0, 7);
-    const u = claims.sc_usage?.month === month ? claims.sc_usage : null;
-    if (u && ((u.tokens_in || 0) > 0 || (u.requests || 0) > 0)) {
-      account_usage = {
-        month,
-        requests: u.requests || 0,
-        tokens_in: u.tokens_in || 0,
-        tokens_out: u.tokens_out || 0,
-        tokens_saved: u.tokens_saved || 0,
-      };
+    // Prefer durable billing ledger (same source as compress paywall) over mirrored claims.
+    try {
+      const { loadLedger } = require("./billing-ledger");
+      const ledger = await loadLedger(ownerUid, claims);
+      if (ledger && String(ledger.month || "") === month) {
+        account_usage = {
+          month,
+          requests: Number(ledger.requests || 0),
+          tokens_in: Number(ledger.tokens_in || 0),
+          tokens_out: Number(ledger.tokens_out || 0),
+          tokens_saved: Number(ledger.tokens_saved || 0),
+        };
+      }
+    } catch (_) {
+      /* fall through to claims */
+    }
+    if (!account_usage) {
+      const u = claims.sc_usage?.month === month ? claims.sc_usage : null;
+      if (u && ((u.tokens_in || 0) > 0 || (u.requests || 0) > 0)) {
+        account_usage = {
+          month,
+          requests: u.requests || 0,
+          tokens_in: u.tokens_in || 0,
+          tokens_out: u.tokens_out || 0,
+          tokens_saved: u.tokens_saved || 0,
+        };
+      }
+    } else {
+      // Keep claims from under-reporting if they somehow raced ahead of ledger reads.
+      const u = claims.sc_usage?.month === month ? claims.sc_usage : null;
+      if (u) {
+        account_usage = {
+          month,
+          requests: Math.max(account_usage.requests, Number(u.requests || 0)),
+          tokens_in: Math.max(account_usage.tokens_in, Number(u.tokens_in || 0)),
+          tokens_out: Math.max(account_usage.tokens_out, Number(u.tokens_out || 0)),
+          tokens_saved: Math.max(account_usage.tokens_saved, Number(u.tokens_saved || 0)),
+        };
+      }
     }
   } catch (_) {}
 

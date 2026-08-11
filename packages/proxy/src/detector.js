@@ -137,6 +137,26 @@ function stripInstructionBlock(text) {
     .replace(/^\n+/, "");
 }
 
+function resolveNodeBin() {
+  // Prefer PATH `node` over Homebrew Cellar-pinned process.execPath — brew
+  // upgrades otherwise leave every agent MCP entry pointing at a deleted binary.
+  if (commandExists("node")) return "node";
+  return process.execPath;
+}
+
+/**
+ * Launch command for MCP stdio servers.
+ * Default: PATH `node` + this package's mcp.js (stable across brew upgrades;
+ * GUI apps like Cursor often lack npm global bins on PATH).
+ * Set preferShim for CLIs that reliably have `supercompress-mcp` on PATH.
+ */
+function resolveMcpLaunchCommand({ preferShim = false } = {}) {
+  if (preferShim && commandExists("supercompress-mcp")) {
+    return ["supercompress-mcp"];
+  }
+  return [resolveNodeBin(), MCP_SERVER_PATH];
+}
+
 function writeMcpJson(filePath) {
   let data = {};
   if (fs.existsSync(filePath)) {
@@ -147,9 +167,11 @@ function writeMcpJson(filePath) {
   // - no provider base-URL rewrite
   // - no broken "${SUPERCOMPRESS_API_KEY}" placeholder (Cursor does not expand it)
   // - MCP reads the linked account key from ~/.supercompress/config.json
+  // - launch via PATH bin / `node` so npm/brew upgrades keep auth working
+  const launch = resolveMcpLaunchCommand();
   data.mcpServers.supercompress = {
-    command: process.execPath,
-    args: [MCP_SERVER_PATH],
+    command: launch[0],
+    args: launch.slice(1),
     env: {
       SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR,
     },
@@ -199,14 +221,6 @@ function parseJsonc(text) {
     i += 1;
   }
   return JSON.parse(out);
-}
-
-function resolveMcpLaunchCommand() {
-  // Prefer the published bin on PATH so upgrades don't leave a stale absolute path.
-  if (commandExists("supercompress-mcp")) {
-    return ["supercompress-mcp"];
-  }
-  return [process.execPath, MCP_SERVER_PATH];
 }
 
 function writeOpenCodeMcp(filePath) {
@@ -450,10 +464,16 @@ function configureMcp() {
       fs.mkdirSync(path.dirname(codexPath), { recursive: true });
       backupFile(codexPath);
       let raw = fs.existsSync(codexPath) ? fs.readFileSync(codexPath, "utf8") : "";
+      const launch = resolveMcpLaunchCommand();
       const block =
         `[mcp_servers.supercompress]\n` +
-        `command = ${JSON.stringify(process.execPath)}\n` +
-        `args = [${JSON.stringify(MCP_SERVER_PATH)}]\n` +
+        `command = ${JSON.stringify(launch[0])}\n` +
+        (launch.length > 1
+          ? `args = [${launch
+              .slice(1)
+              .map((a) => JSON.stringify(a))
+              .join(", ")}]\n`
+          : `args = []\n`) +
         `[mcp_servers.supercompress.env]\n` +
         `SUPERCOMPRESS_CONFIG_DIR = ${JSON.stringify(CONFIG_DIR)}\n`;
       if (/^\[mcp_servers\.supercompress\]/m.test(raw)) {

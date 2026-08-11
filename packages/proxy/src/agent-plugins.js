@@ -48,18 +48,11 @@ function commandExists(cmd) {
   }
 }
 
-function resolveMcpLaunch({ preferAbsolute = true } = {}) {
-  // Prefer absolute node+mcp.js — agent hosts often lack npm global bins on PATH.
-  if (!preferAbsolute && commandExists("supercompress-mcp")) {
-    return { command: "supercompress-mcp", args: [] };
-  }
-  if (!preferAbsolute) {
-    // Still fall through to absolute when shim missing
-    if (commandExists("supercompress-mcp")) {
-      return { command: "supercompress-mcp", args: [] };
-    }
-  }
-  return { command: process.execPath, args: [MCP_SERVER_PATH] };
+function resolveMcpLaunch() {
+  // GUI agent hosts often lack npm global bins — use PATH `node` + this package mcp.js.
+  // Avoid Cellar-pinned process.execPath so brew Node upgrades don't force reconnect.
+  const nodeBin = commandExists("node") ? "node" : process.execPath;
+  return { command: nodeBin, args: [MCP_SERVER_PATH] };
 }
 
 function mcpEnv() {

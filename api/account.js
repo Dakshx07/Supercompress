@@ -83,7 +83,9 @@ function planUsage(owner, fallbackUsed = 0) {
   const plan = getPlan(claims.sc_plan || "free");
   const month = new Date().toISOString().slice(0, 7);
   const usage = claims.sc_usage?.month === month ? claims.sc_usage : {};
-  const used = usage.tokens_in || fallbackUsed || 0;
+  // Prefer the higher of mirrored claims vs caller-supplied ledger/agent totals so
+  // CLI/dashboard never under-report when one source lags.
+  const used = Math.max(Number(usage.tokens_in || 0), Number(fallbackUsed || 0));
   const payg = isPaygEnabled(plan.id);
   const unlimited = isComped(claims) || isLegacyMetered(claims);
   const freeRemaining = freeTokensRemaining(used);
@@ -312,51 +314,78 @@ async function handleUsage(req, res) {
 
   try {
     const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization) || (req.query && req.query.api_key);
+    let ownerUid;
+    let owner;
     if (raw && raw.startsWith(KEY_PREFIX)) {
       const authenticated = await authenticateKey(raw);
-      const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
-      const usage = await loadCodingAgentUsage(authenticated.ownerUid);
-      const agent_plugin = await loadAgentPluginLink(authenticated.ownerUid).catch(() => ({ linked: false }));
-      const total = Object.values(usage).reduce((acc, snap) => ({
+      ownerUid = authenticated.ownerUid;
+      owner = authenticated.owner;
+    } else {
+      const user = await verifyUser(req);
+      ownerUid = user.uid;
+      owner = await admin.auth().getUser(user.uid);
+    }
+
+    const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
+    const { loadLedger } = require("./_lib/billing-ledger");
+    const usage = await loadCodingAgentUsage(ownerUid);
+    const agent_plugin = await loadAgentPluginLink(ownerUid).catch(() => ({ linked: false }));
+    const agentTotal = Object.values(usage).reduce(
+      (acc, snap) => ({
         requests: acc.requests + (snap.requests || 0),
         tokens_in: acc.tokens_in + (snap.tokens_in || 0),
         tokens_out: acc.tokens_out + (snap.tokens_out || 0),
         tokens_saved: acc.tokens_saved + (snap.tokens_saved || 0),
-      }), { requests: 0, tokens_in: 0, tokens_out: 0, tokens_saved: 0 });
+      }),
+      { requests: 0, tokens_in: 0, tokens_out: 0, tokens_saved: 0 }
+    );
 
-      return json(res, 200, {
-        owner_uid: authenticated.ownerUid,
-        total_requests: total.requests,
-        total_tokens_in: total.tokens_in,
-        total_tokens_out: total.tokens_out,
-        total_tokens_saved: total.tokens_saved,
-        coding_agent_usage: normalizeAgentUsage(usage),
-        agent_plugin,
-        ...planUsage(authenticated.owner, total.tokens_in),
-      });
+    // Billing ledger is the same meter the dashboard KPIs prefer.
+    let ledger = null;
+    try {
+      ledger = await loadLedger(ownerUid, owner.customClaims || {});
+    } catch (_) {
+      ledger = null;
     }
+    const month = new Date().toISOString().slice(0, 7);
+    const ledgerMatchesMonth = ledger && String(ledger.month || "") === month;
+    const total_requests = Math.max(
+      Number(ledgerMatchesMonth ? ledger.requests : 0) || 0,
+      agentTotal.requests
+    );
+    const total_tokens_in = Math.max(
+      Number(ledgerMatchesMonth ? ledger.tokens_in : 0) || 0,
+      agentTotal.tokens_in
+    );
+    const total_tokens_out = Math.max(
+      Number(ledgerMatchesMonth ? ledger.tokens_out : 0) || 0,
+      agentTotal.tokens_out
+    );
+    const total_tokens_saved = Math.max(
+      Number(ledgerMatchesMonth ? ledger.tokens_saved : 0) || 0,
+      agentTotal.tokens_saved
+    );
 
-    const user = await verifyUser(req);
-    const { loadCodingAgentUsage, loadAgentPluginLink } = require("./_lib/store");
-    const usage = await loadCodingAgentUsage(user.uid);
-    const agent_plugin = await loadAgentPluginLink(user.uid).catch(() => ({ linked: false }));
-    const total = Object.values(usage).reduce((acc, snap) => ({
-      requests: acc.requests + (snap.requests || 0),
-      tokens_in: acc.tokens_in + (snap.tokens_in || 0),
-      tokens_out: acc.tokens_out + (snap.tokens_out || 0),
-      tokens_saved: acc.tokens_saved + (snap.tokens_saved || 0),
-    }), { requests: 0, tokens_in: 0, tokens_out: 0, tokens_saved: 0 });
-
-    const owner = await admin.auth().getUser(user.uid);
     return json(res, 200, {
-      owner_uid: user.uid,
-      total_requests: total.requests,
-      total_tokens_in: total.tokens_in,
-      total_tokens_out: total.tokens_out,
-      total_tokens_saved: total.tokens_saved,
+      owner_uid: ownerUid,
+      total_requests,
+      total_tokens_in,
+      total_tokens_out,
+      total_tokens_saved,
       coding_agent_usage: normalizeAgentUsage(usage),
+      coding_agent_totals: agentTotal,
+      account_usage: ledgerMatchesMonth
+        ? {
+            month,
+            requests: Number(ledger.requests || 0),
+            tokens_in: Number(ledger.tokens_in || 0),
+            tokens_out: Number(ledger.tokens_out || 0),
+            tokens_saved: Number(ledger.tokens_saved || 0),
+          }
+        : null,
+      meter: ledgerMatchesMonth ? "billing_ledger" : "coding_agent",
       agent_plugin,
-      ...planUsage(owner, total.tokens_in),
+      ...planUsage(owner, total_tokens_in),
     });
   } catch (err) {
     // Unauthenticated scanner GETs — soft 200 so Observability error rate stays honest.

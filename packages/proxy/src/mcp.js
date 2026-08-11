@@ -180,6 +180,10 @@ async function handleToolCall(name, args = {}) {
           total_tokens_in: body.total_tokens_in,
           total_tokens_out: body.total_tokens_out,
           total_tokens_saved: body.total_tokens_saved,
+          tokens_used_this_period: body.tokens_used_this_period,
+          free_tokens_remaining: body.free_tokens_remaining,
+          meter: body.meter || null,
+          account_usage: body.account_usage || null,
           coding_agent_usage: body.coding_agent_usage,
         })
       );

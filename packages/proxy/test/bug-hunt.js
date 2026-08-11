@@ -105,15 +105,20 @@ async function main() {
     fail("coding-agent usage uses dedicated tracker", e.message);
   }
 
-  // 5) Live MCP paths all point at this package
+  // 5) Live MCP paths all point at this package (PATH `node`, not Cellar-pinned execPath)
   try {
     const expected = path.join(ROOT, "src/mcp.js");
     const cursor = JSON.parse(fs.readFileSync(path.join(HOME, ".cursor/mcp.json"), "utf8"));
+    assert.equal(cursor.mcpServers.supercompress.command, "node");
     assert.ok(cursor.mcpServers.supercompress.args.includes(expected));
     const fb = JSON.parse(fs.readFileSync(path.join(HOME, ".agents/mcp.json"), "utf8"));
+    assert.equal(fb.mcpServers.supercompress.command, "node");
     assert.ok(fb.mcpServers.supercompress.args.includes(expected));
     const oc = JSON.parse(fs.readFileSync(path.join(HOME, ".config/opencode/opencode.jsonc"), "utf8"));
-    assert.ok(oc.mcp.supercompress.command.includes(expected));
+    const ocCmd = oc.mcp.supercompress.command;
+    assert.ok(Array.isArray(ocCmd), "OpenCode command must be an array");
+    assert.equal(ocCmd[0], "node");
+    assert.ok(ocCmd.includes(expected));
     pass("Cursor/FreeBuff/OpenCode MCP paths are current");
   } catch (e) {
     fail("Cursor/FreeBuff/OpenCode MCP paths are current", e.message);
