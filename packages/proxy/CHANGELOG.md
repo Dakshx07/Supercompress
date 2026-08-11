@@ -4,6 +4,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+- Hook `Idempotency-Key` includes normalized **query** (avoids 409 when context reused for a new task).
+- Partial chunk failure no longer marks session hashes seen; OpenClaw/Cursor feed full dumps into the chunker (1.2M soft cap, not 180k hard clip).
+- OpenClaw skips inbox compress when no session/conversation id (no shared cwd fallback).
 - **OpenClaw auto-compress parity with Hermes**: setup/plugin installs MCP + `AGENTS.md` + managed skill + internal hooks + extension plugin (tool dumps → inbox); uninstall cleans them.
 - **Session-scoped inbox** (`inbox/<sessionId>/`) + `SUPERCOMPRESS_CONFIG_DIR` for OpenClaw plugin/hooks (no global `latest.md` cross-session leak).
 - Exact OpenClaw plugin path match on install/uninstall (no substring deletes).

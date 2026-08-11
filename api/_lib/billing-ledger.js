@@ -8,7 +8,7 @@
  * Firestore:
  *   billing/{uid}                    — monthly usage + wallet balance
  *   billing_credits/{creditKey}      — permanent Stripe session / PI idempotency
- *   billing_usage/{uid}:{requestId}  — per-request usage burn idempotency
+ *   billing_usage/{uid}:{requestId}  — per-request usage burn + compress response replay
  *   billing_bonus/{uid}:first_pay    — one-time first-pay bonus create-once
  */
 const { initFirebaseAdmin } = require("./auth");
@@ -337,6 +337,48 @@ function sanitizeRequestId(raw) {
  * returns idempotency_conflict (409) instead of already:true.
  * Throws paywall / billing_unavailable — never silently under-charges.
  */
+/** Cap stored replay payloads (Firestore 1 MiB doc limit; leave headroom). */
+const MAX_REPLAY_TEXT_CHARS = 400_000;
+
+function sanitizeReplayResponse(response) {
+  if (!response || typeof response !== "object") return null;
+  const text = String(response.compressed_text || "").slice(0, MAX_REPLAY_TEXT_CHARS);
+  if (!text) return null;
+  return {
+    compressed_text: text,
+    original_tokens: Number(response.original_tokens) || 0,
+    kept_tokens: Number(response.kept_tokens) || 0,
+    tokens_saved: Number(response.tokens_saved) || 0,
+    tokens_saved_pct: Number(response.tokens_saved_pct) || 0,
+    kv_savings_pct: Number(response.kv_savings_pct) || 0,
+    mode: response.mode || null,
+    policy_name: response.policy_name || null,
+    keep_ratio: response.keep_ratio ?? null,
+    coding_agent: response.coding_agent || null,
+    source: response.source || null,
+    cache_prefix_applied: Boolean(response.cache_prefix_applied),
+    ccr: response.ccr || null,
+    latency_ms: Number(response.latency_ms) || 0,
+  };
+}
+
+/**
+ * Lookup a prior compress billing row for Idempotency-Key replay.
+ * @returns {Promise<object|null>}
+ */
+async function lookupUsageReplay(uid, requestId) {
+  const rid = sanitizeRequestId(requestId);
+  if (!uid || !rid || !initFirebaseAdmin()) return null;
+  try {
+    const snap = await db().collection("billing_usage").doc(`${uid}:${rid}`).get();
+    if (!snap.exists) return null;
+    return snap.data() || null;
+  } catch (err) {
+    console.warn("lookupUsageReplay failed:", err?.message || err);
+    return null;
+  }
+}
+
 async function applyUsageAndBurn({
   uid,
   tokensIn,
@@ -345,6 +387,7 @@ async function applyUsageAndBurn({
   claims = {},
   requestId,
   fingerprint,
+  response = null,
 }) {
   if (!uid) throw new Error("uid required");
   const rid = sanitizeRequestId(requestId);
@@ -352,6 +395,7 @@ async function applyUsageAndBurn({
     throw billingError("billing_unavailable", "Billing request id required");
   }
   const fp = String(fingerprint || "").trim() || null;
+  const replay = sanitizeReplayResponse(response);
   if (!initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
@@ -372,12 +416,17 @@ async function applyUsageAndBurn({
         tokensOut,
         tokensSaved,
       });
+      // Backfill response on legacy rows that billed before replay storage existed.
+      if (replay && !prev.response) {
+        tx.set(usageRef, { response: replay }, { merge: true });
+      }
       return {
         burned_micros: Number(prev.burned_micros || 0),
         ledger,
         already: true,
         request_id: rid,
         fingerprint: prev.fingerprint || fp || null,
+        response: prev.response || replay || null,
       };
     }
 
@@ -394,10 +443,17 @@ async function applyUsageAndBurn({
         tokens_saved: Number(tokensSaved) || 0,
         burned_micros: planned.burned_micros,
         created_at: new Date().toISOString(),
+        ...(replay ? { response: replay } : {}),
       },
       { merge: false }
     );
-    return { ...planned, already: false, request_id: rid, fingerprint: fp };
+    return {
+      ...planned,
+      already: false,
+      request_id: rid,
+      fingerprint: fp,
+      response: replay,
+    };
   });
 
   if (!result.already) {
@@ -584,6 +640,8 @@ async function markTokensReported(uid, tokensReported, claims = {}) {
 module.exports = {
   loadLedger,
   applyUsageAndBurn,
+  lookupUsageReplay,
+  sanitizeReplayResponse,
   creditBalance,
   acquireRechargeLock,
   markTokensReported,

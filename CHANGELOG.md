@@ -14,22 +14,17 @@ Public page: https://www.supercompress.dev/changelog
 ## [Unreleased]
 
 ### Site / docs
+- Product mail campaign copy lives in private GitHub `Supercompress/email-campaigns` (not OSS); loaders read Vercel env / local mirror
 - Product mail (welcome + Sunday tip + Wednesday ship) sends from Resend on `hello@supercompress.dev`; Ideatrusa/gog drains paused offline
 - Remove weekly tip/ship campaign JSON from the OSS tree (private content dir + `WEEKLY_*_JSON` env)
 - Sync public npm pins to `supercompress-proxy@0.5.17`; extend `check-versions.js` to gate those pins
 - Remove leftover Analytics spark DOM + unused series helpers from dashboard
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
-### Python library
-- Shared `CompressResult` for local + hosted client (`supercompress.result`)
-- Honest `mode="precision"` (hosted API when keyed; otherwise raises)
-- Validate `budget_ratio` in `(0, 1]`; empty context returns `noop`
-- Stop appending the user query onto local `compressed_text`
-- Remove import-time warning when no API key is set
-- Fix OpenAI / LangChain / Anthropic integration examples and middleware contracts
-- `serve` extra installs FastAPI + Uvicorn (not Flask/Gunicorn); add `py.typed`
-
 ### API / dashboard
+- Idempotent compress: replay stored response for same Idempotency-Key + fingerprint (no free recompute)
+- Durable IP rate limit counts each client key (not payload fingerprint alone)
+- Billing idempotency ignores `X-Request-Id` (tracing ≠ Idempotency-Key)
 - Durable per-key usage metering + dashboard KPI preference for billing meter
 - Remove dead store Auth-stub helpers; CCR uses Firestore (docs match)
 - Fix demo CO₂ grams over-count (`×1000` bug)

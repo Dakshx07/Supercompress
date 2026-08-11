@@ -401,6 +401,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
       claims: ownerClaims,
       requestId,
       fingerprint,
+      response: opts.response || null,
     });
   } catch (err) {
     // Positive-but-insufficient balance: recharge once, retry same request id.
@@ -428,6 +429,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
             claims: owner.customClaims || ownerClaims,
             requestId,
             fingerprint,
+            response: opts.response || null,
           });
         } else {
           throw err;

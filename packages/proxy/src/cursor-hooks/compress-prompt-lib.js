@@ -26,6 +26,8 @@ const COMPACT_CHARS = Number(process.env.SUPERCOMPRESS_COMPACT_CHARS || 24000);
 const MAX_SEEN = Number(process.env.SUPERCOMPRESS_MAX_SEEN || 500);
 /** Hosted API hard cap — chunk above this rather than 422. */
 const API_MAX_CHARS = Number(process.env.SUPERCOMPRESS_API_MAX_CHARS || 120000);
+/** Deliberate total cap after chunking (hooks feed full dumps; do not pre-truncate to 180k). */
+const HOOK_TOTAL_MAX_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 1_200_000);
 
 function loadApiKey() {
   const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
@@ -148,7 +150,7 @@ function fullHash(text) {
 }
 
 /** Stable Idempotency-Key so hook timeouts can safely retry without double-billing. */
-function stableIdempotencyKey({ sessionId, context, mode }) {
+function stableIdempotencyKey({ sessionId, context, mode, query }) {
   const h = crypto
     .createHash("sha256")
     .update(String(sessionId || ""))
@@ -156,11 +158,17 @@ function stableIdempotencyKey({ sessionId, context, mode }) {
     .update(fullHash(context))
     .update("\0")
     .update(String(mode || "compiler"))
+    .update("\0")
+    .update(fullHash(String(query || "").trim().toLowerCase()))
     .digest("hex")
     .slice(0, 40);
   return `sc_${h}`;
 }
 
+/**
+ * Resolve a session bucket for inbox / memory.
+ * @param {{ fallback?: "cwd"|"ephemeral"|"none" }} [input]
+ */
 function resolveSessionId(input = {}) {
   const raw =
     input.session_id ||
@@ -171,6 +179,11 @@ function resolveSessionId(input = {}) {
     process.env.SUPERCOMPRESS_SESSION_ID ||
     "";
   if (raw) return String(raw).replace(/[^\w.-]+/g, "_").slice(0, 80);
+  const fallback = String(input.fallback || "cwd").toLowerCase();
+  if (fallback === "none") return null;
+  if (fallback === "ephemeral") {
+    return `ephemeral_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+  }
   const cwd = String(input.cwd || process.env.CURSOR_PROJECT_DIR || process.cwd() || "default");
   return `cwd_${hashText(cwd)}`;
 }
@@ -293,6 +306,7 @@ async function compressOnce(context, query, codingAgent, opts = {}) {
     sessionId: opts.sessionId,
     context,
     mode: "compiler",
+    query,
   });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 14000);
@@ -360,7 +374,9 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   const apiKey = loadApiKey();
   if (!apiKey) return { compressed: ctx, skipped: "no_key" };
 
-  const chunks = chunkText(ctx, API_MAX_CHARS);
+  const bounded =
+    ctx.length > HOOK_TOTAL_MAX_CHARS ? ctx.slice(0, HOOK_TOTAL_MAX_CHARS) : ctx;
+  const chunks = chunkText(bounded, API_MAX_CHARS);
   if (chunks.length === 1) {
     return compressOnce(chunks[0], q, codingAgent, opts);
   }
@@ -369,6 +385,8 @@ async function compressContext(context, query, codingAgent, opts = {}) {
   let totalIn = 0;
   let totalOut = 0;
   let lastSkip = null;
+  let okChunks = 0;
+  let failedChunks = 0;
   for (let i = 0; i < chunks.length; i++) {
     const partQuery = `${q} (part ${i + 1}/${chunks.length})`;
     const r = await compressOnce(chunks[i], partQuery, codingAgent, {
@@ -384,26 +402,34 @@ async function compressContext(context, query, codingAgent, opts = {}) {
       String(r.skipped || "").startsWith("http_")
     ) {
       lastSkip = r.skipped || "error";
+      failedChunks += 1;
       // Keep raw chunk so we do not drop context on partial failure.
       parts.push(chunks[i]);
       totalIn += Math.round(chunks[i].length / 4);
       totalOut += Math.round(chunks[i].length / 4);
       continue;
     }
+    okChunks += 1;
     parts.push(r.compressed);
     totalIn += r.original_tokens || Math.round(chunks[i].length / 4);
     totalOut += r.compressed_tokens || Math.round(r.compressed.length / 4);
   }
   const compressed = parts.join("\n\n");
   const pct = totalIn > 0 ? Math.round(((totalIn - totalOut) / totalIn) * 100) : 0;
+  const partial = okChunks > 0 && failedChunks > 0;
+  const allFailed = okChunks === 0 && failedChunks > 0;
   return {
     compressed,
     original_tokens: totalIn,
     compressed_tokens: totalOut,
     savings_pct: pct,
-    skipped: lastSkip && parts.every((p, i) => p === chunks[i]) ? lastSkip : null,
+    // Only treat as total skip when every chunk failed — partial stays retryable upstream.
+    skipped: allFailed ? lastSkip || "error" : partial ? "partial_chunk_failure" : null,
+    partial,
     chunked: true,
     chunks: chunks.length,
+    chunks_ok: okChunks,
+    chunks_failed: failedChunks,
   };
 }
 
@@ -447,14 +473,16 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
 
   if (
     !deltaResult.compressed ||
+    deltaResult.partial ||
     deltaResult.skipped === "empty" ||
     deltaResult.skipped === "too_small" ||
     deltaResult.skipped === "no_key" ||
     deltaResult.skipped === "timeout" ||
     deltaResult.skipped === "error" ||
+    deltaResult.skipped === "partial_chunk_failure" ||
     String(deltaResult.skipped || "").startsWith("http_")
   ) {
-    // Do not markSeen on timeout/error — temporary outages must remain retryable.
+    // Do not markSeen on timeout/error/partial — failed slices must remain retryable.
     return { ...deltaResult, session_id: sid, compacted: false, delta: "" };
   }
 

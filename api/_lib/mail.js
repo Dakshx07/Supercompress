@@ -4,10 +4,12 @@
  *   WELCOME_FROM_EMAIL (default hello@supercompress.dev on verified Resend domain)
  *   WELCOME_REPLY_TO (default founder Gmail)
  *
- * Campaign copy is NOT in the OSS tree. Load order:
- *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel)
+ * Campaign copy is NOT in the OSS tree. Canonical private repo:
+ *   https://github.com/Supercompress/email-campaigns
+ * Load order:
+ *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel; sync from that repo)
  *   2. SUPERCOMPRESS_EMAIL_CONTENT_DIR/{weekly-tips,weekly-ship}.json
- *   3. ~/agent-bridge/private/supercompress-email/content/ (local ops)
+ *   3. ~/agent-bridge/private/supercompress-email/content/ (local mirror)
  *   4. Minimal fallback seed + CHANGELOG-derived ship bullets
  */
 

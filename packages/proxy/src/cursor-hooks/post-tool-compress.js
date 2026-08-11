@@ -15,7 +15,8 @@ const {
 } = require("./compress-prompt-lib");
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
-const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 180000);
+/** Soft total cap — shared lib chunks to API 120k (do not pre-clip to 180k). */
+const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 1_200_000);
 
 function extractText(toolOutput) {
   if (toolOutput == null) return "";
@@ -75,7 +76,7 @@ process.stdin.on("end", async () => {
     if (!text) text = extractText(input.response);
     if (text.length < MIN_CHARS) return empty();
 
-    const clipped = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
+    const bounded = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
     const agentHint = resolveAgentHint(input);
     const sessionId = resolveSessionId(input);
 
@@ -84,7 +85,7 @@ process.stdin.on("end", async () => {
       "Preserve code, paths, errors, numbers, and decisions.";
 
     const result = await compressIncremental({
-      context: clipped,
+      context: bounded,
       query,
       codingAgent: agentHint,
       sessionId,
