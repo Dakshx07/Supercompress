@@ -821,13 +821,6 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
 }
 
 /**
- * Project agent docs onto a single billing month.
- * Legacy docs without `months` only count if last_seen falls in that month
- * (avoids September inheriting August lifetime totals).
- */
-const { agentUsageForMonth } = require("./coding-agent-usage");
-
-/**
  * Cursor postToolUse used to default coding_agent to "Claude Code" whenever the
  * hook payload had session_id/cwd (Cursor always does). Those rows look like
  * claude_code + last_source tool_shell|tool_read|… Merge them into cursor.
