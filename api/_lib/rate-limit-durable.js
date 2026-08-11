@@ -5,7 +5,8 @@
  * cold start, so scrapers / demo abusers can burn through invocation quotas.
  * Firestore gives a shared counter across instances.
  *
- * Fail-open to in-memory if Firebase is down (prefer serving over hard-down).
+ * For authenticated paid endpoints, callers should treat backend !== "firestore"
+ * as fail-closed (reject) so multi-instance fans-out cannot bypass the ceiling.
  */
 const crypto = require("crypto");
 const admin = require("firebase-admin");
@@ -40,8 +41,14 @@ async function checkDurableRateLimit(key, maxRequests, windowMs = 60_000) {
   const resetMs = Math.ceil(Date.now() / windowMs) * windowMs;
   const firestore = db();
   if (!firestore) {
-    const local = checkRateLimit(key, maxRequests, windowMs);
-    return { ...local, backend: "memory" };
+    return {
+      allowed: false,
+      remaining: 0,
+      resetMs,
+      limit: maxRequests,
+      backend: "firestore-unavailable",
+      error: "firebase_unavailable",
+    };
   }
 
   const id = bucketId(key, windowMs);
@@ -81,9 +88,15 @@ async function checkDurableRateLimit(key, maxRequests, windowMs = 60_000) {
       backend: "firestore",
     };
   } catch (err) {
-    console.warn("durable rate limit fallback", err?.message || err);
-    const local = checkRateLimit(key, maxRequests, windowMs);
-    return { ...local, backend: "memory-fallback" };
+    console.warn("durable rate limit unavailable", err?.message || err);
+    return {
+      allowed: false,
+      remaining: 0,
+      resetMs,
+      limit: maxRequests,
+      backend: "firestore-unavailable",
+      error: err?.message || "firestore_unavailable",
+    };
   }
 }
 

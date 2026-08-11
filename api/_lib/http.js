@@ -82,9 +82,23 @@ function parseFormEncoded(str) {
  * and form-encoded (application/x-www-form-urlencoded) cases.
  * Returns parsed object, or throws 413 if body exceeds MAX_BODY_BYTES.
  */
+function estimateBodyBytes(value) {
+  try {
+    return Buffer.byteLength(JSON.stringify(value), "utf8");
+  } catch {
+    return MAX_BODY_BYTES + 1;
+  }
+}
+
 function readBody(req) {
   // Vercel serverless parses JSON bodies before the handler — req.body is already an object
   if (typeof req.body === "object" && req.body !== null && !Array.isArray(req.body)) {
+    const bytes = estimateBodyBytes(req.body);
+    if (bytes > MAX_BODY_BYTES) {
+      const err = new Error(`Request body too large (max ${MAX_BODY_BYTES / 1000}KB)`);
+      err.status = 413;
+      throw err;
+    }
     return req.body;
   }
   // Raw string body (bodyParser disabled or non-JSON content type)

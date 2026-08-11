@@ -168,25 +168,39 @@ async function handleGet(req, res, user) {
   let tokensUsedThisPeriod = 0;
   let requestsThisPeriod = 0;
 
-  const keys = store.keys || {};
-  const usage = store.usage || {};
-  for (const [keyId, keyRec] of Object.entries(keys)) {
-    if (keyRec && keyRec.user_id === user.uid && !keyRec.revoked) {
-      const keyUsage = usage[keyId] || {};
-      for (const [day, rec] of Object.entries(keyUsage)) {
-        if (rec && new Date(day + "T00:00:00Z") >= periodStart) {
-          tokensUsedThisPeriod += rec.tokens_in || 0;
-          requestsThisPeriod += rec.requests || 0;
+  // Prefer transactional billing ledger (source of truth) over store/claims mirrors.
+  try {
+    const { loadLedger, microsToUsd } = require("./_lib/billing-ledger");
+    const ledger = await loadLedger(user.uid, claims);
+    tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
+    requestsThisPeriod = Number(ledger.requests || 0);
+    if (ledger.credit_balance_micros != null) {
+      claims.sc_credit_balance_usd = roundUsd(microsToUsd(ledger.credit_balance_micros));
+    }
+    if (ledger.credit_limit_usd != null) claims.sc_credit_limit_usd = ledger.credit_limit_usd;
+    if (ledger.auto_recharge != null) claims.sc_auto_recharge = Boolean(ledger.auto_recharge);
+  } catch (err) {
+    console.warn("billing ledger read skipped:", err.message || err);
+    const keys = store.keys || {};
+    const usage = store.usage || {};
+    for (const [keyId, keyRec] of Object.entries(keys)) {
+      if (keyRec && keyRec.user_id === user.uid && !keyRec.revoked) {
+        const keyUsage = usage[keyId] || {};
+        for (const [day, rec] of Object.entries(keyUsage)) {
+          if (rec && new Date(day + "T00:00:00Z") >= periodStart) {
+            tokensUsedThisPeriod += rec.tokens_in || 0;
+            requestsThisPeriod += rec.requests || 0;
+          }
         }
       }
     }
-  }
-  if (tokensUsedThisPeriod === 0 && requestsThisPeriod === 0) {
-    const claimUsage = claims.sc_usage;
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    if (claimUsage?.month === currentMonth) {
-      tokensUsedThisPeriod = claimUsage.tokens_in || 0;
-      requestsThisPeriod = claimUsage.requests || 0;
+    if (tokensUsedThisPeriod === 0 && requestsThisPeriod === 0) {
+      const claimUsage = claims.sc_usage;
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      if (claimUsage?.month === currentMonth) {
+        tokensUsedThisPeriod = claimUsage.tokens_in || 0;
+        requestsThisPeriod = claimUsage.requests || 0;
+      }
     }
   }
 

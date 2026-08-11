@@ -37,7 +37,15 @@ async function enforceUsageLimit(owner) {
   }
 
   const { loadLedger, microsToUsd } = require("../_lib/billing-ledger");
-  const ledger = await loadLedger(owner.uid, claims);
+  let ledger;
+  try {
+    ledger = await loadLedger(owner.uid, claims);
+  } catch (err) {
+    const e = new Error("Billing unavailable — try again shortly.");
+    e.status = 503;
+    e.code = "billing_unavailable";
+    throw e;
+  }
   const tokensUsedThisPeriod = Number(ledger.tokens_in || 0);
 
   if (tokensUsedThisPeriod < FREE_TOKENS_PER_MONTH) return;
@@ -121,30 +129,32 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+function stripRetrieveMarkers(text) {
+  return String(text || "")
+    .replace(/\[SC-Retrieve:\s*[^\]]+\]/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
-  if (req.method !== "POST" && req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+  // Compression is POST-only — never accept API keys or context in query strings.
+  if (req.method === "GET") {
+    return json(res, 405, {
+      ok: false,
+      detail: "Use POST /api/v1/compress with X-API-Key (or Authorization: Bearer). Query-string keys/context are not supported.",
+      allow: "POST",
+    });
+  }
+  if (req.method !== "POST") return json(res, 405, { detail: "Method not allowed" });
 
   const requestStarted = Date.now();
   // Leave headroom under function maxDuration (60s for this route) for response flush.
   const HARD_BUDGET_MS = 55_000;
 
   try {
-    // Support API key from: X-API-Key header, Authorization Bearer, or ?api_key query param
-    const raw = req.headers["x-api-key"]
-      || bearerToken(req.headers.authorization)
-      || (req.query && req.query.api_key);
+    const raw = req.headers["x-api-key"] || bearerToken(req.headers.authorization);
     if (!raw || !raw.startsWith(KEY_PREFIX)) {
-      // Scanners often GET /api/v1/compress. Soft 200 keeps Observability error rate
-      // from spiking; real clients use POST + key and still get hard 401.
-      if (req.method === "GET") {
-        return json(res, 200, {
-          ok: false,
-          auth: "required",
-          service: "supercompress",
-          detail: "Pass X-API-Key (sc_live_…) to compress. Prefer POST /api/v1/compress.",
-        });
-      }
       return json(res, 401, { detail: "Missing or invalid API key" });
     }
 
@@ -165,9 +175,17 @@ module.exports = async (req, res) => {
         2000,
         "rate_limit"
       );
-    } catch (_) {
-      rl = checkRateLimit(`v1ip:h:${ip}`, V1_IP_HOURLY, 60 * 60_000);
-      rl.backend = "memory-deadline";
+    } catch (err) {
+      return json(res, 503, {
+        detail: "Rate limit service unavailable. Retry shortly.",
+        code: "rate_limit_unavailable",
+      });
+    }
+    if (rl.backend && rl.backend !== "firestore") {
+      return json(res, 503, {
+        detail: "Rate limit service unavailable. Retry shortly.",
+        code: "rate_limit_unavailable",
+      });
     }
     if (!rl.allowed) {
       return jsonWithRateLimit(res, 429, {
@@ -179,32 +197,17 @@ module.exports = async (req, res) => {
     rl.remaining = Math.min(rl.remaining, rlMem.remaining);
     rl.limit = V1_RPM;
 
-    // Read input outside mutateStore to avoid await inside sync callback
-    let context, query, mode, budgetRatio, ccr, cache_prefix, coding_agent, skipLog, source, session_id;
-    if (req.method === "GET") {
-      context = (req.query && req.query.context) || "";
-      query = (req.query && req.query.query) || "Summarize this context.";
-      mode = (req.query && req.query.mode) || "compiler";
-      budgetRatio = mode === "fixed" ? parseFloat(req.query.budget_ratio || "0.35") : 0.35;
-      ccr = (req.query && req.query.ccr === "true");
-      cache_prefix = (req.query && req.query.cache_prefix === "true");
-      coding_agent = (req.query && req.query.coding_agent) || null;
-      skipLog = req.query && (req.query.log === "0" || req.query.log === "false");
-      source = (req.query && req.query.source) || null;
-      session_id = (req.query && req.query.session_id) || null;
-    } else {
-      const body = readBody(req);
-      context = body.context || "";
-      query = body.query || "Summarize this context.";
-      mode = body.mode || "compiler";
-      budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
-      ccr = body.ccr === true || body.ccr === "true";
-      cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
-      coding_agent = body.coding_agent || null;
-      skipLog = body.log === false || body.log === "false";
-      source = body.source || null;
-      session_id = body.session_id || null;
-    }
+    const body = readBody(req);
+    const context = body.context || "";
+    const query = body.query || "Summarize this context.";
+    const mode = body.mode || "compiler";
+    const budgetRatio = mode === "fixed" ? (body.budget_ratio ?? 0.35) : 0.35;
+    const ccr = body.ccr === true || body.ccr === "true";
+    const cache_prefix = body.cache_prefix === true || body.cache_prefix === "true";
+    const coding_agent = body.coding_agent || null;
+    const skipLog = body.log === false || body.log === "false";
+    const source = body.source || null;
+    const session_id = body.session_id || null;
 
     if (!context.trim()) {
       return json(res, 422, { detail: "context required" });
@@ -229,7 +232,7 @@ module.exports = async (req, res) => {
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
     const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);
-    // Billing must complete when possible; cap so a hung Firebase write can't 504.
+    // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     try {
       await withTimeout(
         recordUsage(authenticated.user, authenticated.owner, result),
@@ -237,7 +240,15 @@ module.exports = async (req, res) => {
         "record_usage"
       );
     } catch (err) {
-      console.warn("recordUsage skipped:", err.message);
+      if (err.paywall || err.status === 402) throw err;
+      const e = new Error(
+        err.code === "timeout"
+          ? "Billing timed out — compression not delivered. Retry."
+          : "Billing unavailable — compression not delivered. Retry."
+      );
+      e.status = err.status || 503;
+      e.code = err.code || "billing_unavailable";
+      throw e;
     }
 
     // Infer source when client omitted it (agent key name / coding_agent).
@@ -301,62 +312,70 @@ module.exports = async (req, res) => {
     // persist each block's text to Blob so retrieval works across cold starts.
     // For fixed+CCR, fall back to basic full-context storage (no block markers).
     let ccrInfo = null;
-    if (ccr && remainingMs() > 2500) {
-      try {
-        if (result.ccr) {
-          // Compiler mode + CCR: compressCCR produced interspersed markers
-          const { stored, stored_hashes, full_stored } = await withTimeout(
-            storeCcrBlocks(result.ccr, context, {
-              ownerUid: authenticated.ownerUid,
-              keyId: authenticated.keyId || authenticated.user?.id,
-            }),
-            Math.min(8000, remainingMs() - 1000),
-            "ccr_store"
-          );
-          if (stored) {
-            ccrInfo = {
-              hash: result.ccr.hash,
-              marker_hashes: result.ccr.marker_hashes || [],
-              markers_count: result.ccr.markers_count || 0,
-              stored_hashes,
-              full_stored,
-              retrieve_url: `/retrieve?hash=${result.ccr.hash}`,
-            };
+    let compressedText = result.compressed_text;
+    if (ccr) {
+      let storedOk = false;
+      if (remainingMs() > 2500) {
+        try {
+          if (result.ccr) {
+            const { stored, stored_hashes, full_stored } = await withTimeout(
+              storeCcrBlocks(result.ccr, context, {
+                ownerUid: authenticated.ownerUid,
+                keyId: authenticated.keyId || authenticated.user?.id,
+              }),
+              Math.min(8000, remainingMs() - 1000),
+              "ccr_store"
+            );
+            if (stored) {
+              storedOk = true;
+              ccrInfo = {
+                hash: result.ccr.hash,
+                marker_hashes: result.ccr.marker_hashes || [],
+                markers_count: result.ccr.markers_count || 0,
+                stored_hashes,
+                full_stored,
+                retrieve_url: `/retrieve?hash=${result.ccr.hash}`,
+              };
+            }
+          } else {
+            const { simpleHash, ccrStoreFirestore } = require("../_lib/engine");
+            const ccrHash = simpleHash(context);
+            const stored = await withTimeout(
+              ccrStoreFirestore(ccrHash, context, {
+                ownerUid: authenticated.ownerUid,
+                keyId: authenticated.keyId || authenticated.user?.id,
+              }),
+              Math.min(5000, remainingMs() - 1000),
+              "ccr_store_full"
+            );
+            if (stored) {
+              storedOk = true;
+              ccrInfo = {
+                hash: ccrHash,
+                marker_hashes: [],
+                markers_count: 0,
+                stored_hashes: [],
+                full_stored: true,
+                retrieve_url: `/retrieve?hash=${ccrHash}`,
+              };
+            }
           }
-        } else {
-          // Fixed mode + CCR (or any mode where compressCCR wasn't used):
-          // Fall back to simple full-context storage with end-of-text marker
-          const { simpleHash, ccrStoreFirestore } = require("../_lib/engine");
-          const ccrHash = simpleHash(context);
-          const stored = await withTimeout(
-            ccrStoreFirestore(ccrHash, context, {
-              ownerUid: authenticated.ownerUid,
-              keyId: authenticated.keyId || authenticated.user?.id,
-            }),
-            Math.min(5000, remainingMs() - 1000),
-            "ccr_store_full"
-          );
-          if (stored) {
-            ccrInfo = {
-              hash: ccrHash,
-              marker_hashes: [],
-              markers_count: 0,
-              stored_hashes: [],
-              full_stored: true,
-              retrieve_url: `/retrieve?hash=${ccrHash}`,
-            };
-          }
+        } catch (err) {
+          console.warn("CCR store failed:", err.message);
         }
-      } catch (err) {
-        console.warn("CCR store skipped:", err.message);
+      }
+      // Persistence is part of a valid CCR result — never return dangling retrieve markers.
+      if (!storedOk) {
+        compressedText = stripRetrieveMarkers(compressedText);
+        ccrInfo = null;
       }
     }
 
     // CacheAligner: optionally wrap compressed text for provider prompt/prefix
     // caching. SuperCompress does not operate inside model KV cache.
     const rawText = ccrInfo && ccrInfo.markers_count === 0
-      ? result.compressed_text + `\n[SC-Retrieve: ${ccrInfo.hash}]\n`
-      : result.compressed_text;
+      ? compressedText + `\n[SC-Retrieve: ${ccrInfo.hash}]\n`
+      : compressedText;
     const finalText = cache_prefix
       ? wrapCompressedForCache(rawText, query).wrapped
       : rawText;

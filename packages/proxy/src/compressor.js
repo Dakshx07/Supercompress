@@ -16,8 +16,19 @@ const SUPERCOMPRESS_API =
   process.env.SUPERCOMPRESS_API_URL || "https://www.supercompress.dev/api/v1/compress";
 const COMPRESS_TIMEOUT_MS = Number(process.env.SUPERCOMPRESS_COMPRESS_TIMEOUT_MS || 12_000);
 
+function isValidApiKey(value) {
+  const key = String(value || "").trim();
+  if (!key) return false;
+  if (key.includes("${") || /SUPERCOMPRESS_API_KEY|your.?key|xxx|placeholder/i.test(key)) {
+    return false;
+  }
+  // Real keys look like sc_live_… / sc_<agent>_…
+  return /^sc_[a-z0-9]+_[A-Za-z0-9]{12,}$/.test(key);
+}
+
 function getApiKey() {
-  if (process.env.SUPERCOMPRESS_API_KEY) return process.env.SUPERCOMPRESS_API_KEY;
+  const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
+  if (isValidApiKey(envKey)) return envKey;
   try {
     const configPath = path.join(
       process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(os.homedir(), ".supercompress"),
@@ -25,7 +36,7 @@ function getApiKey() {
     );
     if (fs.existsSync(configPath)) {
       const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      return config.api_key || null;
+      if (isValidApiKey(config.api_key)) return config.api_key;
     }
   } catch {}
   return null;
@@ -140,12 +151,115 @@ function passThrough(messages, wordCount, skipReason) {
 }
 
 /**
- * Compress a list of messages via the SuperCompress API.
+ * For tool-heavy histories: compress eligible older text turns, keep structured
+ * / recent protocol messages verbatim.
  */
+function splitCompressiblePrefix(messages) {
+  const systemMsgs = [];
+  const rest = [];
+  for (const msg of messages || []) {
+    if (msg?.role === "system" || msg?.role === "developer") systemMsgs.push(msg);
+    else rest.push(msg);
+  }
+  // Keep the trailing window (often active tool loop) untouched.
+  const KEEP_TAIL = 6;
+  if (rest.length <= KEEP_TAIL) {
+    return { systemMsgs, compressible: [], preserved: rest, query: "" };
+  }
+  const compressible = [];
+  const preserved = rest.slice(-KEEP_TAIL);
+  const head = rest.slice(0, -KEEP_TAIL);
+  for (const msg of head) {
+    const structured =
+      msg.role === "tool" ||
+      msg.role === "function" ||
+      msg.tool_calls ||
+      msg.function_call ||
+      msg.tool_call_id ||
+      Array.isArray(msg.content);
+    if (structured) {
+      // Keep structured tool turns verbatim in the preserved prefix area.
+      preserved.unshift(msg);
+    } else {
+      compressible.push(msg);
+    }
+  }
+  let query = "Continue the conversation.";
+  const lastUser = [...compressible].reverse().find((m) => m.role === "user");
+  if (lastUser) query = messageText(lastUser.content) || query;
+  return { systemMsgs, compressible, preserved, query };
+}
+
 async function compress(messages, agentName) {
   if (hasStructuredProtocol(messages)) {
-    const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
-    return passThrough(messages, words, "structured_protocol");
+    const split = splitCompressiblePrefix(messages);
+    const context = split.compressible
+      .map((m) => `[${m.role}]: ${messageText(m.content)}`)
+      .join("\n\n");
+    const wordCount = context.split(/\s+/).filter(Boolean).length;
+    if (wordCount < 100) {
+      const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
+      return passThrough(messages, words, "structured_protocol");
+    }
+    // Fall through to API compress using assembled context, then re-stitch.
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
+      return passThrough(messages, words, "structured_protocol");
+    }
+    const agent = agentName || detectAgentName();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), COMPRESS_TIMEOUT_MS);
+    try {
+      const response = await fetch(SUPERCOMPRESS_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
+        body: JSON.stringify({
+          context,
+          query: split.query,
+          mode: "compiler",
+          coding_agent: agent,
+          source: "agent",
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
+        return passThrough(messages, words, "structured_protocol");
+      }
+      const data = await response.json();
+      const digest = String(data.compressed_text || "").trim();
+      const out = [
+        ...split.systemMsgs,
+        ...(digest
+          ? [
+              {
+                role: "user",
+                content: `[Compressed context — query kept whole]\n\n${digest}`,
+              },
+            ]
+          : []),
+        ...split.preserved,
+      ];
+      const original = wordCount;
+      const compressed = digest.split(/\s+/).filter(Boolean).length;
+      return {
+        messages: out,
+        original_tokens: data.original_tokens || original,
+        compressed_tokens: data.kept_tokens || compressed,
+        tokens_saved: data.tokens_saved || Math.max(0, original - compressed),
+        savings_pct: data.tokens_saved_pct || 0,
+        skip_reason: null,
+      };
+    } catch {
+      const words = messageText(JSON.stringify(messages)).split(/\s+/).length;
+      return passThrough(messages, words, "structured_protocol");
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   const { context, query, systemMsgs } = assembleMessages(messages);

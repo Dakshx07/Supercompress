@@ -41,15 +41,19 @@ jobs:
           python examples/integrations/openai_wrapper.py >/dev/null
           python examples/integrations/langchain_hook.py >/dev/null
           python examples/demo_compare.py >/dev/null
+      - name: Install JS deps
+        run: npm ci --omit=optional --ignore-scripts --no-audit --no-fund
       - name: JS syntax smoke
         run: |
           node --check api/demo/compress.js
           node --check api/_lib/store.js
           node --check api/_lib/engine.js
-          node --check api/_lib/billing-ledger.js 2>/dev/null || true
-          node --check packages/proxy/src/server.js
+          node --check api/_lib/billing-ledger.js
           node --check packages/proxy/src/compressor.js
           node --check packages/proxy/src/forwarder.js
+          node --check packages/proxy/src/server.js
+      - name: Billing ledger unit tests
+        run: node api/_lib/billing-ledger.test.js
       - name: Proxy package tests
         run: |
           cd packages/proxy
