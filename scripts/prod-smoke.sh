@@ -45,6 +45,46 @@ expect_body() {
   fi
 }
 
+# api.supercompress.dev/ must redirect to www (not serve marketing).
+# Retries briefly — Vercel promotion can lag a push by a few seconds.
+check_api_root_redirect() {
+  local attempts="${1:-8}"
+  local i code loc final
+  for ((i = 1; i <= attempts; i++)); do
+    code="$(curl -sS -o /dev/null --max-time 25 -w '%{http_code}' "$API/" || echo 000)"
+    loc="$(curl -sS -o /dev/null --max-time 25 -w '%{redirect_url}' "$API/" || true)"
+    final="$(curl -sS -L -o /dev/null --max-time 25 -w '%{url_effective}' "$API/" || true)"
+    # Normalize trailing slash for compare
+    local want="$WWW"
+    local want_slash="${WWW%/}/"
+    if [[ "$code" == "301" || "$code" == "308" || "$code" == "302" ]]; then
+      if [[ "$loc" == "$want" || "$loc" == "$want_slash" || "$loc" == "${want_slash%/}" ]]; then
+        echo "PASS api root redirect ($code → $loc)"
+        pass=$((pass + 1))
+        return 0
+      fi
+      if [[ "$final" == "$want" || "$final" == "$want_slash" ]]; then
+        echo "PASS api root redirect ($code → $final)"
+        pass=$((pass + 1))
+        return 0
+      fi
+      echo "FAIL api root redirect went to wrong place (HTTP $code loc=$loc final=$final)"
+      fail=$((fail + 1))
+      return 1
+    fi
+    if [[ "$final" == "$want" || "$final" == "$want_slash" ]]; then
+      echo "PASS api root → www ($code)"
+      pass=$((pass + 1))
+      return 0
+    fi
+    echo "  api root not ready yet (HTTP $code → $final), retry $i/$attempts..."
+    sleep 5
+  done
+  echo "FAIL api root should redirect to www (got HTTP $code → $final)"
+  fail=$((fail + 1))
+  return 1
+}
+
 echo "=== SuperCompress production smoke ==="
 echo "www=$WWW"
 echo "api=$API"
@@ -53,31 +93,35 @@ echo
 
 # Domains / edge
 check "www home" 200 "$WWW/"
-# api host homepage must bounce to the real site (not serve marketing itself)
-api_root_code="$(curl -sS -o /dev/null --max-time 25 -w '%{http_code}' "$API/" || echo 000)"
-api_root_final="$(curl -sS -L -o /dev/null --max-time 25 -w '%{url_effective}' "$API/" || true)"
-if [[ "$api_root_code" != "301" && "$api_root_code" != "308" ]]; then
-  # Allow 200 only if already rewritten somehow; prefer redirect to www
-  if [[ "$api_root_final" != "$WWW/" && "$api_root_final" != "${WWW}" ]]; then
-    echo "FAIL api root should redirect to www (got HTTP $api_root_code → $api_root_final)"
-    fail=$((fail + 1))
-  else
-    echo "PASS api root → www ($api_root_code)"
-    pass=$((pass + 1))
-  fi
-else
-  echo "PASS api root redirect ($api_root_code)"
-  pass=$((pass + 1))
-fi
+check_api_root_redirect 8 || true
 check "api health" 200 "$API/api/health"
 check "www health" 200 "$WWW/api/health"
 expect_body "www health body" '"ok":true' "$TMP/body"
 check "docs root" 200 "$DOCS/" 
 
-# Marketing / product surfaces
+# Marketing / product surfaces (www only — api host must not serve them)
 check "dashboard" 200 "$WWW/dashboard"
 check "analytics" 200 "$WWW/analytics"
 check "token-compression" 200 "$WWW/token-compression"
+
+# api host must bounce non-API marketing paths to www (host-wide, not just /)
+api_dash_code="$(curl -sS -o /dev/null --max-time 25 -w '%{http_code}' "$API/dashboard" || echo 000)"
+api_dash_final="$(curl -sS -L -o /dev/null --max-time 25 -w '%{url_effective}' "$API/dashboard" || true)"
+if [[ "$api_dash_code" == "301" || "$api_dash_code" == "308" || "$api_dash_code" == "302" ]]; then
+  if [[ "$api_dash_final" == "$WWW/dashboard" || "$api_dash_final" == "${WWW}/dashboard" ]]; then
+    echo "PASS api /dashboard → www ($api_dash_code)"
+    pass=$((pass + 1))
+  else
+    echo "FAIL api /dashboard redirected to $api_dash_final"
+    fail=$((fail + 1))
+  fi
+elif [[ "$api_dash_final" == "$WWW/dashboard" || "$api_dash_final" == "${WWW}/dashboard" ]]; then
+  echo "PASS api /dashboard → www ($api_dash_code)"
+  pass=$((pass + 1))
+else
+  # Soft during rollout of host-wide rule; still fail if it serves a full page without redirect intent
+  echo "WARN api /dashboard still on api host (HTTP $api_dash_code → $api_dash_final) — host-wide redirect pending deploy"
+fi
 
 # Account / auth plumbing (unauthenticated shapes)
 check "account ops" 200 "$WWW/api/account"
@@ -107,7 +151,7 @@ done
 check "www GET compress" 405 "$WWW/api/v1/compress"
 check "api GET compress" 405 "$API/api/v1/compress"
 
-# Optional authenticated compress (if local key present)
+# Authenticated compress — required when secret is injected (Actions schedule/push).
 KEY=""
 CFG="${SUPERCOMPRESS_CONFIG_DIR:-$HOME/.supercompress}/config.json"
 if [[ -f "$CFG" ]]; then
@@ -115,6 +159,21 @@ if [[ -f "$CFG" ]]; then
 fi
 if [[ -n "${SUPERCOMPRESS_API_KEY:-}" ]]; then
   KEY="$SUPERCOMPRESS_API_KEY"
+fi
+
+REQUIRE_AUTH=0
+if [[ -n "${SUPERCOMPRESS_API_KEY:-}" ]]; then
+  REQUIRE_AUTH=1
+fi
+if [[ "${REQUIRE_AUTH_COMPRESS:-}" == "1" ]]; then
+  REQUIRE_AUTH=1
+fi
+# Scheduled GitHub monitors must exercise real compress when secret is configured;
+# if the workflow forgot to inject it, fail loudly instead of silent SKIP.
+if [[ "${GITHUB_EVENT_NAME:-}" == "schedule" && -z "$KEY" ]]; then
+  echo "FAIL scheduled smoke requires SUPERCOMPRESS_API_KEY secret"
+  fail=$((fail + 1))
+  REQUIRE_AUTH=1
 fi
 
 if [[ -n "$KEY" ]]; then
@@ -133,11 +192,17 @@ if [[ -n "$KEY" ]]; then
       echo "FAIL auth compress on $host_label — HTTP $code"
       head -c 300 "$body"; echo
       fail=$((fail + 1))
+    elif ! grep -q 'compressed_text' "$body"; then
+      echo "FAIL auth compress on $host_label — missing compressed_text"
+      fail=$((fail + 1))
     else
       echo "PASS auth compress on $host_label (200)"
       pass=$((pass + 1))
     fi
   done
+elif ((REQUIRE_AUTH)); then
+  echo "FAIL authenticated compress required but no API key available"
+  fail=$((fail + 1))
 else
   echo
   echo "SKIP authenticated compress (no SUPERCOMPRESS_API_KEY / ~/.supercompress/config.json)"

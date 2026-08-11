@@ -19,6 +19,17 @@
       "permanent": true
     },
     {
+      "source": "/((?!api(?:/|$)|v1(?:/|$)|retrieve(?:/|$)|health(?:/|$)|favicon\\.ico$).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/$1",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {

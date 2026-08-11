@@ -200,7 +200,7 @@ async function handleToolCall(name, args = {}) {
   }
 
   try {
-    const { compressIncremental, writeInbox } = require("./cursor-hooks/compress-prompt-lib");
+    const { compressIncremental, writeInbox, shouldPublishCompressedResult } = require("./cursor-hooks/compress-prompt-lib");
     const result = await compressIncremental({
       context,
       query,
@@ -227,8 +227,16 @@ async function handleToolCall(name, args = {}) {
           : `Compression failed (${result.skipped})`
       );
     }
+    if (result.partial || result.skipped === "partial_chunk_failure") {
+      return toolError(
+        "Compression partially failed (some chunks). Retry — raw failed chunks are not published into context."
+      );
+    }
     if (!result.compressed) {
       return toolError("Nothing new to compress (empty or already in session memory).");
+    }
+    if (!shouldPublishCompressedResult(result)) {
+      return toolError("Compression result is not safe to publish; retry.");
     }
     const meta =
       result.skipped === "already_seen"

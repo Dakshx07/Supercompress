@@ -20,8 +20,9 @@ module.exports = async (req, res) => {
       try {
         agent_plugin = await loadAgentPluginLink(user.uid);
       } catch (_) {}
-      // Prefer max(ledger/claims, coding-agent totals) so analytics KPIs never
-      // under-report when the billing ledger lags agent metering.
+      // Prefer max(ledger/claims, *current-month* coding-agent totals) so analytics
+      // KPIs never under-report when the billing ledger lags agent metering —
+      // and never stamp lifetime agent counters onto the new month.
       let account_usage = keys.account_usage || null;
       const agentTotals = Object.values(coding_agent_usage || {}).reduce(
         (acc, snap) => ({

@@ -12,6 +12,7 @@ const {
   compressIncremental,
   writeInbox,
   resolveSessionId,
+  shouldPublishCompressedResult,
 } = require("./compress-prompt-lib");
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
@@ -93,9 +94,7 @@ process.stdin.on("end", async () => {
     });
 
     if (!result.compressed) return empty();
-    if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
-      return empty();
-    }
+    if (!shouldPublishCompressedResult(result)) return empty();
     // Already in memory — don't spam additional_context every identical tool call
     if (result.skipped === "already_seen" && !result.delta) return empty();
 

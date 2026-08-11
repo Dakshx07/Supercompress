@@ -403,10 +403,9 @@ async function compressContext(context, query, codingAgent, opts = {}) {
     ) {
       lastSkip = r.skipped || "error";
       failedChunks += 1;
-      // Keep raw chunk so we do not drop context on partial failure.
-      parts.push(chunks[i]);
+      // Never reinject raw failed chunks into the digest — callers must skip publish
+      // on partial_chunk_failure so 120k dumps do not leak back into agent context.
       totalIn += Math.round(chunks[i].length / 4);
-      totalOut += Math.round(chunks[i].length / 4);
       continue;
     }
     okChunks += 1;
@@ -607,11 +606,27 @@ async function compressPrompt(context, codingAgent) {
   return compressContext(context, "Compress this context for the coding agent.", codingAgent);
 }
 
+/**
+ * Whether a compress result is safe to write into inbox / additional_context.
+ * Partial chunk failures must never reinject mixed raw+compressed dumps.
+ */
+function shouldPublishCompressedResult(result) {
+  if (!result || !result.compressed) return false;
+  if (result.partial || result.skipped === "partial_chunk_failure") return false;
+  if (result.skipped === "no_key" || result.skipped === "timeout" || result.skipped === "error") {
+    return false;
+  }
+  if (String(result.skipped || "").startsWith("http_")) return false;
+  if (result.paywall || result.skipped === "paywall") return false;
+  return true;
+}
+
 module.exports = {
   compressContext,
   compressIncremental,
   compactSessionMemory,
   compressPrompt,
+  shouldPublishCompressedResult,
   writeInbox,
   readInboxDigest,
   inboxPaths,
