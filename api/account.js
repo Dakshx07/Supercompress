@@ -589,7 +589,7 @@ module.exports = async (req, res) => {
   if (op === "weekly-pending" && req.method === "GET") {
     if (!drainSecretOk(req)) return json(res, 401, { detail: "Unauthorized" });
     try {
-      // Always include branded HTML — gog drain + Mailer need it (plain text alone looks unstyled).
+      // Always include branded HTML — Resend + preview tooling need it (plain text alone looks unstyled).
       const pending = await listPendingWeekly(req.query?.campaign_id || null, {
         includeHtml: String(req.query?.html || "1") !== "0",
       });

@@ -1,16 +1,23 @@
 /**
  * Transactional product email helpers (welcome / weekly / receipts).
- * From-address and reply-to come from env (WELCOME_FROM_EMAIL / WELCOME_REPLY_TO).
+ * Sends via Resend only (`RESEND_API_KEY`). From / reply-to:
+ *   WELCOME_FROM_EMAIL (default hello@supercompress.dev on verified Resend domain)
+ *   WELCOME_REPLY_TO (default founder Gmail)
  *
- * Weekly tips: api/_lib/weekly-tips.json
- * Ship digests: api/_lib/weekly-ship.json
+ * Campaign copy is NOT in the OSS tree. Load order:
+ *   1. WEEKLY_TIPS_JSON / WEEKLY_SHIP_JSON env (Vercel)
+ *   2. SUPERCOMPRESS_EMAIL_CONTENT_DIR/{weekly-tips,weekly-ship}.json
+ *   3. ~/agent-bridge/private/supercompress-email/content/ (local ops)
+ *   4. Minimal fallback seed + CHANGELOG-derived ship bullets
  */
 
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
 const DEFAULT_FROM =
-  process.env.WELCOME_FROM_EMAIL || "Arjun at SuperCompress <arjunkshah21@gmail.com>";
+  process.env.WELCOME_FROM_EMAIL ||
+  "Arjun at SuperCompress <hello@supercompress.dev>";
 const REPLY_TO = process.env.WELCOME_REPLY_TO || "arjunkshah21@gmail.com";
 const SITE = "https://www.supercompress.dev";
 const LOGO = `${SITE}/assets/img/logo-chevrons.png`;
@@ -23,7 +30,46 @@ const MUTED = "#5c5a55";
 const BG = "#f4f5f8";
 const CARD = "#ffffff";
 const BORDER = "#e6e7eb";
-const WEEKLY_TIPS_PATH = path.join(__dirname, "weekly-tips.json");
+
+const PRIVATE_EMAIL_CONTENT_DIR = path.join(
+  os.homedir(),
+  "agent-bridge",
+  "private",
+  "supercompress-email",
+  "content"
+);
+
+function parseJsonObject(raw) {
+  try {
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function loadCampaignJson(envName, fileName) {
+  const fromEnv = (process.env[envName] || "").trim();
+  if (fromEnv) {
+    const parsed = parseJsonObject(fromEnv);
+    if (parsed) return parsed;
+  }
+  const dirs = [];
+  const contentDir = (process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR || "").trim();
+  if (contentDir) dirs.push(contentDir);
+  dirs.push(PRIVATE_EMAIL_CONTENT_DIR);
+  for (const dir of dirs) {
+    try {
+      const raw = fs.readFileSync(path.join(dir, fileName), "utf8");
+      const parsed = parseJsonObject(raw);
+      if (parsed) return parsed;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
 
 const FONT_SANS =
   "'Source Sans 3', 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -251,7 +297,7 @@ ${signatureBlock()}`;
   return { subject: subjectFinal, text, html, to: email };
 }
 
-/** Fallback seed if weekly-tips.json is missing (keep in sync with JSON). */
+/** Minimal product fallback when private campaign JSON is unavailable. */
 const WEEKLY_TIPS_FALLBACK = [
   {
     id: "agents-money",
@@ -269,14 +315,7 @@ const WEEKLY_TIPS_FALLBACK = [
 ];
 
 function loadWeeklyTipsFile() {
-  try {
-    const raw = fs.readFileSync(WEEKLY_TIPS_PATH, "utf8");
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== "object") return null;
-    return data;
-  } catch {
-    return null;
-  }
+  return loadCampaignJson("WEEKLY_TIPS_JSON", "weekly-tips.json");
 }
 
 function getWeeklyTipsCatalog() {
@@ -570,22 +609,8 @@ function parseRecentChangelog(markdown, withinDays = 10) {
   return { versions, bullets };
 }
 
-const WEEKLY_SHIP_PATH = path.join(__dirname, "weekly-ship.json");
-
 function loadWeeklyShipFile() {
-  try {
-    // eslint-disable-next-line import/no-dynamic-require, global-require
-    return require("./weekly-ship.json");
-  } catch {
-    try {
-      const raw = fs.readFileSync(WEEKLY_SHIP_PATH, "utf8");
-      const data = JSON.parse(raw);
-      if (!data || typeof data !== "object") return null;
-      return data;
-    } catch {
-      return null;
-    }
-  }
+  return loadCampaignJson("WEEKLY_SHIP_JSON", "weekly-ship.json");
 }
 
 function loadShipDigest(withinDays = 10, campaignId = "") {
