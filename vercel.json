@@ -12,6 +12,17 @@
       "has": [
         {
           "type": "host",
+          "value": "api.supercompress.dev"
+        }
+      ],
+      "destination": "https://www.supercompress.dev/",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
           "value": "docs.supercompress.dev"
         }
       ],

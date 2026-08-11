@@ -53,6 +53,22 @@ echo
 
 # Domains / edge
 check "www home" 200 "$WWW/"
+# api host homepage must bounce to the real site (not serve marketing itself)
+api_root_code="$(curl -sS -o /dev/null --max-time 25 -w '%{http_code}' "$API/" || echo 000)"
+api_root_final="$(curl -sS -L -o /dev/null --max-time 25 -w '%{url_effective}' "$API/" || true)"
+if [[ "$api_root_code" != "301" && "$api_root_code" != "308" ]]; then
+  # Allow 200 only if already rewritten somehow; prefer redirect to www
+  if [[ "$api_root_final" != "$WWW/" && "$api_root_final" != "${WWW}" ]]; then
+    echo "FAIL api root should redirect to www (got HTTP $api_root_code → $api_root_final)"
+    fail=$((fail + 1))
+  else
+    echo "PASS api root → www ($api_root_code)"
+    pass=$((pass + 1))
+  fi
+else
+  echo "PASS api root redirect ($api_root_code)"
+  pass=$((pass + 1))
+fi
 check "api health" 200 "$API/api/health"
 check "www health" 200 "$WWW/api/health"
 expect_body "www health body" '"ok":true' "$TMP/body"
