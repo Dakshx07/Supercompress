@@ -14,6 +14,7 @@
 
 const { initFirebaseAdmin } = require("./auth");
 const { gistConfigured, loadGistStore, saveGistStore } = require("./gist-store");
+const { agentUsageForMonth } = require("./coding-agent-usage");
 
 let /** @type {import("firebase-admin").firestore.Firestore | null} */ _db = null;
 
@@ -721,6 +722,9 @@ function publicKey(rec) {
  * Persist per-coding-agent usage in a dedicated Firestore doc so it cannot be
  * lost when the monolithic config/store document conflicts or overflows.
  * Falls back to embedding into config/store when Firestore is unavailable.
+ *
+ * Counters are month-bucketed under `months[YYYY-MM]` so month rollover cannot
+ * stamp lifetime agent totals onto the new billing month.
  */
 async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
   if (!ownerUid || !codingAgent) return false;
@@ -739,8 +743,9 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
     ? String(stats.source).toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 32)
     : null;
   const now = new Date().toISOString();
+  const month = now.slice(0, 7);
 
-  const bump = (prev) => {
+  const bumpMonth = (prev) => {
     const next = {
       requests: (prev.requests || 0) + 1,
       tokens_in: (prev.tokens_in || 0) + tokensIn,
@@ -765,19 +770,40 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
     return next;
   };
 
+  const bumpAgent = (prevAgent) => {
+    const base = prevAgent && typeof prevAgent === "object" ? prevAgent : {};
+    const months =
+      base.months && typeof base.months === "object" ? { ...base.months } : {};
+    const monthPrev = months[month] && typeof months[month] === "object" ? months[month] : {};
+    months[month] = bumpMonth(monthPrev);
+    // Keep top-level last_* for dashboards that still read them; do NOT accumulate
+    // lifetime totals into tokens_in/requests used for monthly billing merge.
+    return {
+      ...base,
+      months,
+      month,
+      requests: months[month].requests,
+      tokens_in: months[month].tokens_in,
+      tokens_out: months[month].tokens_out,
+      tokens_saved: months[month].tokens_saved,
+      first_seen: months[month].first_seen || base.first_seen || now,
+      last_seen: now,
+      last_pct: cutPct,
+      last_query: lastQuery || base.last_query || null,
+      last_source: source || base.last_source || null,
+      latency_sum_ms: months[month].latency_sum_ms,
+      latency_samples: months[month].latency_samples,
+      last_latency_ms: months[month].last_latency_ms,
+      avg_latency_ms: months[month].avg_latency_ms,
+    };
+  };
+
   if (firestoreUnavailable) {
     await mutateStore((store) => {
       if (!store.coding_agent_usage) store.coding_agent_usage = {};
       if (!store.coding_agent_usage[ownerUid]) store.coding_agent_usage[ownerUid] = {};
-      const prev = store.coding_agent_usage[ownerUid][agentName] || {
-        requests: 0,
-        tokens_in: 0,
-        tokens_out: 0,
-        tokens_saved: 0,
-        first_seen: now,
-        last_seen: now,
-      };
-      store.coding_agent_usage[ownerUid][agentName] = bump(prev);
+      const prev = store.coding_agent_usage[ownerUid][agentName] || {};
+      store.coding_agent_usage[ownerUid][agentName] = bumpAgent(prev);
       return true;
     });
     return true;
@@ -788,15 +814,7 @@ async function trackCodingAgentUsage(ownerUid, codingAgent, stats = {}) {
     const snap = await tx.get(docRef);
     const data = snap.exists && snap.data() ? snap.data() : { agents: {} };
     const agents = data.agents && typeof data.agents === "object" ? data.agents : {};
-    const prev = agents[agentName] || {
-      requests: 0,
-      tokens_in: 0,
-      tokens_out: 0,
-      tokens_saved: 0,
-      first_seen: now,
-      last_seen: now,
-    };
-    agents[agentName] = bump(prev);
+    agents[agentName] = bumpAgent(agents[agentName] || {});
     tx.set(docRef, { agents, updated_at: now }, { merge: true });
   });
   return true;
@@ -848,16 +866,18 @@ function repairMisattributedCodingAgents(agents) {
   return { agents: next, changed: true };
 }
 
-async function loadCodingAgentUsage(ownerUid) {
+async function loadCodingAgentUsage(ownerUid, opts = {}) {
   if (!ownerUid) return {};
+  const month = opts.month || new Date().toISOString().slice(0, 7);
+  let agents = {};
   if (!firestoreUnavailable) {
     try {
       const docRef = db().collection("coding_agent_usage").doc(ownerUid);
       const snap = await docRef.get();
       if (snap.exists) {
-        const agents = snap.data()?.agents;
-        if (agents && typeof agents === "object") {
-          const { agents: fixed, changed } = repairMisattributedCodingAgents(agents);
+        const raw = snap.data()?.agents;
+        if (raw && typeof raw === "object") {
+          const { agents: fixed, changed } = repairMisattributedCodingAgents(raw);
           if (changed) {
             // Persist repair so dashboard stays correct without re-deriving every read.
             const now = new Date().toISOString();
@@ -865,7 +885,7 @@ async function loadCodingAgentUsage(ownerUid) {
               console.warn("store: coding_agent_usage repair persist failed:", err.message);
             });
           }
-          return fixed;
+          agents = fixed;
         }
       }
     } catch (err) {
@@ -873,9 +893,13 @@ async function loadCodingAgentUsage(ownerUid) {
       if (isFirestoreUnavailable(err)) firestoreUnavailable = true;
     }
   }
-  const store = await loadStore({ forceRemote: true });
-  const embedded = store.coding_agent_usage?.[ownerUid] || {};
-  return repairMisattributedCodingAgents(embedded).agents;
+  if (!Object.keys(agents).length) {
+    const store = await loadStore({ forceRemote: true });
+    const embedded = store.coding_agent_usage?.[ownerUid] || {};
+    agents = repairMisattributedCodingAgents(embedded).agents;
+  }
+  if (opts.allMonths) return agents;
+  return agentUsageForMonth(agents, month);
 }
 
 /**
@@ -948,6 +972,7 @@ module.exports = {
   publicKey,
   trackCodingAgentUsage,
   loadCodingAgentUsage,
+  agentUsageForMonth,
   trackKeyUsage,
   loadKeyUsage,
   mergeKeySnaps,

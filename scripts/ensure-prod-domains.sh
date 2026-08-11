@@ -2,6 +2,9 @@
 # Keep critical SuperCompress hostnames attached to the Vercel production
 # deployment. Missing aliases (esp. api.supercompress.dev) cause edge
 # DEPLOYMENT_NOT_FOUND / 100% API outages under the wildcard DNS.
+#
+# Safety: never DELETE a healthy canonical domain (www). A repair script must
+# not detach production to "re-promote" ordering.
 set -euo pipefail
 
 cd "$(cd "$(dirname "$0")/.." && pwd)"
@@ -96,6 +99,15 @@ if missing:
 else:
     print("All required domains are attached to the project.")
 
+# Ensure apex redirects to www without deleting www.
+if "supercompress.dev" in names:
+    code, _ = api(
+        "PATCH",
+        f"/v9/projects/{project_id}/domains/supercompress.dev",
+        {"redirect": "www.supercompress.dev", "redirectStatusCode": 308},
+    )
+    print(f"Apex → www redirect ensure HTTP {code}")
+
 code, deps = api(
     "GET",
     f"/v6/deployments?projectId={project_id}&target=production&limit=1&state=READY",
@@ -152,46 +164,13 @@ if ((${#MISSING[@]})) || ((${#BROKEN[@]})); then
 fi
 
 if ((${#MISSING[@]})); then
-  echo "Adding missing domains via CLI..."
+  echo "Adding missing domains via CLI (never delete existing)..."
   for host in "${MISSING[@]}"; do
-    # Never add www here first if other hosts are missing — add non-www, then
-    # re-touch www last so it stays Vercel's newest (= production URL preference).
-    if [[ "$host" != "www.supercompress.dev" ]]; then
-      vercel domains add "$host"
+    if ! vercel domains add "$host"; then
+      echo "FAIL adding domain $host" >&2
+      exit 1
     fi
   done
-  # Ensure www exists and is the newest project domain (primary production URL).
-  python3 <<'PY'
-import json, os, sys, urllib.error, urllib.request
-proj = json.load(open(os.environ["SUPERCOMPRESS_VERCEL_PROJECT_JSON"]))
-org_id, project_id = proj["orgId"], proj["projectId"]
-token = os.environ["VERCEL_TOKEN"]
-
-def api(method, path, body=None):
-    url = f"https://api.vercel.com{path}"
-    url += ("&" if "?" in path else "?") + f"teamId={org_id}"
-    data = None if body is None else json.dumps(body).encode()
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": f"Bearer {token}", "Content-Type": "application/json",
-    })
-    try:
-        with urllib.request.urlopen(req) as resp:
-            return resp.status, json.loads(resp.read().decode() or "{}")
-    except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read().decode() or "{}")
-
-print("Re-promoting www.supercompress.dev as newest project domain...")
-api("PATCH", f"/v9/projects/{project_id}/domains/supercompress.dev",
-    {"redirect": None, "redirectStatusCode": None})
-api("DELETE", f"/v9/projects/{project_id}/domains/www.supercompress.dev")
-code, _ = api("POST", f"/v10/projects/{project_id}/domains", {"name": "www.supercompress.dev"})
-if code not in (200, 201):
-    # already present is fine
-    pass
-api("PATCH", f"/v9/projects/{project_id}/domains/supercompress.dev",
-    {"redirect": "www.supercompress.dev", "redirectStatusCode": 308})
-print("www is newest domain again.")
-PY
 fi
 
 if ((${#BROKEN[@]})); then
@@ -209,14 +188,12 @@ if ((${#BROKEN[@]})); then
     fi
   done
   for host in "${ordered[@]}"; do
-    vercel alias set "$PROD_URL" "$host"
+    if ! vercel alias set "$PROD_URL" "$host"; then
+      echo "FAIL alias set $host → $PROD_URL" >&2
+      exit 1
+    fi
     echo "  repaired $host"
   done
-fi
-
-# Always finish by pointing www at production (site is the product surface).
-if [[ -n "${PROD_URL:-}" ]] && command -v vercel >/dev/null 2>&1; then
-  vercel alias set "$PROD_URL" www.supercompress.dev >/dev/null || true
 fi
 
 # Final edge gate — never leave DEPLOYMENT_NOT_FOUND uncaught.

@@ -8,6 +8,7 @@ const {
   writeInbox,
   splitAskAndContext,
   resolveSessionId,
+  shouldPublishCompressedResult,
 } = require("./compress-prompt-lib");
 
 const MIN_CONTEXT_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
@@ -46,7 +47,7 @@ process.stdin.on("end", async () => {
       process.stdout.write("{}");
       return;
     }
-    if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
+    if (!shouldPublishCompressedResult(result)) {
       process.stdout.write("{}");
       return;
     }

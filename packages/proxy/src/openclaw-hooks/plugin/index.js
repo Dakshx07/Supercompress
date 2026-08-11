@@ -163,7 +163,14 @@ export default definePluginEntry({
         });
 
         if (!result?.compressed) return;
-        if (result.skipped === "no_key" || String(result.skipped || "").startsWith("http_")) {
+        if (typeof lib.shouldPublishCompressedResult === "function") {
+          if (!lib.shouldPublishCompressedResult(result)) return;
+        } else if (
+          result.partial ||
+          result.skipped === "partial_chunk_failure" ||
+          result.skipped === "no_key" ||
+          String(result.skipped || "").startsWith("http_")
+        ) {
           return;
         }
         if (result.skipped === "already_seen" && !result.delta) return;

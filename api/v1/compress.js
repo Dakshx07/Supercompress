@@ -197,14 +197,17 @@ module.exports = async (req, res) => {
         request_id: requestId,
       }, rlMem);
     }
+    // True retry = same Idempotency-Key AND same payload fingerprint → one durable hit.
+    // Reused idempotency key with a different body must consume another slot.
+    const rateHitId = clientIdem
+      ? crypto.createHash("sha256").update(`${clientIdem}:${fingerprint}`).digest("hex").slice(0, 40)
+      : undefined;
     let rl;
     try {
       rl = await withTimeout(
         enforceRateLimits(
           [{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }],
-          // True retries share a client Idempotency-Key. Never use payload
-          // fingerprint alone — identical bodies with different keys must each count.
-          { requestId: clientIdem || undefined }
+          { requestId: rateHitId }
         ),
         2000,
         "rate_limit"
@@ -257,9 +260,9 @@ module.exports = async (req, res) => {
     }
 
     const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
-    await withTimeout(enforceUsageLimit(authenticated.owner), 10000, "usage_limit");
 
-    // Replay stored response for the same Idempotency-Key + payload (no recompute).
+    // Replay BEFORE quota/credit gates so a successfully billed request stays
+    // replayable after free quota is exhausted (and does not trigger auto-recharge).
     if (clientIdem) {
       const prev = await withTimeout(
         lookupUsageReplay(authenticated.ownerUid, clientIdem),
@@ -293,6 +296,8 @@ module.exports = async (req, res) => {
       }
     }
 
+    await withTimeout(enforceUsageLimit(authenticated.owner), 10000, "usage_limit");
+
     if (mode === "fixed" && (budgetRatio < 0.05 || budgetRatio > 1)) {
       const err = new Error("invalid budget_ratio");
       err.status = 422;
@@ -314,53 +319,6 @@ module.exports = async (req, res) => {
       (authenticated.user?.name && /coding agent|cli|mcp|plugin/i.test(authenticated.user.name)
         ? "agent"
         : "api");
-
-    // Activity log: capped previews only (never full dumps). Skip when budget is tight.
-    if (!skipLog && remainingMs() > 4000) {
-      try {
-        const { appendCompressLog } = require("../_lib/compress-log");
-        const tokensSaved = Math.max(
-          0,
-          result.tokens_saved ?? Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0))
-        );
-        await withTimeout(appendCompressLog(authenticated.ownerUid, {
-          query,
-          original_preview: context,
-          compressed_preview: result.compressed_text,
-          tokens_in: result.original_tokens,
-          tokens_out: result.kept_tokens,
-          tokens_saved: tokensSaved,
-          tokens_saved_pct: result.tokens_saved_pct ?? result.kv_savings_pct,
-          coding_agent: coding_agent || null,
-          key_prefix: authenticated.user?.prefix || raw.slice(0, 16),
-          mode,
-          source: inferredSource,
-          session_id: session_id || null,
-          latency_ms: latencyMs,
-        }), Math.min(4000, remainingMs() - 1500), "compress_log");
-      } catch (err) {
-        console.warn("compress log skipped:", err.message);
-      }
-    }
-
-    // Track coding agent usage in a dedicated Firestore collection (more reliable
-    // than mutating the monolithic config/store document).
-    if (coding_agent && remainingMs() > 3000) {
-      try {
-        const { trackCodingAgentUsage } = require("../_lib/store");
-        const tokensSaved = Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0));
-        await withTimeout(trackCodingAgentUsage(authenticated.ownerUid, coding_agent, {
-          original_tokens: result.original_tokens,
-          kept_tokens: result.kept_tokens,
-          tokens_saved: tokensSaved,
-          latency_ms: latencyMs,
-          query,
-          source: inferredSource,
-        }), Math.min(3000, remainingMs() - 1000), "coding_agent_usage");
-      } catch (err) {
-        console.warn("Failed to track coding agent usage:", err.message);
-      }
-    }
 
     // CacheAligner: persist block-level hashes to Blob (async, after mutateStore completes)
     // The compressCCR result (compiler+CCR mode) already has [SC-Retrieve: hash] markers
@@ -488,6 +446,52 @@ module.exports = async (req, res) => {
       e.code = err.code || "billing_unavailable";
       e.requestId = requestId;
       throw e;
+    }
+
+    // Analytics / agent meters ONLY after immutable successful billing — never credit
+    // usage for a request that was rejected by recordUsage.
+    if (!skipLog && remainingMs() > 2500) {
+      try {
+        const { appendCompressLog } = require("../_lib/compress-log");
+        const tokensSaved = Math.max(
+          0,
+          result.tokens_saved ?? Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0))
+        );
+        await withTimeout(appendCompressLog(authenticated.ownerUid, {
+          query,
+          original_preview: context,
+          compressed_preview: finalText,
+          tokens_in: result.original_tokens,
+          tokens_out: result.kept_tokens,
+          tokens_saved: tokensSaved,
+          tokens_saved_pct: result.tokens_saved_pct ?? result.kv_savings_pct,
+          coding_agent: coding_agent || null,
+          key_prefix: authenticated.user?.prefix || raw.slice(0, 16),
+          mode,
+          source: inferredSource,
+          session_id: session_id || null,
+          latency_ms: latencyMs,
+        }), Math.min(3000, remainingMs() - 800), "compress_log");
+      } catch (err) {
+        console.warn("compress log skipped:", err.message);
+      }
+    }
+
+    if (coding_agent && remainingMs() > 2000) {
+      try {
+        const { trackCodingAgentUsage } = require("../_lib/store");
+        const tokensSaved = Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0));
+        await withTimeout(trackCodingAgentUsage(authenticated.ownerUid, coding_agent, {
+          original_tokens: result.original_tokens,
+          kept_tokens: result.kept_tokens,
+          tokens_saved: tokensSaved,
+          latency_ms: latencyMs,
+          query,
+          source: inferredSource,
+        }), Math.min(2500, remainingMs() - 500), "coding_agent_usage");
+      } catch (err) {
+        console.warn("Failed to track coding agent usage:", err.message);
+      }
     }
 
     res.setHeader("Idempotency-Key", requestId);
