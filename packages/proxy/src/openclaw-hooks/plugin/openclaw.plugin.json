@@ -1,0 +1,14 @@
+{
+  "id": "supercompress",
+  "name": "SuperCompress",
+  "description": "Headroom-parity auto-compress for OpenClaw — compress bulky tool dumps into session digests; never compress the user ask.",
+  "version": "1.0.0",
+  "skills": ["../skills/supercompress"],
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}

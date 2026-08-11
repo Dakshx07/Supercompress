@@ -34,6 +34,43 @@ if (!/model: gpt/.test(hy)) throw new Error("hermes wiped unrelated keys");
 const oj = JSON.parse(fs.readFileSync(openclaw, "utf8"));
 if (!oj.mcp.servers.supercompress.command) throw new Error("openclaw missing server");
 
+// OpenClaw auto-compress parity (skill + hooks + plugin + config enable)
+const ocHome = path.join(${JSON.stringify(tmp)}, ".openclaw");
+const ocAuto = ap.writeOpenClawAutoCompress(ocHome);
+if (!ocAuto.installed.includes("mcp")) throw new Error("openclaw auto missing mcp");
+if (!ocAuto.installed.includes("skill")) throw new Error("openclaw auto missing skill");
+if (!ocAuto.installed.includes("hooks")) throw new Error("openclaw auto missing hooks");
+if (!ocAuto.installed.includes("plugin")) throw new Error("openclaw auto missing plugin");
+if (!fs.existsSync(path.join(ocHome, "skills", "supercompress", "SKILL.md"))) {
+  throw new Error("openclaw skill not written");
+}
+if (!fs.existsSync(path.join(ocHome, "hooks", "supercompress-bootstrap", "handler.js"))) {
+  throw new Error("openclaw bootstrap hook missing");
+}
+if (!fs.existsSync(path.join(ocHome, "extensions", "supercompress", "index.js"))) {
+  throw new Error("openclaw plugin missing");
+}
+const ocCfg = JSON.parse(fs.readFileSync(path.join(ocHome, "openclaw.json"), "utf8"));
+if (!ocCfg.hooks?.internal?.enabled) throw new Error("openclaw hooks not enabled");
+if (!ocCfg.hooks?.internal?.entries?.["supercompress-bootstrap"]?.enabled) {
+  throw new Error("openclaw bootstrap hook not enabled in config");
+}
+if (!ocCfg.plugins?.entries?.supercompress?.enabled) throw new Error("openclaw plugin not enabled");
+if (!ocCfg.mcp?.servers?.supercompress?.env?.SUPERCOMPRESS_CONFIG_DIR) {
+  throw new Error("openclaw mcp env missing CONFIG_DIR");
+}
+const agentsOc = fs.readFileSync(path.join(ocHome, "AGENTS.md"), "utf8");
+if (!/compress_context/.test(agentsOc)) throw new Error("openclaw AGENTS.md missing instructions");
+
+const ocRemoved = ap.removeOpenClawAutoCompressArtifacts(ocHome);
+if (!ocRemoved.length) throw new Error("openclaw uninstall removed nothing");
+if (fs.existsSync(path.join(ocHome, "skills", "supercompress"))) {
+  throw new Error("openclaw skill still present after uninstall");
+}
+const ocAfter = JSON.parse(fs.readFileSync(path.join(ocHome, "openclaw.json"), "utf8"));
+if (ocAfter.mcp?.servers?.supercompress) throw new Error("openclaw mcp still present after uninstall");
+if (ocAfter.plugins?.entries?.supercompress) throw new Error("openclaw plugin entry still present");
+
 // Custom plugin: no --config → defaults, always installs, writes AGENTS.md
 const { plugin } = ap.addCustomPlugin({
   id: "demo",

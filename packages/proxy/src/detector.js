@@ -1190,6 +1190,8 @@ function removePluginArtifacts(skip = new Set()) {
 
   // Hermes auto-compress copies hooks/plugins outside the instruction file.
   removed.push(...removeHermesAutoCompressArtifacts());
+  // OpenClaw auto-compress copies skill/hooks/plugin outside the instruction file.
+  removed.push(...removeOpenClawAutoCompressArtifacts());
 
   return removed;
 }
@@ -1244,6 +1246,14 @@ function removeHermesAutoCompressArtifacts() {
   }
 
   return removed;
+}
+
+/** Drop OpenClaw skill / hooks / plugin written by writeOpenClawAutoCompress. */
+function removeOpenClawAutoCompressArtifacts() {
+  if (typeof agentPlugins.removeOpenClawAutoCompressArtifacts === "function") {
+    return agentPlugins.removeOpenClawAutoCompressArtifacts();
+  }
+  return [];
 }
 
 /**
@@ -1650,6 +1660,21 @@ function installAutoPlugin() {
       console.error(`  ⚠ Hermes auto-compress: ${err.message}`);
     }
   }
+  let openclaw = null;
+  if (
+    commandExists("openclaw") ||
+    commandExists("claw") ||
+    fs.existsSync(path.join(HOME, ".openclaw"))
+  ) {
+    try {
+      const openclawHome = path.join(HOME, ".openclaw");
+      backupFile(path.join(openclawHome, "AGENTS.md"));
+      backupFile(path.join(openclawHome, "openclaw.json"));
+      openclaw = agentPlugins.writeOpenClawAutoCompress(openclawHome);
+    } catch (err) {
+      console.error(`  ⚠ OpenClaw auto-compress: ${err.message}`);
+    }
+  }
   const cleared = clearProxyOverrides();
   return {
     found,
@@ -1659,6 +1684,7 @@ function installAutoPlugin() {
     agentHooks,
     instructions,
     hermes,
+    openclaw,
     cleared,
   };
 }
