@@ -610,16 +610,23 @@
     if (critical.length > 0 && specific.length > 0) {
       const picked = [];
       const perEntity = new Map();
+      // Precompute DF once per entity — nested per-critical rescans were O(critical×entities×lines).
+      const linesLower = lines.map((line) => line.toLowerCase());
+      const entityDf = new Map();
+      for (const e of specific) {
+        const lower = e.toLowerCase();
+        let df = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLower[i].includes(lower)) df += 1;
+        }
+        entityDf.set(e, df);
+      }
       const scored = critical.map((item) => {
         let bestDf = n;
         let hit = null;
         for (const e of specific) {
           if (!item.line.includes(e)) continue;
-          let df = 0;
-          const lower = e.toLowerCase();
-          for (const line of lines) {
-            if (line.includes(e) || line.toLowerCase().includes(lower)) df += 1;
-          }
+          const df = entityDf.get(e) || 0;
           if (df < bestDf) {
             bestDf = df;
             hit = e;
@@ -717,25 +724,51 @@
     let lineIdx = 0;
     let tokInLine = 0;
 
+    // O(n) freq table — entropy/divergence used to rescan all tokens per token (O(n²)).
+    const tokFreq = new Map();
+    for (let i = 0; i < tokens.length; i++) {
+      const key = tokens[i].toLowerCase();
+      tokFreq.set(key, (tokFreq.get(key) || 0) + 1);
+    }
+    // Pre-tokenize lines once (avoid rematching the same line on every token).
+    const lineParts = lines.map((line) => {
+      const re = /[A-Za-z_][A-Za-z0-9_]*|[^\s]/g;
+      return line.match(re) || [" "];
+    });
+    // Line-level features are identical for every token on a line — cache them.
+    const qText = question || "";
+    const lineFeatCache = new Map();
+    const lineFeats = (idx, lineCtx) => {
+      let cached = lineFeatCache.get(idx);
+      if (cached) return cached;
+      cached = {
+        semFingerprint: computeSemanticFingerprint(lineCtx, qText),
+        ngramSim: computeNgramSim(lineCtx, qText),
+        lineLenNorm: Math.min(lineCtx.length / 500, 1.0),
+        indent: estimateIndentDepth(lineCtx),
+      };
+      lineFeatCache.set(idx, cached);
+      return cached;
+    };
+
     for (let pos = 0; pos < tokens.length; pos++) {
       const tok = tokens[pos];
       while (lineIdx < lines.length) {
-        const re = /[A-Za-z_][A-Za-z0-9_]*|[^\s]/g;
-        const parts = lines[lineIdx].match(re) || [" "];
+        const parts = lineParts[lineIdx] || [" "];
         if (tokInLine < parts.length) break;
         lineIdx++;
         tokInLine = 0;
       }
       const lineCtx = lineIdx < lines.length ? lines[lineIdx] : "";
+      const lf = lineFeats(lineIdx, lineCtx);
       const sem = classifyTokenSemantic(tok, lineCtx);
       const ageNorm = pos / Math.max(seqLen - 1, 1);
       const entityMatch = entities.has(tok) ? 1 : 0;
       const attn = deterministicAttention(sem, entityMatch, ageNorm, lineCtx, tok);
-      // AMCP features 12-15: compute per-Token, not per-line
-      const entropy = computeTokenEntropy(tok, tokens);
-      const semFingerprint = computeSemanticFingerprint(lineCtx, question || '');
+      // AMCP features 12-15: entropy/divergence from precomputed freq (O(1) per token).
+      const entropy = computeTokenEntropy(tok, tokens, tokFreq);
       const crossSim = computeCrossContextSimilarity(tok, entities);
-      const ctxDiv = computeContextDivergence(tok, tokens);
+      const ctxDiv = computeContextDivergence(tok, tokens, tokFreq);
       records.push({
         text: tok,
         position: pos,
@@ -749,12 +782,12 @@
         line_text: lineCtx,
         // Features 8-11
         position_encoding: sinusoidalPositionEncoding(pos, lines.length),
-        ngram_sim: computeNgramSim(lineCtx, question || ''),
-        line_length_norm: Math.min(lineCtx.length / 500, 1.0),
-        indent_depth: estimateIndentDepth(lineCtx),
+        ngram_sim: lf.ngramSim,
+        line_length_norm: lf.lineLenNorm,
+        indent_depth: lf.indent,
         // AMCP proprietary features 12-15
         entropy: entropy,
-        semantic_fingerprint: semFingerprint,
+        semantic_fingerprint: lf.semFingerprint,
         cross_context_sim: crossSim,
         context_divergence: ctxDiv,
       });
@@ -1356,12 +1389,13 @@
     const keptBlockIds = new Set(blocks.map((b) => b.id));
     let protectedPassageBlocks = new Set();
     const specificEntities = specificQuestionEntities(q, blocks);
+    const linesLower = lines.map((line) => line.toLowerCase());
     const rareEntities = distinctiveEntitiesInCorpus(extractQuestionEntities(q), original)
       .filter((e) => {
         let df = 0;
         const lower = e.toLowerCase();
-        for (const line of lines) {
-          if (line.includes(e) || line.toLowerCase().includes(lower)) df += 1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLower[i].includes(lower)) df += 1;
         }
         return df > 0 && df <= Math.max(4, Math.ceil(lines.length * 0.04));
       });
@@ -3010,13 +3044,15 @@
       const dfCap = proseDoc
         ? Math.max(2, Math.ceil(lines.length * 0.04))
         : Math.max(16, Math.ceil(lines.length * 0.1));
+      const linesLowerForLock = lines.map((line) => line.toLowerCase());
       lockEntities = extractQuestionEntities(q).filter((e) => {
         if (e.length < 4) return false;
         // Skip common question verbs/adjectives that appear throughout prose.
         if (/^(which|what|when|where|whose|whom|basic|best|itself|perform|used|model|models|data|based|using|system|paper|results?)$/i.test(e)) return false;
         let df = 0;
-        for (const line of lines) {
-          if (line.includes(e) || line.toLowerCase().includes(e.toLowerCase())) df += 1;
+        const lower = e.toLowerCase();
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLowerForLock[i].includes(lower)) df += 1;
         }
         return df > 0 && df <= dfCap;
       });
@@ -3197,9 +3233,11 @@
 
   // ── Enhanced compressAdaptive: runs preprocessors before compression ──
   // options.neuralBoost: Map|Object of blockId -> [0,1] cross-encoder scores
+  // options.includeAnnotations: build per-line annotations (default true; API skips for latency)
   function compressAdaptive(text, question, model = null, options = null) {
     const opts = options && typeof options === "object" ? options : {};
     const neuralBoost = opts.neuralBoost || null;
+    const includeAnnotations = opts.includeAnnotations !== false;
     if (!text || !text.trim()) {
       return {
         original_text: text,
@@ -3279,23 +3317,32 @@
     let critical = measureCriticalRetention(original, compressed, q);
     if (critical.critical_lines_dropped && critical.critical_lines_dropped.length) {
       let restored = false;
+      // Exact-trim index for O(1) restore; fall back to short linear scan only for fuzzy.
+      const trimIndex = new Map();
+      for (let i = 0; i < preprocLines.length; i++) {
+        const key = preprocLines[i].trim();
+        if (!key || keptLineSet.has(i)) continue;
+        if (!trimIndex.has(key)) trimIndex.set(key, i);
+      }
       for (const dropped of critical.critical_lines_dropped) {
         const needle = String(dropped.text || "").trim();
         if (!needle) continue;
+        const exact = trimIndex.get(needle);
+        if (exact != null) {
+          keptLineSet.add(exact);
+          trimIndex.delete(needle);
+          restored = true;
+          continue;
+        }
         const needleNorm = normalizeEvidenceLine(needle);
+        if (needleNorm.length < 20) continue;
         for (let i = 0; i < preprocLines.length; i++) {
           if (keptLineSet.has(i)) continue;
-          const pl = preprocLines[i];
-          const plTrim = pl.trim();
-          const plNorm = normalizeEvidenceLine(pl);
-          if (
-            plTrim === needle ||
-            pl.includes(needle) ||
-            needle.includes(plTrim) ||
-            (needleNorm.length >= 20 && plNorm.length >= 20 && (plNorm.includes(needleNorm) || needleNorm.includes(plNorm)))
-          ) {
+          const plNorm = normalizeEvidenceLine(preprocLines[i]);
+          if (plNorm.length >= 20 && (plNorm.includes(needleNorm) || needleNorm.includes(plNorm))) {
             keptLineSet.add(i);
             restored = true;
+            break;
           }
         }
       }
@@ -3317,14 +3364,16 @@
 
     const entities = extractQuestionEntities(q);
     const terms = questionTerms(q);
-    const annotations = preprocLines.map((line, i) => {
-      const kept = keptLineSet.has(i);
-      let reason = kept ? "compiler kept evidence block" : "removed as low-value context";
-      if (i < 1) reason = "attention sink (always kept)";
-      else if (entities.some((e) => line.includes(e))) reason = "question entity match";
-      else if (terms.some((t) => line.toLowerCase().includes(t.toLowerCase()))) reason = "question keyword match";
-      return { line_index: i, text: line, kept, reason };
-    });
+    const annotations = includeAnnotations
+      ? preprocLines.map((line, i) => {
+          const kept = keptLineSet.has(i);
+          let reason = kept ? "compiler kept evidence block" : "removed as low-value context";
+          if (i < 1) reason = "attention sink (always kept)";
+          else if (entities.some((e) => line.includes(e))) reason = "question entity match";
+          else if (terms.some((t) => line.toLowerCase().includes(t.toLowerCase()))) reason = "question keyword match";
+          return { line_index: i, text: line, kept, reason };
+        })
+      : [];
 
     const verifier = compiler ? { ...compiler.verifier } : null;
     const reportedImportant =
@@ -3908,11 +3957,16 @@ Answer the question: ${query}`;
 
   // ── AMCP proprietary feature helpers (16-dim) ──
 
-  function computeTokenEntropy(tok, allTokens) {
+  function computeTokenEntropy(tok, allTokens, freqMap = null) {
     if (!allTokens || allTokens.length < 3) return 0.5;
     const tLower = tok.toLowerCase();
-    let count = 0;
-    for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
+    let count;
+    if (freqMap && typeof freqMap.get === "function") {
+      count = freqMap.get(tLower) || 0;
+    } else {
+      count = 0;
+      for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
+    }
     const freq = count / allTokens.length;
     return Math.min(1, Math.max(0, 1 - freq * 3));
   }
@@ -3953,13 +4007,9 @@ Answer the question: ${query}`;
     return maxSim;
   }
 
-  function computeContextDivergence(tok, allTokens) {
-    if (!allTokens || allTokens.length < 3) return 0.5;
-    const tLower = tok.toLowerCase();
-    let count = 0;
-    for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
-    const freq = count / allTokens.length;
-    return Math.min(1, Math.max(0, 1 - freq * 3));
+  function computeContextDivergence(tok, allTokens, freqMap = null) {
+    // Same rarity signal as entropy — share the optional freq map to stay O(1)/token.
+    return computeTokenEntropy(tok, allTokens, freqMap);
   }
 
   // ── Improved feature helpers for 12-dim model ──

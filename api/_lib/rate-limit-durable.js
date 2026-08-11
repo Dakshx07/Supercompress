@@ -46,25 +46,32 @@ async function checkDurableRateLimit(key, maxRequests, windowMs = 60_000) {
 
   const id = bucketId(key, windowMs);
   const ref = firestore.collection("rate_limits").doc(id);
+  // Never let a stuck Firestore txn burn the whole serverless budget (→ 504).
+  const FS_TIMEOUT_MS = 1500;
 
   try {
-    const count = await firestore.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      const prev = snap.exists ? Number(snap.data().count || 0) : 0;
-      const next = prev + 1;
-      tx.set(
-        ref,
-        {
-          count: next,
-          key: String(key).slice(0, 120),
-          windowMs,
-          resetMs,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-      return next;
-    });
+    const count = await Promise.race([
+      firestore.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const prev = snap.exists ? Number(snap.data().count || 0) : 0;
+        const next = prev + 1;
+        tx.set(
+          ref,
+          {
+            count: next,
+            key: String(key).slice(0, 120),
+            windowMs,
+            resetMs,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        return next;
+      }),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("durable rate limit timeout")), FS_TIMEOUT_MS);
+      }),
+    ]);
 
     return {
       allowed: count <= maxRequests,
