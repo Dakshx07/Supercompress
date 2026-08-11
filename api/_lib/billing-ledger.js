@@ -2,12 +2,13 @@
  * Transactional billing ledger — source of truth for monthly usage + prepaid balance.
  *
  * Auth custom claims (`sc_usage`, `sc_credit_balance_usd`) are mirrored after
- * commit for dashboard/compat reads, but concurrent compressions must not
+ * commit for dashboard/compat reads. Concurrent compressions must not
  * read-modify-write claims directly.
  *
- * Firestore doc: billing/{uid}
+ * Firestore:
+ *   billing/{uid}              — monthly usage + wallet balance
+ *   billing_credits/{creditKey} — permanent Stripe session / PI idempotency
  */
-const admin = require("firebase-admin");
 const { initFirebaseAdmin } = require("./auth");
 const {
   FREE_TOKENS_PER_MONTH,
@@ -24,11 +25,16 @@ const {
 
 const MICROS_PER_USD = 1_000_000;
 
+let _admin = null;
 let _db = null;
+function admin() {
+  if (!_admin) _admin = require("firebase-admin");
+  return _admin;
+}
 function db() {
   if (!_db) {
     initFirebaseAdmin();
-    _db = admin.firestore();
+    _db = admin().firestore();
   }
   return _db;
 }
@@ -47,8 +53,16 @@ function microsToUsd(micros) {
 
 /** Integer micro-USD for a token count at $0.30 / 1M (no per-request $0 rounding). */
 function tokensToMicros(tokenCount) {
-  // tokens * 0.30 micros/token  (== tokens/1e6 * 0.30 * 1e6)
   return Math.ceil(Number(tokenCount || 0) * USD_PER_MILLION);
+}
+
+function billingError(code, message, extra = {}) {
+  const err = new Error(message);
+  err.code = code;
+  err.status = code === "billing_unavailable" ? 503 : 402;
+  err.paywall = code !== "billing_unavailable";
+  Object.assign(err, extra);
+  return err;
 }
 
 function emptyLedger(claims = {}) {
@@ -68,6 +82,7 @@ function emptyLedger(claims = {}) {
     ),
     auto_recharge: Boolean(claims.sc_auto_recharge),
     customer_id: claims.sc_customer_id || null,
+    // Display-only recent keys; idempotency is billing_credits/{id}
     credited_keys: Array.isArray(claims.sc_credited_sessions)
       ? claims.sc_credited_sessions.slice(-40)
       : [],
@@ -79,7 +94,6 @@ function normalizeLedger(raw, claims = {}) {
   const base = emptyLedger(claims);
   if (!raw || typeof raw !== "object") return base;
   const month = monthKey();
-  // Month rollover
   if (raw.month && raw.month !== month) {
     return {
       ...base,
@@ -121,23 +135,107 @@ function normalizeLedger(raw, claims = {}) {
   };
 }
 
+/**
+ * Pure gate used inside the Firestore transaction (and unit tests).
+ * Rejects free-quota overshoot and wallet burns that exceed balance (no clamp-to-zero).
+ */
+function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }) {
+  const prevTokensIn = Number(ledger.tokens_in || 0);
+  const addIn = Math.max(0, Number(tokensIn) || 0);
+  const addOut = Math.max(0, Number(tokensOut) || 0);
+  const addSaved = Math.max(0, Number(tokensSaved) || 0);
+  const nextTokensIn = prevTokensIn + addIn;
+
+  const comped = isComped(claims);
+  const legacy = isLegacyMetered(claims);
+  const wallet =
+    !comped &&
+    (isCreditWallet(claims) ||
+      (isPaygEnabled(claims.sc_plan) && !legacy));
+
+  if (!comped && !legacy && !wallet) {
+    if (prevTokensIn >= FREE_TOKENS_PER_MONTH || nextTokensIn > FREE_TOKENS_PER_MONTH) {
+      throw billingError(
+        "free_quota_exhausted",
+        `Free ${FREE_TOKENS_PER_MONTH / 1e6}M token allowance exhausted this month.`,
+        {
+          payload: {
+            ok: false,
+            paywall: true,
+            code: "free_quota_exhausted",
+            tokens_used: prevTokensIn,
+            free_tokens: FREE_TOKENS_PER_MONTH,
+            upgrade_url: "https://www.supercompress.dev/dashboard#billing",
+          },
+        }
+      );
+    }
+  }
+
+  let burned_micros = 0;
+  let nextBalance = Number(ledger.credit_balance_micros || 0);
+  if (wallet) {
+    const prevBillable = billableTokens(prevTokensIn);
+    const newBillable = billableTokens(nextTokensIn);
+    const deltaBillable = Math.max(0, newBillable - prevBillable);
+    burned_micros = tokensToMicros(deltaBillable);
+    if (burned_micros > nextBalance) {
+      throw billingError(
+        "credits_exhausted",
+        "Prepaid balance is insufficient for this compression.",
+        {
+          payload: {
+            ok: false,
+            paywall: true,
+            code: "credits_exhausted",
+            credit_balance_usd: roundUsd(microsToUsd(nextBalance)),
+            required_usd: roundUsd(microsToUsd(burned_micros)),
+            upgrade_url: "https://www.supercompress.dev/dashboard#billing",
+          },
+        }
+      );
+    }
+    nextBalance -= burned_micros;
+  }
+
+  return {
+    burned_micros,
+    ledger: {
+      ...ledger,
+      tokens_in: nextTokensIn,
+      tokens_out: Number(ledger.tokens_out || 0) + addOut,
+      tokens_saved: Number(ledger.tokens_saved || 0) + addSaved,
+      requests: Number(ledger.requests || 0) + 1,
+      credit_balance_micros: nextBalance,
+      updated_at: new Date().toISOString(),
+    },
+  };
+}
+
 async function loadLedger(uid, claims = {}) {
-  if (!uid || !initFirebaseAdmin()) return emptyLedger(claims);
+  if (!uid || !initFirebaseAdmin()) {
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
+  }
   try {
     const snap = await db().collection("billing").doc(uid).get();
     return normalizeLedger(snap.exists ? snap.data() : null, claims);
   } catch (err) {
+    if (err.code === "billing_unavailable") throw err;
     console.warn("billing-ledger load failed:", err.message || err);
-    return emptyLedger(claims);
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 }
 
-async function mirrorClaims(uid, ledger, claimsBase = {}) {
+/**
+ * Mirror only ledger-owned claim fields. Never re-apply a stale claimsBase over
+ * fresher Auth state (plan / subscription / preferences from webhooks).
+ */
+async function mirrorClaims(uid, ledger) {
   if (!uid || !initFirebaseAdmin()) return;
   try {
-    const fresh = await admin.auth().getUser(uid);
-    const prev = { ...(fresh.customClaims || {}), ...claimsBase };
-    await admin.auth().setCustomUserClaims(uid, {
+    const fresh = await admin().auth().getUser(uid);
+    const prev = { ...(fresh.customClaims || {}) };
+    await admin().auth().setCustomUserClaims(uid, {
       ...prev,
       sc_usage: {
         month: ledger.month,
@@ -151,7 +249,7 @@ async function mirrorClaims(uid, ledger, claimsBase = {}) {
       ...(ledger.credit_limit_usd != null
         ? { sc_credit_limit_usd: ledger.credit_limit_usd }
         : {}),
-      ...(ledger.auto_recharge != null ? { sc_auto_recharge: ledger.auto_recharge } : {}),
+      ...(ledger.auto_recharge != null ? { sc_auto_recharge: Boolean(ledger.auto_recharge) } : {}),
       ...(ledger.customer_id ? { sc_customer_id: ledger.customer_id } : {}),
     });
   } catch (err) {
@@ -160,71 +258,43 @@ async function mirrorClaims(uid, ledger, claimsBase = {}) {
 }
 
 /**
- * Atomically record usage and burn prepaid credit for newly billable tokens.
- * Returns updated ledger snapshot + burn metadata.
+ * Atomically record usage and burn prepaid credit.
+ * Throws paywall / billing_unavailable — never silently under-charges.
  */
 async function applyUsageAndBurn({ uid, tokensIn, tokensOut, tokensSaved, claims = {} }) {
   if (!uid) throw new Error("uid required");
   if (!initFirebaseAdmin()) {
-    // Soft fallback — caller may still update claims (legacy path).
-    const ledger = emptyLedger(claims);
-    ledger.tokens_in += tokensIn;
-    ledger.tokens_out += tokensOut;
-    ledger.tokens_saved += tokensSaved;
-    ledger.requests += 1;
-    return { ledger, burned_micros: 0, fallback: true };
+    throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
 
   const ref = db().collection("billing").doc(uid);
   const result = await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
-    const prevTokensIn = ledger.tokens_in;
-    ledger.tokens_in += Math.max(0, Number(tokensIn) || 0);
-    ledger.tokens_out += Math.max(0, Number(tokensOut) || 0);
-    ledger.tokens_saved += Math.max(0, Number(tokensSaved) || 0);
-    ledger.requests += 1;
-    ledger.updated_at = new Date().toISOString();
-
-    let burned_micros = 0;
-    const wallet =
-      !isComped(claims) &&
-      (isCreditWallet(claims) ||
-        (isPaygEnabled(claims.sc_plan) && !isLegacyMetered(claims)));
-    if (wallet) {
-      const prevBillable = billableTokens(prevTokensIn);
-      const newBillable = billableTokens(ledger.tokens_in);
-      const deltaBillable = Math.max(0, newBillable - prevBillable);
-      burned_micros = tokensToMicros(deltaBillable);
-      if (burned_micros > 0) {
-        ledger.credit_balance_micros = Math.max(
-          0,
-          Number(ledger.credit_balance_micros || 0) - burned_micros
-        );
-      }
-    }
-
-    tx.set(ref, ledger, { merge: true });
-    return { ledger, burned_micros };
+    const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
+    tx.set(ref, planned.ledger, { merge: true });
+    return planned;
   });
 
-  await mirrorClaims(uid, result.ledger, claims);
+  await mirrorClaims(uid, result.ledger);
   return result;
 }
 
 /**
- * Credit prepaid balance (Checkout / auto-recharge). Idempotent by creditKey.
+ * Credit prepaid balance. Idempotent via permanent billing_credits/{creditKey}.
  */
 async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {} }) {
   if (!uid || !creditKey) return { applied: false, reason: "missing_args" };
   if (!initFirebaseAdmin()) return { applied: false, reason: "firebase_unavailable" };
 
   const ref = db().collection("billing").doc(uid);
+  const creditRef = db().collection("billing_credits").doc(String(creditKey));
   const result = await db().runTransaction(async (tx) => {
+    const creditSnap = await tx.get(creditRef);
     const snap = await tx.get(ref);
     const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
-    const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
-    if (keys.includes(creditKey)) {
+
+    if (creditSnap.exists) {
       return {
         applied: true,
         already: true,
@@ -232,6 +302,7 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
         balance: roundUsd(microsToUsd(ledger.credit_balance_micros)),
       };
     }
+
     const add = usdToMicros(creditUsd);
     ledger.credit_balance_micros = Number(ledger.credit_balance_micros || 0) + add;
     if (patch.credit_limit_usd != null) {
@@ -239,8 +310,19 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
     }
     if (patch.auto_recharge != null) ledger.auto_recharge = Boolean(patch.auto_recharge);
     if (patch.customer_id) ledger.customer_id = patch.customer_id;
-    ledger.credited_keys = [...keys.slice(-40), creditKey];
+    const keys = Array.isArray(ledger.credited_keys) ? ledger.credited_keys : [];
+    ledger.credited_keys = [...keys.filter((k) => k !== creditKey).slice(-39), creditKey];
     ledger.updated_at = new Date().toISOString();
+
+    tx.set(
+      creditRef,
+      {
+        uid,
+        credit_usd: Number(creditUsd) || 0,
+        created_at: new Date().toISOString(),
+      },
+      { merge: false }
+    );
     tx.set(ref, ledger, { merge: true });
     return {
       applied: true,
@@ -250,19 +332,38 @@ async function creditBalance({ uid, creditUsd, creditKey, claims = {}, patch = {
     };
   });
 
-  await mirrorClaims(uid, result.ledger, {
-    ...claims,
-    sc_plan: "payg",
-    sc_metered: false,
-    sc_credited_sessions: result.ledger.credited_keys,
-  });
+  // Patch payg flags only when this credit actually applied (not on replay).
+  if (result.applied && !result.already) {
+    try {
+      const fresh = await admin().auth().getUser(uid);
+      const prev = { ...(fresh.customClaims || {}) };
+      await admin().auth().setCustomUserClaims(uid, {
+        ...prev,
+        sc_plan: prev.sc_plan || "payg",
+        sc_metered: false,
+        sc_usage: {
+          month: result.ledger.month,
+          requests: result.ledger.requests,
+          tokens_in: result.ledger.tokens_in,
+          tokens_out: result.ledger.tokens_out,
+          tokens_saved: result.ledger.tokens_saved,
+          tokens_reported: result.ledger.tokens_reported,
+        },
+        sc_credit_balance_usd: roundUsd(microsToUsd(result.ledger.credit_balance_micros)),
+        sc_credit_limit_usd: result.ledger.credit_limit_usd,
+        sc_auto_recharge: Boolean(result.ledger.auto_recharge),
+        ...(result.ledger.customer_id ? { sc_customer_id: result.ledger.customer_id } : {}),
+      });
+    } catch (err) {
+      console.warn("credit claim mirror failed:", err.message || err);
+      await mirrorClaims(uid, result.ledger);
+    }
+  } else {
+    await mirrorClaims(uid, result.ledger);
+  }
   return result;
 }
 
-/**
- * Distributed lock for auto-recharge. Returns { acquired, release }.
- * Lock TTL ~90s; held across Stripe PaymentIntent confirm.
- */
 async function acquireRechargeLock(uid) {
   if (!uid || !initFirebaseAdmin()) return { acquired: false, reason: "unavailable" };
   const ref = db().collection("billing_locks").doc(uid);
@@ -303,7 +404,7 @@ async function markTokensReported(uid, tokensReported, claims = {}) {
     tx.set(ref, next, { merge: true });
     return next;
   });
-  await mirrorClaims(uid, ledger, claims);
+  await mirrorClaims(uid, ledger);
   return ledger;
 }
 
@@ -314,6 +415,7 @@ module.exports = {
   acquireRechargeLock,
   markTokensReported,
   mirrorClaims,
+  planUsageBurn,
   tokensToMicros,
   usdToMicros,
   microsToUsd,

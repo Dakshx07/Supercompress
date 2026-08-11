@@ -446,38 +446,24 @@ async function recordUsage(keyRec, owner, compressed) {
   const { applyUsageAndBurn, microsToUsd } = require("./billing-ledger");
   const { reportPaygUsage, isPaygEnabled, isComped, isLegacyMetered, roundUsd } = require("./stripe");
 
-  let ledger;
-  try {
-    const applied = await applyUsageAndBurn({
-      uid: owner.uid,
-      tokensIn: compressed.original_tokens,
-      tokensOut: compressed.kept_tokens,
-      tokensSaved,
-      claims: ownerClaims,
-    });
-    ledger = applied.ledger;
-  } catch (err) {
-    console.warn("recordUsage: billing ledger failed:", err.message || err);
-    ledger = null;
-  }
+  // Billing is fail-closed: never invent a fake usage object on ledger failure.
+  const applied = await applyUsageAndBurn({
+    uid: owner.uid,
+    tokensIn: compressed.original_tokens,
+    tokensOut: compressed.kept_tokens,
+    tokensSaved,
+    claims: ownerClaims,
+  });
+  const ledger = applied.ledger;
 
-  const ownerUsage = ledger
-    ? {
-        month: ledger.month,
-        requests: ledger.requests,
-        tokens_in: ledger.tokens_in,
-        tokens_out: ledger.tokens_out,
-        tokens_saved: ledger.tokens_saved,
-        tokens_reported: ledger.tokens_reported || 0,
-      }
-    : {
-        month: now.slice(0, 7),
-        requests: 1,
-        tokens_in: compressed.original_tokens,
-        tokens_out: compressed.kept_tokens,
-        tokens_saved: tokensSaved,
-        tokens_reported: 0,
-      };
+  const ownerUsage = {
+    month: ledger.month,
+    requests: ledger.requests,
+    tokens_in: ledger.tokens_in,
+    tokens_out: ledger.tokens_out,
+    tokens_saved: ledger.tokens_saved,
+    tokens_reported: ledger.tokens_reported || 0,
+  };
 
   // Legacy metered: report to Stripe meters (idempotent watermark on ledger).
   try {

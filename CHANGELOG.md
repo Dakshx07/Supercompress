@@ -33,6 +33,8 @@ Public page: https://www.supercompress.dev/changelog
 - Fix demo CO₂ grams over-count (`×1000` bug)
 - Transactional Firestore billing ledger for usage + wallet burns; Stripe auto-recharge lock + idempotency; no pre-Checkout `sc_metered` mutation; micro-USD burns so tiny requests are not free
 - Fix `/api/v1/compress` 504s: kill O(n²) token-entropy scans in the engine, skip unused line annotations on the hosted path, soft-timeout Firestore side-effects, raise route `maxDuration` to 60s
+- Harden billing: fail-closed `recordUsage`, atomic free-quota/wallet rejection (no clamp-to-zero), permanent `billing_credits/{id}` idempotency, ledger-only claim mirroring
+- Compress POST-only (no query API keys/context); durable rate-limit fail-closed; CCR strips retrieve markers if persistence fails; dashboard reads billing ledger
 
 ### Coding agent plugin
 - Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`

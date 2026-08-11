@@ -419,9 +419,38 @@ function responsesFallbackObject(data, model) {
   };
 }
 
-async function forwardResponsesViaChatFixed(model, compressed, extraParams, res, apiKey, providerError) {
+async function forwardResponsesViaChatFixed(
+  model,
+  compressed,
+  extraParams,
+  res,
+  apiKey,
+  providerError,
+  originalInput
+) {
   const isStream = extraParams.stream === true || extraParams.stream === "true";
-  const body = responsesToChatBody(model, compressed, extraParams, isStream);
+  const emptyCompressed = !compressed.messages || compressed.messages.length === 0;
+  const preferOriginal =
+    originalInput !== undefined &&
+    (compressed.skip_reason === "structured_protocol" || emptyCompressed);
+  if (preferOriginal && responsesInputHasStructuredItems(originalInput)) {
+    throw new Error(
+      "OpenAI Responses API unavailable, and this request has structured tool items that cannot use the Chat Completions fallback. Enable Responses access for this key."
+    );
+  }
+  if (emptyCompressed && !preferOriginal) {
+    throw new Error(
+      "OpenAI Responses Chat Completions fallback received empty messages (structured compression skip). Enable Responses access for this key."
+    );
+  }
+  const body = responsesToChatBody(
+    model,
+    preferOriginal
+      ? { ...compressed, messages: responsesInputToMessages(originalInput) }
+      : compressed,
+    extraParams,
+    isStream
+  );
   console.error(
     `[supercompress] Responses permission unavailable; using Chat Completions compatibility fallback (${providerError.slice(0, 160)})`
   );
@@ -605,7 +634,8 @@ async function forwardResponses(model, compressed, extraParams, res, authHeader,
         extraParams,
         res,
         apiKey,
-        parseProviderError(apiResponse.status, errorBody)
+        parseProviderError(apiResponse.status, errorBody),
+        originalInput
       );
       return;
     }
