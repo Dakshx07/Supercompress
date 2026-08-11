@@ -4,6 +4,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+- Align CLI/MCP `usage` totals with the dashboard billing ledger (not coding-agent subset alone).
+- Stable MCP launch after npm/brew upgrades: PATH `node` + package `mcp.js` (not Homebrew Cellar-pinned binaries); postinstall refreshes MCP paths without clearing auth.
+- Docs: run `supercompress plugin` after upgrades to refresh integrations without reconnecting.
 - Hook `Idempotency-Key` includes normalized **query** (avoids 409 when context reused for a new task).
 - Partial chunk failure no longer marks session hashes seen; OpenClaw/Cursor feed full dumps into the chunker (1.2M soft cap, not 180k hard clip).
 - OpenClaw skips inbox compress when no session/conversation id (no shared cwd fallback).
@@ -14,6 +17,11 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 - **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`).
 - Rank structured-history compression against the **latest user ask in the full thread**, not an older compressible-prefix turn.
 - Send `Idempotency-Key` on compress API calls for safer retries with request-level billing idempotency.
+
+## [0.5.18] — 2026-08-11
+
+- **Keep auth across npm updates**: MCP entries use PATH `node` + this package's `mcp.js` (not Homebrew Cellar-pinned binaries). `postinstall` refreshes MCP paths when an account is already linked — never clears `~/.supercompress/config.json`.
+- Docs: run `supercompress plugin` after upgrades to refresh integrations without reconnecting.
 
 ## [0.5.17] — 2026-08-10
 
