@@ -658,6 +658,11 @@ async function showDashboard(user) {
   try {
     await loadSubscription();
   } catch (_) {}
+  // Deep-link: /dashboard?panel=analytics (and friends)
+  try {
+    const panel = (new URLSearchParams(window.location.search).get("panel") || "").trim().toLowerCase();
+    if (panel && panel !== "keys") openDashboardPanel(panel, { updateUrl: false });
+  } catch (_) {}
 }
 
 function showAuth() {
@@ -1481,7 +1486,7 @@ function renderKeysSummary() {
   );
 }
 
-/** KPI cards on API keys panel (full charts on /analytics). */
+/** KPI cards on API keys panel (full charts on Analytics panel). */
 function renderAnalytics() {
   renderKeysSummary();
 }
@@ -1685,19 +1690,57 @@ async function createKey() {
   }
 }
 
+function openDashboardPanel(panel, { updateUrl = true } = {}) {
+  const btn = document.querySelector(`.dash-topnav-item[data-panel="${panel}"]`);
+  if (!btn) return false;
+  document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll("[id^='panel-']").forEach((p) => p.classList.add("hidden"));
+  const panelEl = $(`panel-${panel}`);
+  if (panelEl) panelEl.classList.remove("hidden");
+
+  if (panel === "billing") loadSubscription();
+  if (panel === "keys") {
+    requestAnimationFrame(() => renderKeysSummary());
+  }
+  if (panel === "analytics") {
+    const user = currentUser;
+    window.SCDashboardAnalytics?.show({
+      getIdToken: async () => {
+        if (idToken && String(idToken).startsWith("dev:")) return idToken;
+        if (user?.getIdToken) return getUserToken(user);
+        if (idToken) return idToken;
+        throw new Error("Not signed in");
+      },
+    });
+  }
+
+  if (updateUrl && window.history?.replaceState) {
+    const url = new URL(window.location.href);
+    if (panel === "keys") url.searchParams.delete("panel");
+    else url.searchParams.set("panel", panel);
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, "", next || "/dashboard");
+  }
+  return true;
+}
+
 function initPanels() {
   document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".dash-topnav-item[data-panel]").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const panel = btn.dataset.panel;
-      document.querySelectorAll("[id^='panel-']").forEach((p) => p.classList.add("hidden"));
-      const panelEl = $(`panel-${panel}`);
-      if (panelEl) panelEl.classList.remove("hidden");
-      if (panel === "billing") loadSubscription();
-      if (panel === "keys") {
-        requestAnimationFrame(() => renderKeysSummary());
-      }
+      openDashboardPanel(btn.dataset.panel);
+    });
+  });
+  $("btn-refresh-analytics")?.addEventListener("click", () => {
+    const user = currentUser;
+    window.SCDashboardAnalytics?.show({
+      force: true,
+      getIdToken: async () => {
+        if (idToken && String(idToken).startsWith("dev:")) return idToken;
+        if (user?.getIdToken) return getUserToken(user);
+        if (idToken) return idToken;
+        throw new Error("Not signed in");
+      },
     });
   });
 }

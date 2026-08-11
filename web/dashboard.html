@@ -28,6 +28,8 @@
   <meta name="theme-color" content="rgb(251,251,248)" />
   <link rel="stylesheet" href="assets/css/supercompress.css?v=112" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
+  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
 <style>
     /* Dashboard: no dark bg layers, full light page */
     html, body.dash-page {
@@ -396,7 +398,7 @@
       color: var(--text-muted);
     }
 
-    /* Keys summary cards (light) — full charts on /analytics */
+    /* Keys summary cards (light) — full charts on Analytics panel */
     .dash-panel-actions {
       display: flex;
       align-items: center;
@@ -640,8 +642,8 @@
         <nav class="dash-topnav" aria-label="Dashboard sections">
           <button type="button" class="dash-topnav-item active" data-panel="keys">API keys</button>
           <button type="button" class="dash-topnav-item" data-panel="agents">Coding Agents</button>
+          <button type="button" class="dash-topnav-item" data-panel="analytics">Analytics</button>
           <button type="button" class="dash-topnav-item" data-panel="billing">Billing</button>
-          <a class="dash-topnav-item dash-topnav-link" href="/analytics">Analytics</a>
           <a class="dash-topnav-item dash-topnav-link" href="https://docs.supercompress.dev" target="_blank" rel="noopener">Documentation ↗</a>
         </nav>
 
@@ -817,6 +819,105 @@ npm exec supercompress setup</pre>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Analytics (live charts — same dither UI, stays inside the dashboard) -->
+        <div id="panel-analytics" class="hidden">
+          <div class="dash-panel-head">
+            <div>
+              <h1>Analytics</h1>
+              <p>Token savings, <strong>in Bayer</strong> — live meter from your keys and coding agents, last 30 days.</p>
+            </div>
+            <div class="dash-panel-actions">
+              <span class="an-status" style="margin:0">
+                <span class="an-pill an-pill--load" id="an-data-pill">Live · loading…</span>
+              </span>
+              <button type="button" class="btn-link-muted" id="btn-refresh-analytics">Refresh</button>
+            </div>
+          </div>
+
+          <div class="an-loading" id="an-loading">Loading your live usage…</div>
+
+          <div class="kpi-grid" aria-label="Usage KPIs">
+            <article class="kpi kpi--cut">
+              <div class="kpi-wash" id="an-wash-cut" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Cut</span>
+                <strong class="kpi-n" id="an-kpi-cut">—</strong>
+                <span class="kpi-s" id="an-kpi-cut-sub">loading…</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="an-wash-saved" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Saved</span>
+                <strong class="kpi-n" id="an-kpi-saved">—</strong>
+                <span class="kpi-s">this month · billing meter</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="an-wash-in" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Input</span>
+                <strong class="kpi-n" id="an-kpi-in">—</strong>
+                <span class="kpi-s">tokens compressed in</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="an-wash-req" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Requests</span>
+                <strong class="kpi-n" id="an-kpi-req">—</strong>
+                <span class="kpi-s" id="an-kpi-req-sub">loading…</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="charts">
+            <section class="panel panel--wide">
+              <header class="panel-head">
+                <div>
+                  <h2>Tokens saved</h2>
+                  <p>Daily · last 30 days · hover a day</p>
+                </div>
+                <span class="chip chip--cut" id="an-chip-delta">—</span>
+              </header>
+              <div class="chart-well chart-well--lg" id="an-area"></div>
+            </section>
+
+            <section class="panel">
+              <header class="panel-head">
+                <div>
+                  <h2>Requests</h2>
+                  <p>Compress calls · last 30 days</p>
+                </div>
+                <span class="chip">30 days</span>
+              </header>
+              <div class="chart-well" id="an-bars"></div>
+            </section>
+
+            <section class="panel">
+              <header class="panel-head">
+                <div>
+                  <h2>By coding agent</h2>
+                  <p>Share of tokens saved</p>
+                </div>
+              </header>
+              <ol class="rank-list" id="an-agents"></ol>
+            </section>
+
+            <section class="panel panel--wide">
+              <header class="panel-head">
+                <div>
+                  <h2>Key breakdown</h2>
+                  <p>Tokens saved per API key</p>
+                </div>
+              </header>
+              <ul class="rank-list key-list" id="an-keys"></ul>
+            </section>
+          </div>
+
+          <p class="an-footnote">Signed-in usage from your SuperCompress account · last 30 days</p>
         </div>
 
         <!-- Billing / PAYG -->
@@ -1017,7 +1118,10 @@ npm exec supercompress setup</pre>
   </footer>
   <script src="assets/js/firebase-config.js?v=3"></script>
   <script src="assets/js/supercompress.js?v=1"></script>
-  <script type="module" src="assets/js/dashboard-api.js?v=32"></script>
+  <script src="/assets/js/dither-kit-lite.js?v=10"></script>
+  <script src="/assets/js/analytics-data.js?v=2"></script>
+  <script src="/assets/js/dashboard-analytics.js?v=2"></script>
+  <script type="module" src="assets/js/dashboard-api.js?v=34"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>

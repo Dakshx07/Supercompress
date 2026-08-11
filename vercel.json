@@ -263,6 +263,11 @@
       "permanent": true
     },
     {
+      "source": "/analytics",
+      "destination": "/dashboard?panel=analytics",
+      "permanent": false
+    },
+    {
       "source": "/web",
       "destination": "/",
       "permanent": false
@@ -1249,10 +1254,6 @@
     {
       "source": "/dashboard",
       "destination": "/dashboard.html"
-    },
-    {
-      "source": "/analytics",
-      "destination": "/analytics.html"
     },
     {
       "source": "/playground",
