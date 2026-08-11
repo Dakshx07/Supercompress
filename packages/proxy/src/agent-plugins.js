@@ -475,7 +475,7 @@ function allPlugins() {
 }
 
 function instructionBody() {
-  const inboxPath = path.join(HOME, ".supercompress", "inbox", "latest.md");
+  const inboxHint = path.join(CONFIG_DIR, "inbox", "<sessionId>", "latest.md");
   return [
     INSTRUCTION_MARKER,
     "",
@@ -483,7 +483,7 @@ function instructionBody() {
     "",
     "What to compress: tool dumps, file reads, logs, diffs, pasted blobs, scrapes, long history — anything that is not the current user question.",
     "",
-    "1. If `" + inboxPath + "` exists, Read it first — session digest (ask is unchanged).",
+    "1. If `" + inboxHint + "` exists for this session, Read it first — session digest (ask is unchanged).",
     "2. Else call MCP `compress_context` with `context`=<new dump only> and `query`=<user ask>. Prefer the returned digest.",
     "3. Hooks also auto-compress on submit + after large tool results when installed.",
     "4. If compress_context fails with account-not-linked, call `connect_account` once, then retry.",
@@ -657,6 +657,20 @@ function copyTree(src, dest) {
   return true;
 }
 
+/** Exact absolute-path compare for OpenClaw plugin load.paths (no substring matches). */
+function normalizeAbsPath(p) {
+  try {
+    return path.resolve(String(p || ""));
+  } catch {
+    return String(p || "");
+  }
+}
+
+function sameAbsPath(a, b) {
+  if (!a || !b) return false;
+  return normalizeAbsPath(a) === normalizeAbsPath(b);
+}
+
 function enableOpenClawAutoConfig(configPath, { pluginDest } = {}) {
   let data = {};
   if (fs.existsSync(configPath)) {
@@ -704,9 +718,7 @@ function enableOpenClawAutoConfig(configPath, { pluginDest } = {}) {
     data.plugins.load && typeof data.plugins.load === "object" ? data.plugins.load : {};
   const loadPaths = Array.isArray(data.plugins.load.paths) ? [...data.plugins.load.paths] : [];
   if (pluginDest) {
-    const already = loadPaths.some(
-      (p) => String(p).includes("extensions/supercompress") || String(p) === pluginDest
-    );
+    const already = loadPaths.some((p) => sameAbsPath(p, pluginDest));
     if (!already) loadPaths.push(pluginDest);
   }
   data.plugins.load.paths = loadPaths;
@@ -830,9 +842,8 @@ function removeOpenClawAutoCompressArtifacts(openclawHome = path.join(HOME, ".op
         changed = true;
       }
       if (Array.isArray(data?.plugins?.load?.paths)) {
-        const next = data.plugins.load.paths.filter(
-          (p) => !String(p).includes("extensions/supercompress")
-        );
+        const pluginDest = path.join(openclawHome, "extensions", "supercompress");
+        const next = data.plugins.load.paths.filter((p) => !sameAbsPath(p, pluginDest));
         if (next.length !== data.plugins.load.paths.length) {
           data.plugins.load.paths = next;
           changed = true;
@@ -1125,6 +1136,8 @@ module.exports = {
   parseLooseJson,
   mcpStdioEntry,
   resolveWrapSpec,
+  sameAbsPath,
+  normalizeAbsPath,
   PLUGINS_FILE,
   PLUGINS_DIR,
   instructionTargetsFromPlugins,

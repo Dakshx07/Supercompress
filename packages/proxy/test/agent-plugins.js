@@ -61,15 +61,73 @@ if (!ocCfg.mcp?.servers?.supercompress?.env?.SUPERCOMPRESS_CONFIG_DIR) {
 }
 const agentsOc = fs.readFileSync(path.join(ocHome, "AGENTS.md"), "utf8");
 if (!/compress_context/.test(agentsOc)) throw new Error("openclaw AGENTS.md missing instructions");
+if (!/inbox\\/<sessionId>\\/latest\\.md/.test(agentsOc)) {
+  throw new Error("openclaw AGENTS.md missing session-scoped inbox path");
+}
+
+// Exact plugin path match: unrelated .../extensions/supercompress-backup must survive uninstall
+const backupPath = path.join(ocHome, "extensions", "supercompress-backup");
+fs.mkdirSync(backupPath, { recursive: true });
+fs.writeFileSync(path.join(backupPath, "marker.txt"), "keep");
+const cfgBeforeUninstall = JSON.parse(fs.readFileSync(path.join(ocHome, "openclaw.json"), "utf8"));
+cfgBeforeUninstall.plugins.load.paths.push(backupPath);
+fs.writeFileSync(path.join(ocHome, "openclaw.json"), JSON.stringify(cfgBeforeUninstall, null, 2));
+if (!ap.sameAbsPath(ocAuto.pluginDest, path.join(ocHome, "extensions", "supercompress"))) {
+  throw new Error("sameAbsPath failed for installed plugin dest");
+}
+if (ap.sameAbsPath(ocAuto.pluginDest, backupPath)) {
+  throw new Error("sameAbsPath incorrectly matched backup path");
+}
 
 const ocRemoved = ap.removeOpenClawAutoCompressArtifacts(ocHome);
 if (!ocRemoved.length) throw new Error("openclaw uninstall removed nothing");
 if (fs.existsSync(path.join(ocHome, "skills", "supercompress"))) {
   throw new Error("openclaw skill still present after uninstall");
 }
+if (!fs.existsSync(path.join(backupPath, "marker.txt"))) {
+  throw new Error("uninstall deleted unrelated extensions/supercompress-backup");
+}
 const ocAfter = JSON.parse(fs.readFileSync(path.join(ocHome, "openclaw.json"), "utf8"));
 if (ocAfter.mcp?.servers?.supercompress) throw new Error("openclaw mcp still present after uninstall");
 if (ocAfter.plugins?.entries?.supercompress) throw new Error("openclaw plugin entry still present");
+if (!(ocAfter.plugins?.load?.paths || []).includes(backupPath)) {
+  throw new Error("uninstall stripped unrelated plugin load path");
+}
+
+// Session-scoped inbox + compactSessionMemory smoke (no network)
+const lib = require(${JSON.stringify(path.join(ROOT, "src/cursor-hooks/compress-prompt-lib.js"))});
+const inboxA = lib.writeInbox("ask A", "digest A", "1→1", { session_id: "sessA", kind: "test" });
+const inboxB = lib.writeInbox("ask B", "digest B", "1→1", { session_id: "sessB", kind: "test" });
+if (inboxA === inboxB) throw new Error("session inboxes must not share a path");
+if (!inboxA.includes(${JSON.stringify(path.sep + "sessA" + path.sep)})) {
+  throw new Error("sessA inbox path wrong: " + inboxA);
+}
+if (lib.readInboxDigest("sessA").includes("digest B")) {
+  throw new Error("cross-session inbox leak");
+}
+if (!lib.readInboxDigest("sessA").includes("digest A")) {
+  throw new Error("sessA digest missing");
+}
+if (typeof lib.compactSessionMemory !== "function") {
+  throw new Error("compactSessionMemory missing");
+}
+if (lib.chunkText("x".repeat(250000), 120000).length !== 3) {
+  throw new Error("chunkText should split above API max");
+}
+const idKey = lib.stableIdempotencyKey({ sessionId: "s1", context: "abc", mode: "compiler" });
+if (!/^sc_[a-f0-9]{40}$/.test(idKey)) throw new Error("bad stable idempotency key: " + idKey);
+
+// Plugin source must not hardcode ~/.supercompress/inbox/latest.md
+const pluginAsset = fs.readFileSync(
+  path.join(${JSON.stringify(ROOT)}, "src/openclaw-hooks/plugin/index.js"),
+  "utf8"
+);
+if (pluginAsset.includes(".supercompress/inbox/latest.md")) {
+  throw new Error("OpenClaw plugin still hardcodes global inbox/latest.md");
+}
+if (!/readInboxDigest/.test(pluginAsset)) {
+  throw new Error("OpenClaw plugin must use session readInboxDigest");
+}
 
 // Custom plugin: no --config → defaults, always installs, writes AGENTS.md
 const { plugin } = ap.addCustomPlugin({

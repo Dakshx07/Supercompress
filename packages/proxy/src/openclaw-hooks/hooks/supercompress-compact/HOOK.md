@@ -1,6 +1,6 @@
 ---
 name: supercompress-compact
-description: "Before OpenClaw session compaction, nudge to prefer SuperCompress digests and refresh inbox when possible."
+description: "Before OpenClaw session compaction, compact SuperCompress session memory and refresh the session inbox."
 metadata:
   {
     "openclaw":
@@ -15,7 +15,7 @@ metadata:
 
 # SuperCompress compact
 
-On `session:compact:before`, remind the chat to prefer SuperCompress digests and fire-and-forget a background compact of rolling session memory (via shared compress-prompt-lib).
+On `session:compact:before`, remind the chat to prefer SuperCompress digests and fire-and-forget `compactSessionMemory(sessionId)` (real compact of rolling session memory + session-scoped inbox write).
 
 Enable with:
 

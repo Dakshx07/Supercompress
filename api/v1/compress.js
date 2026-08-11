@@ -19,7 +19,10 @@ const {
   roundUsd,
 } = require("../_lib/stripe");
 const crypto = require("crypto");
-const { sanitizeRequestId } = require("../_lib/billing-ledger");
+const {
+  sanitizeRequestId,
+  computeCompressFingerprint,
+} = require("../_lib/billing-ledger");
 
 const V1_RPM = 90; // per API key (in-memory fast path)
 const V1_IP_HOURLY = 600; // durable per-IP ceiling (stops stolen-key / fan-out abuse)
@@ -177,6 +180,9 @@ module.exports = async (req, res) => {
     // Parse body early so Idempotency-Key can come from JSON when header omitted.
     const body = readBody(req);
     requestId = resolveRequestId(req, body);
+    // Bind durable rate-limit + billing idempotency to a server-side payload
+    // fingerprint — never to a client-chosen key alone (abuse / free compress).
+    const fingerprint = computeCompressFingerprint(body);
 
     // ── Rate limit: fast per-key + durable per-IP hourly ceiling ──
     const keyPrefix = raw.slice(0, 24);
@@ -194,7 +200,8 @@ module.exports = async (req, res) => {
       rl = await withTimeout(
         enforceRateLimits(
           [{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }],
-          { requestId }
+          // Hit id = payload fingerprint (same retry OK; different body always counts).
+          { requestId: fingerprint }
         ),
         2000,
         "rate_limit"
@@ -265,7 +272,10 @@ module.exports = async (req, res) => {
     // Billing is fail-closed: never return compressed text without a durable charge/quota write.
     try {
       await withTimeout(
-        recordUsage(authenticated.user, authenticated.owner, result, { requestId }),
+        recordUsage(authenticated.user, authenticated.owner, result, {
+          requestId,
+          fingerprint,
+        }),
         Math.max(1500, Math.min(12000, remainingMs() - 2000)),
         "record_usage"
       );

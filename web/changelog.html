@@ -229,14 +229,17 @@
         <div class="cl-body">
           <h3>API / billing</h3>
           <ul>
+            <li><strong>Fingerprint-bound Idempotency-Key</strong> — reuse with a different compress payload returns <code>409 idempotency_conflict</code> (blocks free recompress / billing bypass).</li>
+            <li>Durable hourly rate-limit hits keyed by <strong>payload fingerprint</strong>, not the client-chosen request id.</li>
             <li><strong>Request-level billing idempotency</strong> (<code>Idempotency-Key</code> / <code>billing_usage/{uid}:{requestId}</code>) so billing timeouts cannot double-charge on retry.</li>
             <li>Bill before per-key analytics; auto-recharge when balance is positive but insufficient, then retry the same request id.</li>
-            <li>Transactional first-pay bonus; honest Checkout replay flags; cumulative micro-USD rounding; idempotent durable rate-limit hits.</li>
+            <li>Transactional first-pay bonus; honest Checkout replay flags; cumulative micro-USD rounding.</li>
             <li>Earlier: fail-closed usage burns, permanent Stripe credit idempotency, POST-only compress, CCR marker cleanup, billing ledger as source of truth.</li>
           </ul>
           <h3>Coding agent plugin</h3>
           <ul>
-            <li><strong>OpenClaw auto-compress</strong> parity with Hermes: setup/plugin installs MCP + <code>AGENTS.md</code> + managed skill + internal hooks + extension plugin (large tool dumps → inbox).</li>
+            <li><strong>OpenClaw auto-compress</strong> parity with Hermes: setup/plugin installs MCP + <code>AGENTS.md</code> + managed skill + internal hooks + extension plugin.</li>
+            <li><strong>Session-scoped inbox</strong> (<code>inbox/&lt;sessionId&gt;/latest.md</code>) + <code>SUPERCOMPRESS_CONFIG_DIR</code>; exact plugin path uninstall; real <code>compactSessionMemory</code>; chunk ≤120k; stable hook idempotency keys.</li>
             <li><strong>Preserve tool-call order</strong> when splitting compressible history; rank compression against the latest user ask in the full thread.</li>
             <li>Proxy sends <code>Idempotency-Key</code> on compress API calls.</li>
             <li>See <a href="#v0.5.17">0.5.17</a> / <a href="#v0.5.16">0.5.16</a> for the latest published npm fixes.</li>

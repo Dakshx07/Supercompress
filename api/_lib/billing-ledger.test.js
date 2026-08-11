@@ -3,7 +3,13 @@
  * Run: node api/_lib/billing-ledger.test.js
  */
 const assert = require("assert");
-const { planUsageBurn, FREE_TOKENS_PER_MONTH, tokensToMicros } = require("./billing-ledger");
+const {
+  planUsageBurn,
+  FREE_TOKENS_PER_MONTH,
+  tokensToMicros,
+  computeCompressFingerprint,
+  assertUsageIdempotencyMatch,
+} = require("./billing-ledger");
 
 function ledger(partial = {}) {
   return {
@@ -145,5 +151,59 @@ mustThrow(
   assert.strictEqual(r.burned_micros, 0);
   assert.ok(r.ledger.tokens_in > FREE_TOKENS_PER_MONTH);
 }
+
+// Fingerprint: same payload → same hash; different context → different hash
+{
+  const a = computeCompressFingerprint({
+    context: "hello world catalog noise",
+    query: "hello",
+    mode: "compiler",
+  });
+  const b = computeCompressFingerprint({
+    context: "hello world catalog noise",
+    query: "hello",
+    mode: "compiler",
+  });
+  const c = computeCompressFingerprint({
+    context: "completely different dump",
+    query: "hello",
+    mode: "compiler",
+  });
+  assert.strictEqual(a, b);
+  assert.notStrictEqual(a, c);
+  assert.strictEqual(a.length, 64);
+}
+
+// Idempotency: same fingerprint replays OK
+assertUsageIdempotencyMatch(
+  { fingerprint: "abc", tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+  { fingerprint: "abc", tokensIn: 99, tokensOut: 1, tokensSaved: 98 }
+);
+
+// Idempotency: different fingerprint → conflict
+mustThrow(
+  () =>
+    assertUsageIdempotencyMatch(
+      { fingerprint: "aaa", tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+      { fingerprint: "bbb", tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
+    ),
+  "idempotency_conflict"
+);
+
+// Legacy (no fingerprint): token mismatch → conflict
+mustThrow(
+  () =>
+    assertUsageIdempotencyMatch(
+      { tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+      { fingerprint: "newfp", tokensIn: 11, tokensOut: 5, tokensSaved: 6 }
+    ),
+  "idempotency_conflict"
+);
+
+// Legacy (no fingerprint): matching tokens OK
+assertUsageIdempotencyMatch(
+  { tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+  { fingerprint: "newfp", tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
+);
 
 console.log("billing-ledger.test.js: ok");
