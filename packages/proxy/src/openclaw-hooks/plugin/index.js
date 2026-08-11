@@ -15,8 +15,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
-/** Accept large dumps; shared lib chunks to the hosted 120k API limit. */
-const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 180000);
+/** Soft total cap — shared lib chunks to the hosted 120k API limit (do not pre-clip to 180k). */
+const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 1_200_000);
 
 function definePluginEntry(options) {
   return options;
@@ -64,22 +64,33 @@ function extractText(value) {
   return String(value);
 }
 
+/**
+ * Prefer OpenClaw session/conversation identifiers. Never fall back to cwd —
+ * that collapses unrelated chats into one inbox when IDs are missing.
+ * @returns {string|null}
+ */
 function resolveSessionId(event = {}, ctx = {}, lib = null) {
-  if (lib?.resolveSessionId) {
-    return lib.resolveSessionId({
-      sessionId: event.sessionId || ctx.sessionId,
-      session_id: event.sessionKey || ctx.sessionKey,
-      conversationId: event.conversationId || ctx.conversationId,
-    });
+  const candidates = [
+    event.sessionId,
+    ctx.sessionId,
+    event.sessionKey,
+    ctx.sessionKey,
+    event.conversationId,
+    ctx.conversationId,
+    process.env.SUPERCOMPRESS_SESSION_ID,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim()) {
+      if (lib?.resolveSessionId) {
+        return lib.resolveSessionId({
+          sessionId: c,
+          fallback: "none",
+        });
+      }
+      return String(c).replace(/[^\w.-]+/g, "_").slice(0, 80);
+    }
   }
-  const raw =
-    event.sessionId ||
-    ctx.sessionId ||
-    event.sessionKey ||
-    ctx.sessionKey ||
-    process.env.SUPERCOMPRESS_SESSION_ID ||
-    "openclaw";
-  return String(raw).replace(/[^\w.-]+/g, "_").slice(0, 80);
+  return null;
 }
 
 export default definePluginEntry({
@@ -126,18 +137,25 @@ export default definePluginEntry({
 
         let text = extractText(event?.result);
         if (text.length < MIN_CHARS) return;
-        const clipped = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
+        // Soft total bound only — shared chunker splits to API 120k; do not discard mid-dump.
+        const bounded = text.length > MAX_IN ? text.slice(0, MAX_IN) : text;
 
         const lib = loadLib();
         if (!lib?.compressIncremental || !lib?.writeInbox) return;
 
         const sessionId = resolveSessionId(event, ctx, lib);
+        if (!sessionId) {
+          logger.warn?.(
+            "[supercompress] skipping tool compress — no OpenClaw session/conversation id (refusing shared cwd inbox)"
+          );
+          return;
+        }
         const query =
           `Compress new ${toolName || "tool"} output for the current OpenClaw task. ` +
           "Preserve code, paths, errors, numbers, and decisions.";
 
         const result = await lib.compressIncremental({
-          context: clipped,
+          context: bounded,
           query,
           codingAgent: "OpenClaw",
           sessionId,
@@ -166,6 +184,7 @@ export default definePluginEntry({
       async (event, ctx) => {
         const lib = loadLib();
         const sessionId = resolveSessionId(event || {}, ctx || {}, lib);
+        if (!sessionId) return;
         const digest = lib?.readInboxDigest
           ? lib.readInboxDigest(sessionId)
           : "";

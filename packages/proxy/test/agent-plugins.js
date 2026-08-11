@@ -114,8 +114,6 @@ if (typeof lib.compactSessionMemory !== "function") {
 if (lib.chunkText("x".repeat(250000), 120000).length !== 3) {
   throw new Error("chunkText should split above API max");
 }
-const idKey = lib.stableIdempotencyKey({ sessionId: "s1", context: "abc", mode: "compiler" });
-if (!/^sc_[a-f0-9]{40}$/.test(idKey)) throw new Error("bad stable idempotency key: " + idKey);
 
 // Plugin source must not hardcode ~/.supercompress/inbox/latest.md
 const pluginAsset = fs.readFileSync(
@@ -127,6 +125,33 @@ if (pluginAsset.includes(".supercompress/inbox/latest.md")) {
 }
 if (!/readInboxDigest/.test(pluginAsset)) {
   throw new Error("OpenClaw plugin must use session readInboxDigest");
+}
+
+const idKey = lib.stableIdempotencyKey({
+  sessionId: "s1",
+  context: "abc",
+  mode: "compiler",
+  query: "do the thing",
+});
+if (!/^sc_[a-f0-9]{40}$/.test(idKey)) throw new Error("bad stable idempotency key: " + idKey);
+const idKey2 = lib.stableIdempotencyKey({
+  sessionId: "s1",
+  context: "abc",
+  mode: "compiler",
+  query: "different task",
+});
+if (idKey === idKey2) throw new Error("stable idempotency key must include query");
+if (lib.resolveSessionId({ fallback: "none" }) != null) {
+  throw new Error("fallback=none must return null without session id");
+}
+if (!String(lib.resolveSessionId({ fallback: "ephemeral" }) || "").startsWith("ephemeral_")) {
+  throw new Error("fallback=ephemeral must mint ephemeral session id");
+}
+if (!/1_200_000|1200000/.test(pluginAsset) && /180000/.test(pluginAsset)) {
+  throw new Error("OpenClaw plugin still hard-clips at 180k before chunker");
+}
+if (!/no OpenClaw session/.test(pluginAsset)) {
+  throw new Error("OpenClaw plugin must refuse cwd fallback when session id missing");
 }
 
 // Custom plugin: no --config → defaults, always installs, writes AGENTS.md

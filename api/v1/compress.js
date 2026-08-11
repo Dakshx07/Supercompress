@@ -22,10 +22,25 @@ const crypto = require("crypto");
 const {
   sanitizeRequestId,
   computeCompressFingerprint,
+  lookupUsageReplay,
+  assertUsageIdempotencyMatch,
 } = require("../_lib/billing-ledger");
 
 const V1_RPM = 90; // per API key (in-memory fast path)
 const V1_IP_HOURLY = 600; // durable per-IP ceiling (stops stolen-key / fan-out abuse)
+
+/**
+ * Client Idempotency-Key only — never X-Request-Id (tracing ≠ billing semantics).
+ */
+function resolveClientIdempotencyKey(req, body) {
+  return (
+    sanitizeRequestId(req.headers["idempotency-key"]) ||
+    sanitizeRequestId(req.headers["x-idempotency-key"]) ||
+    sanitizeRequestId(body?.idempotency_key) ||
+    sanitizeRequestId(body?.request_id) ||
+    null
+  );
+}
 
 /**
  * Free accounts hard-stop at the monthly free allowance (1M).
@@ -141,19 +156,6 @@ function stripRetrieveMarkers(text) {
     .trim();
 }
 
-function resolveRequestId(req, body) {
-  const header =
-    req.headers["idempotency-key"] ||
-    req.headers["x-idempotency-key"] ||
-    req.headers["x-request-id"];
-  return (
-    sanitizeRequestId(header) ||
-    sanitizeRequestId(body?.idempotency_key) ||
-    sanitizeRequestId(body?.request_id) ||
-    crypto.randomUUID()
-  );
-}
-
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
   // Compression is POST-only — never accept API keys or context in query strings.
@@ -179,9 +181,9 @@ module.exports = async (req, res) => {
 
     // Parse body early so Idempotency-Key can come from JSON when header omitted.
     const body = readBody(req);
-    requestId = resolveRequestId(req, body);
-    // Bind durable rate-limit + billing idempotency to a server-side payload
-    // fingerprint — never to a client-chosen key alone (abuse / free compress).
+    const clientIdem = resolveClientIdempotencyKey(req, body);
+    requestId = clientIdem || crypto.randomUUID();
+    // Bind billing idempotency to a server-side payload fingerprint.
     const fingerprint = computeCompressFingerprint(body);
 
     // ── Rate limit: fast per-key + durable per-IP hourly ceiling ──
@@ -200,8 +202,9 @@ module.exports = async (req, res) => {
       rl = await withTimeout(
         enforceRateLimits(
           [{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }],
-          // Hit id = payload fingerprint (same retry OK; different body always counts).
-          { requestId: fingerprint }
+          // True retries share a client Idempotency-Key. Never use payload
+          // fingerprint alone — identical bodies with different keys must each count.
+          { requestId: clientIdem || undefined }
         ),
         2000,
         "rate_limit"
@@ -256,6 +259,40 @@ module.exports = async (req, res) => {
     const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
     await withTimeout(enforceUsageLimit(authenticated.owner), 10000, "usage_limit");
 
+    // Replay stored response for the same Idempotency-Key + payload (no recompute).
+    if (clientIdem) {
+      const prev = await withTimeout(
+        lookupUsageReplay(authenticated.ownerUid, clientIdem),
+        3000,
+        "idempotency_lookup"
+      );
+      if (prev) {
+        try {
+          assertUsageIdempotencyMatch(prev, {
+            fingerprint,
+            tokensIn: prev.tokens_in,
+            tokensOut: prev.tokens_out,
+            tokensSaved: prev.tokens_saved,
+          });
+        } catch (err) {
+          throw err;
+        }
+        if (prev.response?.compressed_text) {
+          res.setHeader("Idempotency-Key", requestId);
+          return jsonWithRateLimit(
+            res,
+            200,
+            {
+              ...prev.response,
+              request_id: requestId,
+              idempotent_replay: true,
+            },
+            rl
+          );
+        }
+      }
+    }
+
     if (mode === "fixed" && (budgetRatio < 0.05 || budgetRatio > 1)) {
       const err = new Error("invalid budget_ratio");
       err.status = 422;
@@ -269,28 +306,6 @@ module.exports = async (req, res) => {
     const latencyMs = Math.max(0, Date.now() - compressStarted);
 
     const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);
-    // Billing is fail-closed: never return compressed text without a durable charge/quota write.
-    try {
-      await withTimeout(
-        recordUsage(authenticated.user, authenticated.owner, result, {
-          requestId,
-          fingerprint,
-        }),
-        Math.max(1500, Math.min(12000, remainingMs() - 2000)),
-        "record_usage"
-      );
-    } catch (err) {
-      if (err.paywall || err.status === 402) throw err;
-      const e = new Error(
-        err.code === "timeout"
-          ? "Billing timed out — compression not delivered. Retry with the same Idempotency-Key."
-          : "Billing unavailable — compression not delivered. Retry with the same Idempotency-Key."
-      );
-      e.status = err.status || 503;
-      e.code = err.code || "billing_unavailable";
-      e.requestId = requestId;
-      throw e;
-    }
 
     // Infer source when client omitted it (agent key name / coding_agent).
     const inferredSource =
@@ -421,8 +436,7 @@ module.exports = async (req, res) => {
       ? wrapCompressedForCache(rawText, query).wrapped
       : rawText;
 
-    res.setHeader("Idempotency-Key", requestId);
-    return jsonWithRateLimit(res, 200, {
+    const responseBody = {
       compressed_text: finalText,
       original_tokens: result.original_tokens,
       kept_tokens: result.kept_tokens,
@@ -449,7 +463,35 @@ module.exports = async (req, res) => {
       coding_agent: coding_agent || null,
       source: inferredSource,
       request_id: requestId,
-    }, rl);
+    };
+
+    // Billing is fail-closed: never return compressed text without a durable charge/quota write.
+    // Persist responseBody so identical Idempotency-Key retries replay instead of recomputing.
+    try {
+      await withTimeout(
+        recordUsage(authenticated.user, authenticated.owner, result, {
+          requestId,
+          fingerprint,
+          response: responseBody,
+        }),
+        Math.max(1500, Math.min(12000, remainingMs() - 2000)),
+        "record_usage"
+      );
+    } catch (err) {
+      if (err.paywall || err.status === 402) throw err;
+      const e = new Error(
+        err.code === "timeout"
+          ? "Billing timed out — compression not delivered. Retry with the same Idempotency-Key."
+          : "Billing unavailable — compression not delivered. Retry with the same Idempotency-Key."
+      );
+      e.status = err.status || 503;
+      e.code = err.code || "billing_unavailable";
+      e.requestId = requestId;
+      throw e;
+    }
+
+    res.setHeader("Idempotency-Key", requestId);
+    return jsonWithRateLimit(res, 200, responseBody, rl);
   } catch (err) {
     let status = err.status || 500;
     if (err.code === "timeout" && !err.status) status = 504;
