@@ -1,8 +1,8 @@
 /**
  * Pluggable coding-agent MCP adapters.
  *
- * Built-ins: Hermes (~/.hermes/config.yaml mcp_servers),
- *            OpenClaw (~/.openclaw/openclaw.json mcp.servers),
+ * Built-ins: Hermes (~/.hermes/config.yaml mcp_servers + auto-compress),
+ *            OpenClaw (~/.openclaw/openclaw.json mcp.servers + auto-compress),
  *            plus Cursor-style mcp-json / OpenCode / Codex formats for custom agents.
  *
  * Custom plugins: ~/.supercompress/agent-plugins.json
@@ -24,7 +24,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 
 const HOME = os.homedir();
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(HOME, ".supercompress");
@@ -214,7 +214,8 @@ function writeOpenClawJson(filePath) {
   }
   data.mcp = data.mcp && typeof data.mcp === "object" ? data.mcp : {};
   data.mcp.servers = data.mcp.servers && typeof data.mcp.servers === "object" ? data.mcp.servers : {};
-  const entry = mcpStdioEntry();
+  // Always absolute node+mcp — OpenClaw gateway PATH often lacks npm bins
+  const entry = mcpStdioEntry({ preferAbsolute: true });
   data.mcp.servers.supercompress = {
     command: entry.command,
     args: entry.args,
@@ -644,6 +645,227 @@ hooks:
   return { configPath, hooksDest, pluginDest, instructionPath, installed };
 }
 
+function copyTree(src, dest) {
+  if (!src || !fs.existsSync(src)) return false;
+  fs.mkdirSync(dest, { recursive: true });
+  for (const ent of fs.readdirSync(src, { withFileTypes: true })) {
+    const from = path.join(src, ent.name);
+    const to = path.join(dest, ent.name);
+    if (ent.isDirectory()) copyTree(from, to);
+    else fs.copyFileSync(from, to);
+  }
+  return true;
+}
+
+function enableOpenClawAutoConfig(configPath, { pluginDest } = {}) {
+  let data = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      data = parseLooseJson(fs.readFileSync(configPath, "utf8"));
+    } catch (err) {
+      throw new Error(`OpenClaw config is not valid JSON/JSON5 (${configPath}): ${err.message}`);
+    }
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error(`OpenClaw config must be a JSON object (${configPath})`);
+  }
+
+  data.hooks = data.hooks && typeof data.hooks === "object" ? data.hooks : {};
+  data.hooks.internal =
+    data.hooks.internal && typeof data.hooks.internal === "object" ? data.hooks.internal : {};
+  data.hooks.internal.enabled = true;
+  data.hooks.internal.entries =
+    data.hooks.internal.entries && typeof data.hooks.internal.entries === "object"
+      ? data.hooks.internal.entries
+      : {};
+  data.hooks.internal.entries["supercompress-bootstrap"] = {
+    ...(data.hooks.internal.entries["supercompress-bootstrap"] || {}),
+    enabled: true,
+  };
+  data.hooks.internal.entries["supercompress-compact"] = {
+    ...(data.hooks.internal.entries["supercompress-compact"] || {}),
+    enabled: true,
+  };
+
+  data.plugins = data.plugins && typeof data.plugins === "object" ? data.plugins : {};
+  data.plugins.entries =
+    data.plugins.entries && typeof data.plugins.entries === "object" ? data.plugins.entries : {};
+  data.plugins.entries.supercompress = {
+    ...(data.plugins.entries.supercompress || {}),
+    enabled: true,
+    hooks: {
+      ...((data.plugins.entries.supercompress && data.plugins.entries.supercompress.hooks) || {}),
+      allowConversationAccess: true,
+      timeoutMs: 25000,
+    },
+  };
+
+  data.plugins.load =
+    data.plugins.load && typeof data.plugins.load === "object" ? data.plugins.load : {};
+  const loadPaths = Array.isArray(data.plugins.load.paths) ? [...data.plugins.load.paths] : [];
+  if (pluginDest) {
+    const already = loadPaths.some(
+      (p) => String(p).includes("extensions/supercompress") || String(p) === pluginDest
+    );
+    if (!already) loadPaths.push(pluginDest);
+  }
+  data.plugins.load.paths = loadPaths;
+
+  if (Array.isArray(data.plugins.allow) && !data.plugins.allow.includes("supercompress")) {
+    data.plugins.allow.push("supercompress");
+  }
+
+  fs.writeFileSync(configPath, JSON.stringify(data, null, 2) + "\n");
+}
+
+/**
+ * Wire OpenClaw: MCP + AGENTS.md + managed skill + internal hooks + extension plugin.
+ * Parity with Hermes auto-compress (OpenClaw uses plugins/hooks instead of shell yaml hooks).
+ */
+function writeOpenClawAutoCompress(openclawHome = path.join(HOME, ".openclaw")) {
+  const installed = [];
+  fs.mkdirSync(openclawHome, { recursive: true });
+
+  const configPath = path.join(openclawHome, "openclaw.json");
+  writeOpenClawJson(configPath);
+  installed.push("mcp");
+
+  const instructionPath = path.join(openclawHome, "AGENTS.md");
+  writeInstructionFile(instructionPath);
+  installed.push("AGENTS.md");
+
+  const assetsRoot = path.join(__dirname, "openclaw-hooks");
+  const libSrc = path.join(__dirname, "cursor-hooks", "compress-prompt-lib.js");
+
+  const skillDest = path.join(openclawHome, "skills", "supercompress");
+  if (copyTree(path.join(assetsRoot, "skills", "supercompress"), skillDest)) {
+    installed.push("skill");
+  }
+
+  const hooksRoot = path.join(openclawHome, "hooks");
+  for (const name of ["supercompress-bootstrap", "supercompress-compact"]) {
+    const dest = path.join(hooksRoot, name);
+    if (copyTree(path.join(assetsRoot, "hooks", name), dest)) {
+      if (fs.existsSync(libSrc)) {
+        fs.copyFileSync(libSrc, path.join(dest, "compress-prompt-lib.js"));
+      }
+    }
+  }
+  installed.push("hooks");
+
+  const pluginDest = path.join(openclawHome, "extensions", "supercompress");
+  if (copyTree(path.join(assetsRoot, "plugin"), pluginDest)) {
+    if (fs.existsSync(libSrc)) {
+      fs.copyFileSync(libSrc, path.join(pluginDest, "compress-prompt-lib.js"));
+    }
+    installed.push("plugin");
+  }
+
+  enableOpenClawAutoConfig(configPath, { pluginDest });
+  installed.push("hooks+plugins config");
+
+  // Best-effort CLI enable when openclaw/claw is on PATH
+  for (const bin of ["openclaw", "claw"]) {
+    if (!commandExists(bin)) continue;
+    try {
+      for (const hook of ["supercompress-bootstrap", "supercompress-compact"]) {
+        spawnSync(bin, ["hooks", "enable", hook], {
+          encoding: "utf8",
+          timeout: 15000,
+          env: process.env,
+        });
+      }
+      spawnSync(bin, ["plugins", "enable", "supercompress"], {
+        encoding: "utf8",
+        timeout: 15000,
+        env: process.env,
+      });
+      installed.push(`cli:${bin}`);
+    } catch {
+      /* ignore — config already enables hooks/plugin */
+    }
+    break;
+  }
+
+  return { configPath, skillDest, hooksRoot, pluginDest, instructionPath, installed };
+}
+
+/** Drop OpenClaw skill / hooks / plugin + config entries written by writeOpenClawAutoCompress. */
+function removeOpenClawAutoCompressArtifacts(openclawHome = path.join(HOME, ".openclaw")) {
+  const removed = [];
+  if (!fs.existsSync(openclawHome)) return removed;
+
+  for (const rel of [
+    ["skills", "supercompress"],
+    ["hooks", "supercompress-bootstrap"],
+    ["hooks", "supercompress-compact"],
+    ["extensions", "supercompress"],
+  ]) {
+    const dest = path.join(openclawHome, ...rel);
+    if (!fs.existsSync(dest)) continue;
+    try {
+      fs.rmSync(dest, { recursive: true, force: true });
+      removed.push(`OpenClaw ${rel.join("/")}`);
+    } catch (err) {
+      console.error(`  ✗ Failed to remove ${dest}: ${err.message}`);
+    }
+  }
+
+  const configPath = path.join(openclawHome, "openclaw.json");
+  if (fs.existsSync(configPath)) {
+    try {
+      let data = parseLooseJson(fs.readFileSync(configPath, "utf8"));
+      let changed = false;
+
+      if (data?.hooks?.internal?.entries?.["supercompress-bootstrap"]) {
+        delete data.hooks.internal.entries["supercompress-bootstrap"];
+        changed = true;
+      }
+      if (data?.hooks?.internal?.entries?.["supercompress-compact"]) {
+        delete data.hooks.internal.entries["supercompress-compact"];
+        changed = true;
+      }
+      if (data?.plugins?.entries?.supercompress) {
+        delete data.plugins.entries.supercompress;
+        changed = true;
+      }
+      if (Array.isArray(data?.plugins?.load?.paths)) {
+        const next = data.plugins.load.paths.filter(
+          (p) => !String(p).includes("extensions/supercompress")
+        );
+        if (next.length !== data.plugins.load.paths.length) {
+          data.plugins.load.paths = next;
+          changed = true;
+        }
+      }
+      if (Array.isArray(data?.plugins?.allow)) {
+        const nextAllow = data.plugins.allow.filter((id) => id !== "supercompress");
+        if (nextAllow.length !== data.plugins.allow.length) {
+          data.plugins.allow = nextAllow;
+          changed = true;
+        }
+      }
+      if (data?.mcp?.servers?.supercompress) {
+        delete data.mcp.servers.supercompress;
+        if (data.mcp.servers && Object.keys(data.mcp.servers).length === 0) {
+          delete data.mcp.servers;
+        }
+        if (data.mcp && Object.keys(data.mcp).length === 0) delete data.mcp;
+        changed = true;
+      }
+
+      if (changed) {
+        fs.writeFileSync(configPath, JSON.stringify(data, null, 2) + "\n");
+        removed.push("OpenClaw auto config");
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to clean OpenClaw config: ${err.message}`);
+    }
+  }
+
+  return removed;
+}
+
 function pluginDetected(plugin) {
   // Explicitly registered custom plugins always count as present
   if (plugin.alwaysInstall || (!plugin.builtin && plugin.id)) {
@@ -892,7 +1114,10 @@ module.exports = {
   writeHermesYaml,
   removeHermesYaml,
   writeHermesAutoCompress,
+  writeOpenClawAutoCompress,
+  removeOpenClawAutoCompressArtifacts,
   writeOpenClawJson,
+  removeOpenClawJson,
   writeMcpJson,
   writeInstructionFile,
   instructionBody,

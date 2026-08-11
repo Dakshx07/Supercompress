@@ -1,0 +1,16 @@
+{
+  "name": "supercompress-openclaw",
+  "version": "1.0.0",
+  "description": "SuperCompress auto-compress plugin for OpenClaw",
+  "type": "module",
+  "main": "index.js",
+  "openclaw": {
+    "extensions": ["./index.js"],
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

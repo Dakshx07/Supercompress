@@ -149,6 +149,10 @@ async function main() {
         console.log(`  ✓ Hermes auto-compress: ${result.hermes.installed.join(", ")}`);
         console.log("    → pre_llm_call + post_tool_call hooks + transform plugin + native compact");
       }
+      if (result.openclaw?.installed?.length) {
+        console.log(`  ✓ OpenClaw auto-compress: ${result.openclaw.installed.join(", ")}`);
+        console.log("    → MCP + skill + managed hooks + extension plugin (tool dump → inbox)");
+      }
       if (result.cleared.length) {
         console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
       }
