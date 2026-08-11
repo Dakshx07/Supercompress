@@ -5,6 +5,7 @@
  *   - only compress *new* chunks (seen hashes skipped)
  *   - append into rolling session memory
  *   - when memory gets big, compact it back down
+ * Inbox is session-scoped: inbox/<sessionId>/latest.{md,json}
  */
 const fs = require("fs");
 const os = require("os");
@@ -23,6 +24,8 @@ const SESSIONS_DIR = path.join(CONFIG_DIR, "sessions");
 const COMPACT_CHARS = Number(process.env.SUPERCOMPRESS_COMPACT_CHARS || 24000);
 /** Keep at most this many seen block hashes per session (LRU-ish trim). */
 const MAX_SEEN = Number(process.env.SUPERCOMPRESS_MAX_SEEN || 500);
+/** Hosted API hard cap — chunk above this rather than 422. */
+const API_MAX_CHARS = Number(process.env.SUPERCOMPRESS_API_MAX_CHARS || 120000);
 
 function loadApiKey() {
   const envKey = String(process.env.SUPERCOMPRESS_API_KEY || "").trim();
@@ -60,17 +63,39 @@ function splitAskAndContext(text) {
   return { ask: raw.trim(), context: "" };
 }
 
+function safeSessionSegment(sessionId) {
+  const raw = String(sessionId || "").trim();
+  if (!raw) return null;
+  return raw.replace(/[^\w.-]+/g, "_").slice(0, 80) || null;
+}
+
+/** Session-scoped inbox directory (required for writes that carry a session id). */
+function inboxDirForSession(sessionId) {
+  const safe = safeSessionSegment(sessionId);
+  if (!safe) return INBOX_DIR;
+  return path.join(INBOX_DIR, safe);
+}
+
+function inboxPaths(sessionId) {
+  const dir = inboxDirForSession(sessionId);
+  return {
+    dir,
+    latestMd: path.join(dir, "latest.md"),
+    latestJson: path.join(dir, "latest.json"),
+  };
+}
+
 function writeInbox(query, compressed, meta, extra = {}) {
-  fs.mkdirSync(INBOX_DIR, { recursive: true, mode: 0o700 });
-  const latestMd = path.join(INBOX_DIR, "latest.md");
-  const latestJson = path.join(INBOX_DIR, "latest.json");
+  const sessionId = extra.session_id || extra.sessionId || null;
+  const { dir, latestMd, latestJson } = inboxPaths(sessionId);
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const body = [
     "# SuperCompress context digest",
     "",
     `Saved: ${new Date().toISOString()}`,
     meta ? `Stats: ${meta}` : "",
     extra.kind ? `Kind: ${extra.kind}` : "",
-    extra.session_id ? `Session: ${extra.session_id}` : "",
+    sessionId ? `Session: ${sessionId}` : "",
     "",
     "## User ask (never compressed)",
     "",
@@ -91,6 +116,7 @@ function writeInbox(query, compressed, meta, extra = {}) {
         compressed,
         meta,
         ...extra,
+        session_id: sessionId || extra.session_id || null,
       },
       null,
       2
@@ -100,8 +126,39 @@ function writeInbox(query, compressed, meta, extra = {}) {
   return latestMd;
 }
 
+function readInboxDigest(sessionId) {
+  const safe = safeSessionSegment(sessionId);
+  if (!safe) return "";
+  try {
+    const p = path.join(INBOX_DIR, safe, "latest.md");
+    if (!fs.existsSync(p)) return "";
+    const body = fs.readFileSync(p, "utf8").trim();
+    return body.length > 40 ? body : "";
+  } catch {
+    return "";
+  }
+}
+
 function hashText(text) {
   return crypto.createHash("sha256").update(String(text || "")).digest("hex").slice(0, 16);
+}
+
+function fullHash(text) {
+  return crypto.createHash("sha256").update(String(text || "")).digest("hex");
+}
+
+/** Stable Idempotency-Key so hook timeouts can safely retry without double-billing. */
+function stableIdempotencyKey({ sessionId, context, mode }) {
+  const h = crypto
+    .createHash("sha256")
+    .update(String(sessionId || ""))
+    .update("\0")
+    .update(fullHash(context))
+    .update("\0")
+    .update(String(mode || "compiler"))
+    .digest("hex")
+    .slice(0, 40);
+  return `sc_${h}`;
 }
 
 function resolveSessionId(input = {}) {
@@ -218,18 +275,25 @@ function extractNewBlocks(context, seen = {}) {
   return blocks.filter((b) => b.length >= 40 && !seen[hashText(b)]);
 }
 
-/** Compress context against a query. Query is never sent as compressible context. */
-async function compressContext(context, query, codingAgent, opts = {}) {
-  const ctx = String(context || "").trim();
-  const q = String(query || "").trim() || "Compress this context for the coding task.";
-  if (!ctx) return { compressed: "", skipped: "empty" };
-  if (ctx.length < 40) {
-    return { compressed: ctx, skipped: "too_small", original_tokens: Math.ceil(ctx.length / 4) };
+function chunkText(text, maxChars = API_MAX_CHARS) {
+  const raw = String(text || "");
+  if (raw.length <= maxChars) return [raw];
+  const chunks = [];
+  for (let i = 0; i < raw.length; i += maxChars) {
+    chunks.push(raw.slice(i, i + maxChars));
   }
-  const apiKey = loadApiKey();
-  if (!apiKey) return { compressed: ctx, skipped: "no_key" };
+  return chunks;
+}
 
-  const clipped = ctx.length > 160000 ? ctx.slice(0, 160000) : ctx;
+async function compressOnce(context, query, codingAgent, opts = {}) {
+  const apiKey = loadApiKey();
+  if (!apiKey) return { compressed: context, skipped: "no_key" };
+
+  const idempotencyKey = stableIdempotencyKey({
+    sessionId: opts.sessionId,
+    context,
+    mode: "compiler",
+  });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 14000);
   try {
@@ -238,25 +302,28 @@ async function compressContext(context, query, codingAgent, opts = {}) {
       headers: {
         "Content-Type": "application/json",
         "X-API-Key": apiKey,
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify({
-        context: clipped,
-        query: q,
+        context,
+        query,
         mode: "compiler",
         coding_agent: codingAgent || "Cursor",
         source: opts.source || "cursor-hook",
         session_id: opts.sessionId || null,
+        request_id: idempotencyKey,
+        idempotency_key: idempotencyKey,
       }),
       signal: controller.signal,
     });
-    if (!res.ok) return { compressed: ctx, skipped: `http_${res.status}` };
+    if (!res.ok) return { compressed: context, skipped: `http_${res.status}` };
     const body = await res.json();
     const compressed =
       body.compressed_text ||
       body.compressed_context ||
       body.compressed ||
-      ctx;
-    const inTok = body.original_tokens || Math.round(clipped.length / 4);
+      context;
+    const inTok = body.original_tokens || Math.round(context.length / 4);
     const outTok = body.kept_tokens || body.compressed_tokens || Math.round(compressed.length / 4);
     const pct =
       body.tokens_saved_pct != null
@@ -272,13 +339,72 @@ async function compressContext(context, query, codingAgent, opts = {}) {
       compressed_tokens: outTok,
       savings_pct: pct,
       latency_ms: body.latency_ms || null,
+      request_id: idempotencyKey,
     };
   } catch (err) {
-    if (err?.name === "AbortError") return { compressed: ctx, skipped: "timeout" };
-    return { compressed: ctx, skipped: "error" };
+    if (err?.name === "AbortError") return { compressed: context, skipped: "timeout" };
+    return { compressed: context, skipped: "error" };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Compress context against a query. Query is never sent as compressible context. */
+async function compressContext(context, query, codingAgent, opts = {}) {
+  const ctx = String(context || "").trim();
+  const q = String(query || "").trim() || "Compress this context for the coding task.";
+  if (!ctx) return { compressed: "", skipped: "empty" };
+  if (ctx.length < 40) {
+    return { compressed: ctx, skipped: "too_small", original_tokens: Math.ceil(ctx.length / 4) };
+  }
+  const apiKey = loadApiKey();
+  if (!apiKey) return { compressed: ctx, skipped: "no_key" };
+
+  const chunks = chunkText(ctx, API_MAX_CHARS);
+  if (chunks.length === 1) {
+    return compressOnce(chunks[0], q, codingAgent, opts);
+  }
+
+  const parts = [];
+  let totalIn = 0;
+  let totalOut = 0;
+  let lastSkip = null;
+  for (let i = 0; i < chunks.length; i++) {
+    const partQuery = `${q} (part ${i + 1}/${chunks.length})`;
+    const r = await compressOnce(chunks[i], partQuery, codingAgent, {
+      ...opts,
+      // Distinct keys per chunk so retries stay bound to that slice.
+      sessionId: `${opts.sessionId || "default"}:chunk${i}`,
+    });
+    if (
+      !r.compressed ||
+      r.skipped === "no_key" ||
+      r.skipped === "timeout" ||
+      r.skipped === "error" ||
+      String(r.skipped || "").startsWith("http_")
+    ) {
+      lastSkip = r.skipped || "error";
+      // Keep raw chunk so we do not drop context on partial failure.
+      parts.push(chunks[i]);
+      totalIn += Math.round(chunks[i].length / 4);
+      totalOut += Math.round(chunks[i].length / 4);
+      continue;
+    }
+    parts.push(r.compressed);
+    totalIn += r.original_tokens || Math.round(chunks[i].length / 4);
+    totalOut += r.compressed_tokens || Math.round(r.compressed.length / 4);
+  }
+  const compressed = parts.join("\n\n");
+  const pct = totalIn > 0 ? Math.round(((totalIn - totalOut) / totalIn) * 100) : 0;
+  return {
+    compressed,
+    original_tokens: totalIn,
+    compressed_tokens: totalOut,
+    savings_pct: pct,
+    skipped: lastSkip && parts.every((p, i) => p === chunks[i]) ? lastSkip : null,
+    chunked: true,
+    chunks: chunks.length,
+  };
 }
 
 /**
@@ -350,27 +476,22 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
   let compacted = false;
   let compactMeta = null;
   if (state.memory.length >= COMPACT_CHARS) {
-    const compactQuery =
-      `${query || "coding task"} | Compact this session memory. ` +
-      "Keep decisions, file paths, errors, APIs, open TODOs, and key code. Drop chatter and duplicates.";
-    const compactResult = await compressContext(state.memory, compactQuery, codingAgent, {
-      source: kind === "mcp" ? "mcp" : kind || "cursor-hook",
-      sessionId: sid,
+    const compactResult = await compactSessionMemory(sid, query, {
+      codingAgent,
+      kind,
+      persistInbox: false,
+      state,
     });
-    if (compactResult.compressed && !String(compactResult.skipped || "").startsWith("http_")) {
-      state.memory = [
-        `# Session compact · ${new Date().toISOString().slice(0, 19)}`,
-        "",
-        compactResult.compressed.trim(),
-      ].join("\n");
-      state.compacted_at = new Date().toISOString();
+    if (compactResult.compacted) {
       compacted = true;
       compactMeta = compactResult;
-      markSeen(state, hashText(state.memory));
+    } else {
+      // Compact failed — still persist the appended delta memory.
+      saveSession(sid, state);
     }
+  } else {
+    saveSession(sid, state);
   }
-
-  saveSession(sid, state);
 
   const inTok = deltaResult.original_tokens || 0;
   const outTok = Math.round(state.memory.length / 4);
@@ -389,6 +510,70 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
   };
 }
 
+/**
+ * Compact existing session memory (used by OpenClaw compact:before).
+ * Unlike compressIncremental(""), this always runs COMPACT against memory.
+ */
+async function compactSessionMemory(sessionId, query, opts = {}) {
+  const sid = sessionId || "default";
+  const state = opts.state || loadSession(sid);
+  const memory = String(state.memory || "").trim();
+  if (memory.length < 80) {
+    return {
+      compressed: memory,
+      skipped: "too_small",
+      session_id: sid,
+      compacted: false,
+    };
+  }
+
+  const codingAgent = opts.codingAgent || "OpenClaw";
+  const compactQuery =
+    `${query || "coding task"} | Compact this session memory. ` +
+    "Keep decisions, file paths, errors, APIs, open TODOs, and key code. Drop chatter and duplicates.";
+  const compactResult = await compressContext(memory, compactQuery, codingAgent, {
+    source: opts.kind === "mcp" ? "mcp" : opts.kind || "openclaw:compact",
+    sessionId: sid,
+  });
+
+  if (
+    !compactResult.compressed ||
+    compactResult.skipped === "no_key" ||
+    compactResult.skipped === "timeout" ||
+    compactResult.skipped === "error" ||
+    String(compactResult.skipped || "").startsWith("http_")
+  ) {
+    return { ...compactResult, session_id: sid, compacted: false };
+  }
+
+  state.memory = [
+    `# Session compact · ${new Date().toISOString().slice(0, 19)}`,
+    "",
+    compactResult.compressed.trim(),
+  ].join("\n");
+  state.compacted_at = new Date().toISOString();
+  markSeen(state, hashText(state.memory));
+  saveSession(sid, state);
+
+  const meta = `${compactResult.original_tokens || "?"}→${
+    compactResult.compressed_tokens || Math.round(state.memory.length / 4)
+  } (−${compactResult.savings_pct || 0}%)`;
+  if (opts.persistInbox !== false) {
+    writeInbox(query || "compact session memory", state.memory, meta, {
+      kind: opts.kind || "openclaw-compact",
+      session_id: sid,
+      compacted: true,
+    });
+  }
+
+  return {
+    ...compactResult,
+    compressed: state.memory,
+    session_id: sid,
+    compacted: true,
+  };
+}
+
 // Back-compat alias (old name) — still means context compress
 async function compressPrompt(context, codingAgent) {
   return compressContext(context, "Compress this context for the coding agent.", codingAgent);
@@ -397,8 +582,11 @@ async function compressPrompt(context, codingAgent) {
 module.exports = {
   compressContext,
   compressIncremental,
+  compactSessionMemory,
   compressPrompt,
   writeInbox,
+  readInboxDigest,
+  inboxPaths,
   loadApiKey,
   splitAskAndContext,
   resolveSessionId,
@@ -406,9 +594,13 @@ module.exports = {
   saveSession,
   extractNewBlocks,
   hashText,
+  stableIdempotencyKey,
+  chunkText,
+  CONFIG_DIR,
   INBOX_DIR,
   SESSIONS_DIR,
   COMPACT_CHARS,
+  API_MAX_CHARS,
 };
 
 if (require.main === module) {

@@ -8,8 +8,10 @@
  * For authenticated paid endpoints, callers should treat backend !== "firestore"
  * as fail-closed (reject) so multi-instance fans-out cannot bypass the ceiling.
  *
- * Optional requestId makes increments idempotent: a timed-out txn that still
- * commits will not burn a second slot when the client retries with the same id.
+ * Optional requestId makes increments idempotent for *true* retries. Callers
+ * MUST pass a server-calculated operation fingerprint (e.g. SHA-256 of the
+ * billing-relevant payload) — never a client-supplied Idempotency-Key alone,
+ * or distinct requests can share one hit and evade the durable ceiling.
  */
 const crypto = require("crypto");
 const admin = require("firebase-admin");

@@ -5,6 +5,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 ## [Unreleased]
 
 - **OpenClaw auto-compress parity with Hermes**: setup/plugin installs MCP + `AGENTS.md` + managed skill + internal hooks + extension plugin (tool dumps → inbox); uninstall cleans them.
+- **Session-scoped inbox** (`inbox/<sessionId>/`) + `SUPERCOMPRESS_CONFIG_DIR` for OpenClaw plugin/hooks (no global `latest.md` cross-session leak).
+- Exact OpenClaw plugin path match on install/uninstall (no substring deletes).
+- `compactSessionMemory()` for OpenClaw compact:before; chunk dumps ≤120k; stable hook `Idempotency-Key`.
 - **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`).
 - Rank structured-history compression against the **latest user ask in the full thread**, not an older compressible-prefix turn.
 - Send `Idempotency-Key` on compress API calls for safer retries with request-level billing idempotency.

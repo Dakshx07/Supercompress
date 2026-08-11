@@ -1,6 +1,6 @@
 /**
  * OpenClaw internal hook — session compact:before.
- * Nudges the chat + fire-and-forget session memory compact.
+ * Runs a real session-memory compact (not empty-context compressIncremental).
  * Fail-open. ESM.
  */
 import { createRequire } from "node:module";
@@ -14,7 +14,6 @@ function loadLib() {
   const candidates = [
     path.join(__dirname, "compress-prompt-lib.js"),
     path.join(__dirname, "..", "..", "extensions", "supercompress", "compress-prompt-lib.js"),
-    // Dev / package-relative fallback when hooks live next to cursor-hooks
     path.join(__dirname, "..", "..", "..", "cursor-hooks", "compress-prompt-lib.js"),
   ];
   for (const p of candidates) {
@@ -31,30 +30,35 @@ const handler = async (event) => {
   try {
     if (event?.type !== "session" || event?.action !== "compact:before") return;
 
+    const lib = loadLib();
+    const sessionId = lib?.resolveSessionId
+      ? lib.resolveSessionId({
+          sessionId: event.context?.sessionId || event.sessionId,
+          session_id: event.sessionKey || event.context?.sessionKey,
+        })
+      : String(
+          event.context?.sessionId ||
+            event.sessionKey ||
+            event.context?.sessionKey ||
+            "openclaw"
+        )
+          .replace(/[^\w.-]+/g, "_")
+          .slice(0, 80);
+
     if (Array.isArray(event.messages)) {
       event.messages.push(
-        "🗜️ SuperCompress: prefer ~/.supercompress/inbox/latest.md digests over raw dumps while context is compacted."
+        `🗜️ SuperCompress: prefer session inbox digests (inbox/${sessionId}/latest.md) over raw dumps while context is compacted.`
       );
     }
 
-    const lib = loadLib();
-    if (!lib?.compressIncremental) return;
-
-    const sessionId = String(
-      event.context?.sessionId ||
-        event.sessionKey ||
-        event.context?.sessionKey ||
-        "openclaw"
-    ).replace(/[^\w.-]+/g, "_").slice(0, 80);
+    if (!lib?.compactSessionMemory) return;
 
     // Fire-and-forget — do not block compaction.
     void lib
-      .compressIncremental({
-        context: "",
-        query: "Compact OpenClaw session memory before native compaction.",
+      .compactSessionMemory(sessionId, "Compact OpenClaw session memory before native compaction.", {
         codingAgent: "OpenClaw",
-        sessionId,
         kind: "openclaw:compact",
+        persistInbox: true,
       })
       .catch(() => {});
   } catch (err) {

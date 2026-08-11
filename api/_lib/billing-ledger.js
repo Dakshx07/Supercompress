@@ -61,10 +61,69 @@ function tokensToMicros(tokenCount) {
 function billingError(code, message, extra = {}) {
   const err = new Error(message);
   err.code = code;
-  err.status = code === "billing_unavailable" ? 503 : 402;
-  err.paywall = code !== "billing_unavailable";
+  if (Number.isFinite(Number(extra.status))) {
+    err.status = Number(extra.status);
+  } else if (code === "billing_unavailable") {
+    err.status = 503;
+  } else if (code === "idempotency_conflict") {
+    err.status = 409;
+  } else {
+    err.status = 402;
+  }
+  err.paywall = code !== "billing_unavailable" && code !== "idempotency_conflict";
   Object.assign(err, extra);
   return err;
+}
+
+/**
+ * SHA-256 fingerprint of billing-relevant compress request fields.
+ * Used to bind Idempotency-Key / request_id to a specific payload.
+ */
+function computeCompressFingerprint(body = {}) {
+  const crypto = require("crypto");
+  const mode = String(body.mode || "compiler");
+  const normalized = JSON.stringify({
+    context: String(body.context || ""),
+    query: String(body.query || "Summarize this context."),
+    mode,
+    budget_ratio: mode === "fixed" ? Number(body.budget_ratio ?? 0.35) : 0.35,
+    ccr: body.ccr === true || body.ccr === "true",
+    cache_prefix: body.cache_prefix === true || body.cache_prefix === "true",
+  });
+  return crypto.createHash("sha256").update(normalized).digest("hex");
+}
+
+/**
+ * Decide whether an existing billing_usage row is a safe replay.
+ * Throws idempotency_conflict (409) when the key is reused with a different payload.
+ */
+function assertUsageIdempotencyMatch(prev, { fingerprint, tokensIn, tokensOut, tokensSaved }) {
+  if (!prev || typeof prev !== "object") return;
+  const prevFp = String(prev.fingerprint || "").trim();
+  const fp = String(fingerprint || "").trim();
+  if (fp) {
+    if (prevFp && prevFp !== fp) {
+      throw billingError(
+        "idempotency_conflict",
+        "Idempotency-Key reused with a different request payload",
+        { status: 409 }
+      );
+    }
+    if (!prevFp) {
+      // Legacy rows (pre-fingerprint): require identical billing token tuple.
+      const same =
+        Number(prev.tokens_in || 0) === Number(tokensIn || 0) &&
+        Number(prev.tokens_out || 0) === Number(tokensOut || 0) &&
+        Number(prev.tokens_saved || 0) === Number(tokensSaved || 0);
+      if (!same) {
+        throw billingError(
+          "idempotency_conflict",
+          "Idempotency-Key reused with a different request payload",
+          { status: 409 }
+        );
+      }
+    }
+  }
 }
 
 function emptyLedger(claims = {}) {
@@ -273,7 +332,9 @@ function sanitizeRequestId(raw) {
 
 /**
  * Atomically record usage and burn prepaid credit.
- * Idempotent via billing_usage/{uid}:{requestId} (create-once).
+ * Idempotent via billing_usage/{uid}:{requestId} (create-once), bound to a
+ * server-calculated request fingerprint so key reuse with a different payload
+ * returns idempotency_conflict (409) instead of already:true.
  * Throws paywall / billing_unavailable — never silently under-charges.
  */
 async function applyUsageAndBurn({
@@ -283,12 +344,14 @@ async function applyUsageAndBurn({
   tokensSaved,
   claims = {},
   requestId,
+  fingerprint,
 }) {
   if (!uid) throw new Error("uid required");
   const rid = sanitizeRequestId(requestId);
   if (!rid) {
     throw billingError("billing_unavailable", "Billing request id required");
   }
+  const fp = String(fingerprint || "").trim() || null;
   if (!initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
   }
@@ -303,11 +366,18 @@ async function applyUsageAndBurn({
 
     if (usageSnap.exists) {
       const prev = usageSnap.data() || {};
+      assertUsageIdempotencyMatch(prev, {
+        fingerprint: fp,
+        tokensIn,
+        tokensOut,
+        tokensSaved,
+      });
       return {
         burned_micros: Number(prev.burned_micros || 0),
         ledger,
         already: true,
         request_id: rid,
+        fingerprint: prev.fingerprint || fp || null,
       };
     }
 
@@ -318,6 +388,7 @@ async function applyUsageAndBurn({
       {
         uid,
         request_id: rid,
+        fingerprint: fp,
         tokens_in: Number(tokensIn) || 0,
         tokens_out: Number(tokensOut) || 0,
         tokens_saved: Number(tokensSaved) || 0,
@@ -326,7 +397,7 @@ async function applyUsageAndBurn({
       },
       { merge: false }
     );
-    return { ...planned, already: false, request_id: rid };
+    return { ...planned, already: false, request_id: rid, fingerprint: fp };
   });
 
   if (!result.already) {
@@ -523,5 +594,7 @@ module.exports = {
   microsToUsd,
   monthKey,
   sanitizeRequestId,
+  computeCompressFingerprint,
+  assertUsageIdempotencyMatch,
   FREE_TOKENS_PER_MONTH,
 };

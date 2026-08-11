@@ -2,13 +2,11 @@
  * SuperCompress OpenClaw plugin — Headroom-parity auto-compress.
  *
  * - after_tool_call: compress large tool results into session inbox (async)
- * - before_prompt_build: prepend inbox digest so the model prefers digests
+ * - before_prompt_build: prepend *that session's* inbox digest
  *
  * Uses a local definePluginEntry stub (same pattern as community plugins) so
  * we do not need openclaw as a hard dependency at install time.
  */
-import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -17,8 +15,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 const MIN_CHARS = Number(process.env.SUPERCOMPRESS_HOOK_MIN_CHARS || 400);
+/** Accept large dumps; shared lib chunks to the hosted 120k API limit. */
 const MAX_IN = Number(process.env.SUPERCOMPRESS_HOOK_MAX_CHARS || 180000);
-const INBOX_MD = path.join(os.homedir(), ".supercompress", "inbox", "latest.md");
 
 function definePluginEntry(options) {
   return options;
@@ -66,7 +64,14 @@ function extractText(value) {
   return String(value);
 }
 
-function resolveSessionId(event = {}, ctx = {}) {
+function resolveSessionId(event = {}, ctx = {}, lib = null) {
+  if (lib?.resolveSessionId) {
+    return lib.resolveSessionId({
+      sessionId: event.sessionId || ctx.sessionId,
+      session_id: event.sessionKey || ctx.sessionKey,
+      conversationId: event.conversationId || ctx.conversationId,
+    });
+  }
   const raw =
     event.sessionId ||
     ctx.sessionId ||
@@ -75,16 +80,6 @@ function resolveSessionId(event = {}, ctx = {}) {
     process.env.SUPERCOMPRESS_SESSION_ID ||
     "openclaw";
   return String(raw).replace(/[^\w.-]+/g, "_").slice(0, 80);
-}
-
-function readInboxDigest() {
-  try {
-    if (!fs.existsSync(INBOX_MD)) return "";
-    const body = fs.readFileSync(INBOX_MD, "utf8").trim();
-    return body.length > 40 ? body : "";
-  } catch {
-    return "";
-  }
 }
 
 export default definePluginEntry({
@@ -136,7 +131,7 @@ export default definePluginEntry({
         const lib = loadLib();
         if (!lib?.compressIncremental || !lib?.writeInbox) return;
 
-        const sessionId = resolveSessionId(event, ctx);
+        const sessionId = resolveSessionId(event, ctx, lib);
         const query =
           `Compress new ${toolName || "tool"} output for the current OpenClaw task. ` +
           "Preserve code, paths, errors, numbers, and decisions.";
@@ -168,8 +163,12 @@ export default definePluginEntry({
 
     safeOn(
       "before_prompt_build",
-      async () => {
-        const digest = readInboxDigest();
+      async (event, ctx) => {
+        const lib = loadLib();
+        const sessionId = resolveSessionId(event || {}, ctx || {}, lib);
+        const digest = lib?.readInboxDigest
+          ? lib.readInboxDigest(sessionId)
+          : "";
         if (!digest) return;
         return {
           prependContext: [

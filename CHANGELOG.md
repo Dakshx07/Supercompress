@@ -40,9 +40,15 @@ Public page: https://www.supercompress.dev/changelog
 - Auto-recharge once when balance is positive but insufficient, then retry the same request id
 - First-pay bonus create-once via `billing_bonus/{uid}:first_pay`; honest Checkout replay (`already: true`, `creditUsd: 0`)
 - Cumulative micro-USD rounding (`ceil(totalAfter) − ceil(totalBefore)`); idempotent durable rate-limit hits
+- **Bind Idempotency-Key to a server SHA-256 payload fingerprint** — reused key with a different compress body returns `409 idempotency_conflict` (not free recompress)
+- Durable hourly rate-limit hits use the **payload fingerprint**, not the client-chosen request id (stops limit evasion)
 
 ### Coding agent plugin
 - **OpenClaw auto-compress parity with Hermes**: `supercompress setup` / `plugin` wires MCP (absolute node+mcp), `AGENTS.md`, managed skill, internal hooks (`agent:bootstrap` + `session:compact:before`), and an extension plugin that compresses large tool dumps into the inbox
+- **Session-scoped OpenClaw inbox** (`inbox/<sessionId>/latest.md`) so sessions/projects cannot cross-contaminate digests; honor `SUPERCOMPRESS_CONFIG_DIR`
+- OpenClaw plugin path install/uninstall uses **exact absolute path** equality (no substring deletes of `extensions/supercompress-*`)
+- Real `compactSessionMemory()` for OpenClaw `compact:before` (no empty-context no-op)
+- Chunk tool dumps into ≤120k API blocks; hooks send stable `Idempotency-Key` = hash(session + content + mode)
 - Protocol/runtime safety: native `fetch` (drop `node-fetch`), owned-PID-only stop, buffered SSE that preserves `tool_calls`, skip compression for structured tool/Responses items, inject digests as user (not system), fail-open on compress timeout/5xx, block browser `Origin` on local proxy, zstd size caps, spawn via `process.execPath`
 - Non-destructive setup: only clear SuperCompress-owned base URLs; backup before plugin writers; fix instruction-block idempotency; don’t markSeen on compress timeout/error; don’t split long asks without paragraph breaks; secure inbox/session modes; fail connect instead of rotating production API keys; atomic device-link consume via Firestore
 - **Preserve tool-call / tool-result order** when splitting compressible history (no reverse via `unshift`)

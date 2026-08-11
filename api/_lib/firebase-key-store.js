@@ -386,6 +386,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
     sanitizeRequestId(opts.requestId) ||
     sanitizeRequestId(opts.idempotencyKey) ||
     crypto.randomUUID();
+  const fingerprint = String(opts.fingerprint || "").trim() || null;
 
   const ownerClaims = owner.customClaims || {};
 
@@ -399,6 +400,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
       tokensSaved,
       claims: ownerClaims,
       requestId,
+      fingerprint,
     });
   } catch (err) {
     // Positive-but-insufficient balance: recharge once, retry same request id.
@@ -425,6 +427,7 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
             tokensSaved,
             claims: owner.customClaims || ownerClaims,
             requestId,
+            fingerprint,
           });
         } else {
           throw err;
