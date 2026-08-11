@@ -14,6 +14,8 @@ Public page: https://www.supercompress.dev/changelog
 ## [Unreleased]
 
 ### Site / docs
+- Product mail (welcome + Sunday tip + Wednesday ship) sends from Resend on `hello@supercompress.dev`; Ideatrusa/gog drains paused offline
+- Remove weekly tip/ship campaign JSON from the OSS tree (private content dir + `WEEKLY_*_JSON` env)
 - Sync public npm pins to `supercompress-proxy@0.5.17`; extend `check-versions.js` to gate those pins
 - Remove leftover Analytics spark DOM + unused series helpers from dashboard
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`

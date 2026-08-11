@@ -53,6 +53,8 @@ const bannedPaths = [
   "scripts/drain_weekly_emails.py",
   "scripts/dev.supercompress.welcome-drain.plist",
   "scripts/outreach_suppression.py",
+  "api/_lib/weekly-tips.json",
+  "api/_lib/weekly-ship.json",
 ];
 for (const p of bannedPaths) {
   if (listed.includes(p)) hits.push(`tracked private ops path: ${p}`);

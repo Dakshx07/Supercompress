@@ -18,7 +18,28 @@ const REQUIRED = [
   "ctaUrl",
 ];
 
-const tipsPath = path.join(__dirname, "..", "api", "_lib", "weekly-tips.json");
+const os = require("os");
+const tipsCandidates = [
+  process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR
+    ? path.join(process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR, "weekly-tips.json")
+    : null,
+  path.join(
+    os.homedir(),
+    "agent-bridge",
+    "private",
+    "supercompress-email",
+    "content",
+    "weekly-tips.json"
+  ),
+].filter(Boolean);
+
+let tipsPath = tipsCandidates.find((p) => fs.existsSync(p));
+if (!tipsPath) {
+  console.error(
+    "FAIL: weekly-tips.json not found (set SUPERCOMPRESS_EMAIL_CONTENT_DIR or use ~/agent-bridge/private/supercompress-email/content/)"
+  );
+  process.exit(1);
+}
 const campaignId = (process.argv[2] || isoWeekCampaignId()).trim();
 
 let data;

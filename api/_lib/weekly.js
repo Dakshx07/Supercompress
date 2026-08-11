@@ -1,7 +1,6 @@
 /**
  * Weekly product email for all signed-up users (used by api/account.js).
- * Enqueues by ISO week; drains via Resend when configured, otherwise
- * queues for the gog Gmail drain script.
+ * Enqueues by ISO week; drains via Resend (`RESEND_API_KEY` required to send).
  */
 
 const crypto = require("crypto");
@@ -284,7 +283,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
       sent: 0,
       failed: 0,
       remaining: null,
-      errors: [{ error: "RESEND_API_KEY not configured — use gog drain" }],
+      errors: [{ error: "RESEND_API_KEY not configured — cannot send weekly email" }],
       mode: "enqueue_only",
     };
   }
@@ -350,7 +349,7 @@ async function drainPendingWeekly({ limit = BATCH_SIZE, campaignId } = {}) {
 /**
  * Sunday tip / Wednesday ship tick.
  * force: tip | ship | drain | full campaign id (e.g. 2026-W32-ship)
- * Without RESEND_API_KEY: enqueue only (gog drain sends).
+ * Without RESEND_API_KEY: enqueue only (no send).
  * With key: send up to BATCH_SIZE via Resend.
  * Off-schedule days: drain pending only (no new enqueue).
  */
@@ -372,7 +371,7 @@ async function weeklyTick(opts = {}) {
         failed: 0,
         remaining: null,
         errors: [],
-        note: "No campaign today (tips = Sunday, ship = Wednesday). Drain pending with gog if needed.",
+        note: "No campaign today (tips = Sunday, ship = Wednesday). Pending waits for Resend drain.",
       };
     }
     const drain = await drainPendingWeekly({ limit: BATCH_SIZE });
@@ -388,7 +387,7 @@ async function weeklyTick(opts = {}) {
     };
   }
 
-  // No Resend → queue for gog drain instead of burning failed attempts
+  // No Resend → queue only (do not burn failed send attempts)
   if (!hasResendKey()) {
     const enqueue = await enqueueWeeklyCampaign(campaignId);
     return {
@@ -408,7 +407,7 @@ async function weeklyTick(opts = {}) {
       errors: [],
       drain: { sent: 0, failed: 0, remaining: enqueue.pending, batch: 0, mode: "enqueue_only" },
       enqueue,
-      note: "RESEND_API_KEY not configured — queued for gog drain",
+      note: "RESEND_API_KEY not configured — queued until Resend is available",
     };
   }
 
