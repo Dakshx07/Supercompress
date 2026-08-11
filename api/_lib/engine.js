@@ -68,7 +68,11 @@ function compress(context, query, budgetRatio = 0.35) {
 async function compressAdaptive(context, query) {
   const E = getEngine();
   const neuralBoost = await loadNeuralBoost(context, query);
-  return E.compressAdaptive(context, query, getModel(), neuralBoost ? { neuralBoost } : null);
+  // Hosted API never returns line_annotations — skip building them (big win on large dumps).
+  return E.compressAdaptive(context, query, getModel(), {
+    includeAnnotations: false,
+    ...(neuralBoost ? { neuralBoost } : {}),
+  });
 }
 
 async function compressCCR(context, query) {
@@ -76,6 +80,7 @@ async function compressCCR(context, query) {
   const neuralBoost = await loadNeuralBoost(context, query);
   return E.compressCCR(context, query, getModel(), {
     enableMarkers: true,
+    includeAnnotations: false,
     neuralBoost: neuralBoost || undefined,
   });
 }

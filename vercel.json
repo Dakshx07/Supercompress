@@ -1394,6 +1394,10 @@
     }
   ],
   "functions": {
+    "api/v1/compress.js": {
+      "maxDuration": 60,
+      "includeFiles": "web/assets/**"
+    },
     "api/**/*.js": {
       "maxDuration": 30,
       "includeFiles": "web/assets/**"

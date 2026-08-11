@@ -108,9 +108,26 @@ async function enforceUsageLimit(owner) {
   throw err;
 }
 
+/** Soft deadline so Firestore/Stripe side-effects don't push past Vercel maxDuration. */
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      const err = new Error(`${label || "operation"} timed out after ${ms}ms`);
+      err.code = "timeout";
+      reject(err);
+    }, ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
   if (req.method !== "POST" && req.method !== "GET") return json(res, 405, { detail: "Method not allowed" });
+
+  const requestStarted = Date.now();
+  // Leave headroom under function maxDuration (60s for this route) for response flush.
+  const HARD_BUDGET_MS = 55_000;
 
   try {
     // Support API key from: X-API-Key header, Authorization Bearer, or ?api_key query param
@@ -141,9 +158,17 @@ module.exports = async (req, res) => {
         retry_after_seconds: Math.max(1, Math.ceil((rlMem.resetMs - Date.now()) / 1000)),
       }, rlMem);
     }
-    const rl = await enforceRateLimits([
-      { key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 },
-    ]);
+    let rl;
+    try {
+      rl = await withTimeout(
+        enforceRateLimits([{ key: `v1ip:h:${ip}`, max: V1_IP_HOURLY, windowMs: 60 * 60_000 }]),
+        2000,
+        "rate_limit"
+      );
+    } catch (_) {
+      rl = checkRateLimit(`v1ip:h:${ip}`, V1_IP_HOURLY, 60 * 60_000);
+      rl.backend = "memory-deadline";
+    }
     if (!rl.allowed) {
       return jsonWithRateLimit(res, 429, {
         detail: `IP rate limit exceeded (${V1_IP_HOURLY}/hour). Spread traffic or contact support.`,
@@ -188,8 +213,8 @@ module.exports = async (req, res) => {
       return json(res, 422, { detail: "context too long (120k max)" });
     }
 
-    const authenticated = await authenticateKey(raw);
-    await enforceUsageLimit(authenticated.owner);
+    const authenticated = await withTimeout(authenticateKey(raw), 8000, "authenticate");
+    await withTimeout(enforceUsageLimit(authenticated.owner), 10000, "usage_limit");
 
     if (mode === "fixed" && (budgetRatio < 0.05 || budgetRatio > 1)) {
       const err = new Error("invalid budget_ratio");
@@ -202,7 +227,18 @@ module.exports = async (req, res) => {
       ? compress(context, query, budgetRatio)
       : await (ccr ? compressCCR(context, query) : compressAdaptive(context, query));
     const latencyMs = Math.max(0, Date.now() - compressStarted);
-    await recordUsage(authenticated.user, authenticated.owner, result);
+
+    const remainingMs = () => HARD_BUDGET_MS - (Date.now() - requestStarted);
+    // Billing must complete when possible; cap so a hung Firebase write can't 504.
+    try {
+      await withTimeout(
+        recordUsage(authenticated.user, authenticated.owner, result),
+        Math.max(1500, Math.min(12000, remainingMs() - 2000)),
+        "record_usage"
+      );
+    } catch (err) {
+      console.warn("recordUsage skipped:", err.message);
+    }
 
     // Infer source when client omitted it (agent key name / coding_agent).
     const inferredSource =
@@ -212,15 +248,15 @@ module.exports = async (req, res) => {
         ? "agent"
         : "api");
 
-    // Activity log: capped previews only (never full dumps).
-    if (!skipLog) {
+    // Activity log: capped previews only (never full dumps). Skip when budget is tight.
+    if (!skipLog && remainingMs() > 4000) {
       try {
         const { appendCompressLog } = require("../_lib/compress-log");
         const tokensSaved = Math.max(
           0,
           result.tokens_saved ?? Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0))
         );
-        await appendCompressLog(authenticated.ownerUid, {
+        await withTimeout(appendCompressLog(authenticated.ownerUid, {
           query,
           original_preview: context,
           compressed_preview: result.compressed_text,
@@ -234,7 +270,7 @@ module.exports = async (req, res) => {
           source: inferredSource,
           session_id: session_id || null,
           latency_ms: latencyMs,
-        });
+        }), Math.min(4000, remainingMs() - 1500), "compress_log");
       } catch (err) {
         console.warn("compress log skipped:", err.message);
       }
@@ -242,18 +278,18 @@ module.exports = async (req, res) => {
 
     // Track coding agent usage in a dedicated Firestore collection (more reliable
     // than mutating the monolithic config/store document).
-    if (coding_agent) {
+    if (coding_agent && remainingMs() > 3000) {
       try {
         const { trackCodingAgentUsage } = require("../_lib/store");
         const tokensSaved = Math.max(0, (result.original_tokens || 0) - (result.kept_tokens || 0));
-        await trackCodingAgentUsage(authenticated.ownerUid, coding_agent, {
+        await withTimeout(trackCodingAgentUsage(authenticated.ownerUid, coding_agent, {
           original_tokens: result.original_tokens,
           kept_tokens: result.kept_tokens,
           tokens_saved: tokensSaved,
           latency_ms: latencyMs,
           query,
           source: inferredSource,
-        });
+        }), Math.min(3000, remainingMs() - 1000), "coding_agent_usage");
       } catch (err) {
         console.warn("Failed to track coding agent usage:", err.message);
       }
@@ -265,40 +301,54 @@ module.exports = async (req, res) => {
     // persist each block's text to Blob so retrieval works across cold starts.
     // For fixed+CCR, fall back to basic full-context storage (no block markers).
     let ccrInfo = null;
-    if (ccr && result.ccr) {
-      // Compiler mode + CCR: compressCCR produced interspersed markers
-      const { stored, stored_hashes, full_stored } = await storeCcrBlocks(result.ccr, context, {
-        ownerUid: authenticated.ownerUid,
-        keyId: authenticated.keyId || authenticated.user?.id,
-      });
-      if (stored) {
-        ccrInfo = {
-          hash: result.ccr.hash,
-          marker_hashes: result.ccr.marker_hashes || [],
-          markers_count: result.ccr.markers_count || 0,
-          stored_hashes,
-          full_stored,
-          retrieve_url: `/retrieve?hash=${result.ccr.hash}`,
-        };
-      }
-    } else if (ccr) {
-      // Fixed mode + CCR (or any mode where compressCCR wasn't used):
-      // Fall back to simple full-context storage with end-of-text marker
-      const { simpleHash, ccrStoreFirestore } = require("../_lib/engine");
-      const ccrHash = simpleHash(context);
-      const stored = await ccrStoreFirestore(ccrHash, context, {
-        ownerUid: authenticated.ownerUid,
-        keyId: authenticated.keyId || authenticated.user?.id,
-      });
-      if (stored) {
-        ccrInfo = {
-          hash: ccrHash,
-          marker_hashes: [],
-          markers_count: 0,
-          stored_hashes: [],
-          full_stored: true,
-          retrieve_url: `/retrieve?hash=${ccrHash}`,
-        };
+    if (ccr && remainingMs() > 2500) {
+      try {
+        if (result.ccr) {
+          // Compiler mode + CCR: compressCCR produced interspersed markers
+          const { stored, stored_hashes, full_stored } = await withTimeout(
+            storeCcrBlocks(result.ccr, context, {
+              ownerUid: authenticated.ownerUid,
+              keyId: authenticated.keyId || authenticated.user?.id,
+            }),
+            Math.min(8000, remainingMs() - 1000),
+            "ccr_store"
+          );
+          if (stored) {
+            ccrInfo = {
+              hash: result.ccr.hash,
+              marker_hashes: result.ccr.marker_hashes || [],
+              markers_count: result.ccr.markers_count || 0,
+              stored_hashes,
+              full_stored,
+              retrieve_url: `/retrieve?hash=${result.ccr.hash}`,
+            };
+          }
+        } else {
+          // Fixed mode + CCR (or any mode where compressCCR wasn't used):
+          // Fall back to simple full-context storage with end-of-text marker
+          const { simpleHash, ccrStoreFirestore } = require("../_lib/engine");
+          const ccrHash = simpleHash(context);
+          const stored = await withTimeout(
+            ccrStoreFirestore(ccrHash, context, {
+              ownerUid: authenticated.ownerUid,
+              keyId: authenticated.keyId || authenticated.user?.id,
+            }),
+            Math.min(5000, remainingMs() - 1000),
+            "ccr_store_full"
+          );
+          if (stored) {
+            ccrInfo = {
+              hash: ccrHash,
+              marker_hashes: [],
+              markers_count: 0,
+              stored_hashes: [],
+              full_stored: true,
+              retrieve_url: `/retrieve?hash=${ccrHash}`,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("CCR store skipped:", err.message);
       }
     }
 
@@ -339,7 +389,8 @@ module.exports = async (req, res) => {
       source: inferredSource,
     }, rl);
   } catch (err) {
-    const status = err.status || 500;
+    let status = err.status || 500;
+    if (err.code === "timeout" && !err.status) status = 504;
     // Expected auth/validation failures are not production incidents — avoid
     // inflating Vercel Observability error rate via console.error.
     if (status >= 500) console.error("compress error", err);
