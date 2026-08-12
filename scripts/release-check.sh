@@ -8,6 +8,7 @@ node --check api/account.js
 node --check api/v1/compress.js
 node --check web/assets/js/supercompress.js
 node scripts/check-versions.js
+node scripts/check-api-host-routes.js
 
 node - <<'NODE'
 const fs = require('fs');

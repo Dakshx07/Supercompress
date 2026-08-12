@@ -1,3 +1,9 @@
+## Hard bans (product)
+
+| Ban | Meaning |
+|-----|---------|
+| **No api-host catch-all redirects** | Never add `/:path*`, `/((?!api…)…)`, or any regex redirect on `api.supercompress.dev`. That 308'd `/compress` (POST→GET) and took production down. Explicit marketing paths only. After `vercel.json` edits run `node scripts/check-api-host-routes.js`. |
+
 ## Agent Bridge dashboard
 
 Control plane MCP: `agent-bridge-dashboard` (`bridge_*` tools). Skill: `agent-bridge-dashboard`.
