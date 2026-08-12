@@ -38,22 +38,12 @@
     if (message) el.textContent = message;
   }
 
-  function animateNumber(el, to, { suffix = "", compact = false, duration = 900 } = {}) {
+  function animateNumber(el, to, { suffix = "", compact = false } = {}) {
     const kit = DK();
     if (!el) return;
-    if (!kit) {
-      el.textContent = (compact ? String(Math.round(to)) : String(Math.round(to))) + suffix;
-      return;
-    }
-    const t0 = performance.now();
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
-    const frame = (now) => {
-      const p = Math.min(1, (now - t0) / duration);
-      const v = to * ease(p);
-      el.textContent = (compact ? kit.formatCompact(v) : String(Math.round(v))) + suffix;
-      if (p < 1) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
+    const n = Number(to);
+    const v = Number.isFinite(n) ? Math.max(0, n) : 0;
+    el.textContent = (compact && kit ? kit.formatCompact(v) : String(Math.round(v))) + suffix;
   }
 
   function paint(series) {
@@ -99,46 +89,29 @@
       yMax: areaMax,
       empty: !series.areaData.some((d) => d.y > 0),
       emptyLabel: "No daily savings yet",
+      data: series.areaData,
+      interactive: true,
     };
-    kit.animateChart((p) => {
-      kit.renderAreaChart(areaEl, {
-        ...areaOpts,
-        data: series.areaData.map((d) => ({ x: d.x, y: d.y * p })),
-        interactive: false,
-      });
-      if (p > 0.98) {
-        kit.renderAreaChart(areaEl, { ...areaOpts, data: series.areaData, interactive: true });
-        kit.startChartDitherLoop(areaEl, {
-          kind: "area",
-          ...areaOpts,
-          data: series.areaData,
-          interactive: true,
-        });
-      }
-    }, 1100);
+    kit.renderAreaChart(areaEl, areaOpts);
+    kit.startChartDitherLoop(areaEl, { kind: "area", ...areaOpts });
 
-    kit.animateChart((p) => {
-      const done = p > 0.98;
-      const barOpts = {
-        data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
-        orientation: "vertical",
-        color: "brand",
-        variant: "gradient",
-        bloom: "aura",
-        maxBars: 30,
-        progress: done ? 1 : p,
-        yMax: reqMax,
-        unit: "requests",
-        tooltipTitle: "Requests",
-        interactive: done,
-        empty: !series.reqs.some((r) => r.value > 0),
-        emptyLabel: "No requests yet",
-      };
-      kit.renderBarChart(barsEl, barOpts);
-      if (done) {
-        kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts, progress: 1, interactive: true });
-      }
-    }, 1100);
+    const barOpts = {
+      data: series.reqs.map((r) => ({ label: r.label, value: r.value, full: r.full })),
+      orientation: "vertical",
+      color: "brand",
+      variant: "gradient",
+      bloom: "aura",
+      maxBars: 30,
+      progress: 1,
+      yMax: reqMax,
+      unit: "requests",
+      tooltipTitle: "Requests",
+      interactive: true,
+      empty: !series.reqs.some((r) => r.value > 0),
+      emptyLabel: "No requests yet",
+    };
+    kit.renderBarChart(barsEl, barOpts);
+    kit.startChartDitherLoop(barsEl, { kind: "bar", ...barOpts });
 
     const esc = data.escapeHtml;
     const agentTotal = series.agents.reduce((s, a) => s + a.value, 0) || 1;
@@ -208,18 +181,30 @@
     }
     if (loading) return;
     if (loadedOnce && !force) {
-      // Re-paint washes on revisit (canvas size can stale after hide)
-      for (const [id, opts] of washes) {
-        const el = $(id);
-        if (el) kit.renderDitherWash(el, opts);
+      const areaH = $("an-area")?.querySelector("canvas")?.getBoundingClientRect().height || 0;
+      if (areaH >= 80) {
+        for (const [id, opts] of washes) {
+          const el = $(id);
+          if (el) kit.renderDitherWash(el, opts);
+        }
+        return;
       }
-      return;
+      // First paint happened while the panel was 0×0 — do a full redraw.
     }
 
     loading = true;
     setLoading(true, "Loading your live usage…");
     setPill("load", "Live · loading…");
     try {
+      await new Promise((resolve) => {
+        let n = 16;
+        const tick = () => {
+          const w = $("an-area")?.getBoundingClientRect().width || 0;
+          if (w > 40 || n-- <= 0) return resolve();
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
       const token = await getIdToken();
       if (!token) throw new Error("Not signed in");
       const payload = await fetchKeys(token);

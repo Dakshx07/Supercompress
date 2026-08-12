@@ -116,12 +116,13 @@
 
   function sizeCanvases(host, crisp, bloom) {
     const rect = host.getBoundingClientRect();
-    // Hidden tabs report 0×0 — fall back to CSS height / sensible defaults.
-    const cssHAttr = parseFloat(getComputedStyle(host).height) || 0;
+    // Hidden tabs report 0×0 — fall back to CSS height / min-height / sensible defaults.
+    const cs = host ? getComputedStyle(host) : null;
+    const cssHAttr = parseFloat(cs?.height) || parseFloat(cs?.minHeight) || 0;
     const cssW = Math.max(40, Math.round(rect.width || host.clientWidth || host.parentElement?.clientWidth || 640));
     const cssH = Math.max(
-      40,
-      Math.round(rect.height || host.clientHeight || cssHAttr || 220)
+      120,
+      Math.round(rect.height || host.clientHeight || cssHAttr || 260)
     );
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     for (const c of [crisp, bloom]) {
@@ -601,7 +602,9 @@
     const t0 = performance.now();
     const ease = (t) => 1 - Math.pow(1 - t, 3);
     const frame = (now) => {
-      const p = Math.min(1, (now - t0) / Math.max(1, duration));
+      let p = (now - t0) / Math.max(1, duration);
+      if (!Number.isFinite(p) || p < 0) p = 1;
+      p = Math.min(1, p);
       fn(ease(p));
       if (p < 1) requestAnimationFrame(frame);
     };
