@@ -91,6 +91,9 @@ echo "api=$API"
 echo "docs=$DOCS"
 echo
 
+# Static guard before any HTTP — fail PRs that reintroduce the catch-all outage.
+node scripts/check-api-host-routes.js
+
 # Domains / edge
 check "www home" 200 "$WWW/"
 check_api_root_redirect 8 || true
@@ -159,6 +162,19 @@ for host_label in www api; do
       expect_body "${host_label} ${path} body" 'API key' "$body"
     fi
   done
+done
+
+# Other API aliases on api host must not 308 either (no follow).
+for path in /retrieve /api/retrieve /api/health /api/keys /api/account; do
+  code="$(curl -sS -o "$TMP/alias" -w '%{http_code}' --max-time 25 "$API$path" || echo 000)"
+  loc="$(curl -sS -o /dev/null -w '%{redirect_url}' --max-time 25 "$API$path" || true)"
+  if [[ "$code" == "301" || "$code" == "302" || "$code" == "307" || "$code" == "308" ]]; then
+    echo "FAIL api GET ${path} redirected ($code → $loc) — API aliases must stay on api host"
+    fail=$((fail + 1))
+  else
+    echo "PASS api GET ${path} no-redirect ($code)"
+    pass=$((pass + 1))
+  fi
 done
 
 # GET compress must be method-not-allowed (not 5xx)

@@ -9,6 +9,7 @@ on:
     paths:
       - "scripts/prod-smoke.sh"
       - "scripts/ensure-prod-domains.sh"
+      - "scripts/check-api-host-routes.js"
       - "api/**"
       - "vercel.json"
       - ".github/workflows/prod-smoke.yml"

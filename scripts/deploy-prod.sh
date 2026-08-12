@@ -17,6 +17,7 @@ fi
 
 npm ci --omit=optional --ignore-scripts --no-audit --no-fund
 npm run release:check
+node scripts/check-api-host-routes.js
 vercel deploy --prod --yes
 
 # Critical: api.supercompress.dev (and siblings) must stay aliased or the API
