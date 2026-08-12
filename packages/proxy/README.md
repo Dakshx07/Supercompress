@@ -77,6 +77,7 @@ Your agent ──→ SuperCompress (hooks / MCP) ──→ smaller context ─�
 
 | Command | What it does |
 |---------|----------------|
+| `supercompress` / `tui` | Interactive paper-branded UI (default in a TTY; [Bun](https://bun.sh)) |
 | `supercompress setup` | **Recommended** — link account, detect agents, install MCP + hooks |
 | `supercompress plugin` | Refresh agent integrations anytime |
 | `supercompress agents` | List supported / detected agents |

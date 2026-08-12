@@ -179,6 +179,12 @@ async function main() {
     assert.equal(require(path.join(ROOT, "package.json")).name, "supercompress-proxy");
     assert.ok(fs.existsSync(path.join(ROOT, "bin/supercompress.js")));
     assert.ok(fs.existsSync(path.join(ROOT, "src/mcp.js")));
+    assert.ok(fs.existsSync(path.join(ROOT, "tui/index.ts")));
+    const ver = spawnSync(process.execPath, [path.join(ROOT, "bin/supercompress.js"), "--version"], {
+      encoding: "utf8",
+      timeout: 10000,
+    });
+    assert.match(String(ver.stdout || "").trim(), new RegExp(`^${VERSION.replace(/\./g, "\\.")}$`));
     const help = spawnSync(process.execPath, [path.join(ROOT, "bin/supercompress.js"), "help"], {
       encoding: "utf8",
       timeout: 10000,
