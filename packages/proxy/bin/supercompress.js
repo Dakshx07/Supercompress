@@ -50,39 +50,85 @@ function saveConfig(config) {
 
 function printLogo() {
   console.log("");
-  console.log("  ╔══════════════════════════════════════╗");
-  console.log(`  ║         SuperCompress v${VERSION.padEnd(8)}       ║`);
-  console.log("  ║   Cut your coding agent costs ~65%   ║");
-  console.log("  ╚══════════════════════════════════════╝");
+  console.log(`  ◆ SuperCompress  v${VERSION}`);
+  console.log("    cut agent context · keep the answer");
   console.log("");
 }
 
 function printHelp() {
-  console.log("Usage: supercompress <command>");
+  console.log("Usage: supercompress [command]");
   console.log("");
   console.log("  Commands:");
-  console.log("  setup       Recommended — link account, auto-detect agents, install MCP + hooks");
-  console.log("  plugin      Re-run detect + install MCP/hooks/instructions for every agent");
-  console.log("  connect     Link this install to your SuperCompress account");
-  console.log("  account     Show the connected SuperCompress account");
-  console.log("  usage       Plan, quota, and token savings by coding agent");
-  console.log("  start       Start the optional local proxy server");
-  console.log("  stop        Stop the proxy server");
-  console.log("  status      Check if the proxy is running");
-  console.log("  agents      Show supported agents and detected integrations");
-  console.log("  agents add  Register a custom MCP-capable agent (pluggable)");
-  console.log("  agents rm   Remove a custom agent plugin");
-  console.log("  mcp-check   Verify the SuperCompress MCP server responds");
-  console.log("  restart     Restart the proxy server");
-  console.log("  uninstall   Remove SuperCompress configs and revert agent integrations");
+  console.log("  (none) / tui   Interactive paper-branded UI (default in a TTY; needs Bun)");
+  console.log("  setup          Recommended — link account, auto-detect agents, install MCP + hooks");
+  console.log("  plugin         Re-run detect + install MCP/hooks/instructions for every agent");
+  console.log("  connect        Link this install to your SuperCompress account");
+  console.log("  account        Show the connected SuperCompress account");
+  console.log("  usage          Plan, quota, and token savings by coding agent");
+  console.log("  start          Start the optional local proxy server");
+  console.log("  stop           Stop the proxy server");
+  console.log("  status         Check if the proxy is running");
+  console.log("  agents         Show supported agents and detected integrations");
+  console.log("  agents add     Register a custom MCP-capable agent (pluggable)");
+  console.log("  agents rm      Remove a custom agent plugin");
+  console.log("  mcp-check      Verify the SuperCompress MCP server responds");
+  console.log("  restart        Restart the proxy server");
+  console.log("  uninstall      Remove SuperCompress configs and revert agent integrations");
+  console.log("  help           This message (also: --help, --plain)");
   console.log("");
   console.log("Examples:");
+  console.log("  supercompress");
   console.log("  supercompress setup");
   console.log("  supercompress plugin");
   console.log("  supercompress account");
   console.log("  supercompress usage");
   console.log("  supercompress usage --json");
   console.log("  supercompress status");
+}
+
+function findBun() {
+  try {
+    const out = execFileSync("which", ["bun"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+function wantsTui(cmd) {
+  if (process.env.SUPERCOMPRESS_TUI === "0" || process.env.SUPERCOMPRESS_TUI === "false") return false;
+  if (!cmd) return Boolean(process.stdout.isTTY);
+  return cmd === "tui" || cmd === "ui" || cmd === "--tui";
+}
+
+function launchTui() {
+  const entry = path.join(__dirname, "..", "tui", "index.ts");
+  if (!fs.existsSync(entry)) {
+    console.error("  ✗ TUI entry missing from this install.");
+    return false;
+  }
+  const bun = findBun();
+  if (!bun) {
+    console.log("  → Interactive UI needs Bun: https://bun.sh");
+    console.log("    then re-run `supercompress` (or `supercompress tui`).");
+    console.log("  → Classic commands still work: setup · usage · account · plugin …");
+    console.log("");
+    return false;
+  }
+  const result = spawn(bun, [entry], {
+    stdio: "inherit",
+    cwd: path.join(__dirname, ".."),
+    env: process.env,
+  });
+  result.on("exit", (code) => process.exit(code == null ? 0 : code));
+  result.on("error", (err) => {
+    console.error(`  ✗ Failed to start TUI: ${err.message}`);
+    process.exit(1);
+  });
+  return true;
 }
 
 async function connectAccount() {
@@ -102,11 +148,20 @@ async function connectAccount() {
 }
 
 async function main() {
-  const cmd = process.argv[2] || "help";
+  const cmd = process.argv[2];
+  if (cmd === "--version" || cmd === "-v" || cmd === "version") {
+    console.log(VERSION);
+    return;
+  }
+  if (wantsTui(cmd)) {
+    if (launchTui()) return;
+    printLogo();
+    printHelp();
+    return;
+  }
 
   printLogo();
-
-  switch (cmd) {
+  switch (cmd || "help") {
     case "connect":
       try { await connectAccount(); } catch (err) { console.error(`  ✗ ${err.message}`); process.exit(1); }
       break;
@@ -406,6 +461,11 @@ async function main() {
     }
 
     case "help":
+    case "--help":
+    case "-h":
+    case "--plain":
+      printHelp();
+      break;
     default:
       printHelp();
       break;

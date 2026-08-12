@@ -4,6 +4,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.19] — 2026-08-12
+
+- **Interactive TUI** (`supercompress` / `supercompress tui`): paper-branded OpenTUI dashboard with live usage, account, connect, setup, plugin, agents, proxy, and MCP check. Needs [Bun](https://bun.sh); classic commands still work without it (`SUPERCOMPRESS_TUI=0` or `--plain`).
 - Align CLI/MCP `usage` totals with the dashboard billing ledger (not coding-agent subset alone).
 - Stable MCP launch after npm/brew upgrades: PATH `node` + package `mcp.js` (not Homebrew Cellar-pinned binaries); postinstall refreshes MCP paths without clearing auth.
 - Docs: run `supercompress plugin` after upgrades to refresh integrations without reconnecting.

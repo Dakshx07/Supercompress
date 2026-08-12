@@ -198,6 +198,9 @@ async function main() {
     const help = execFileSync(process.execPath, ["bin/supercompress.js", "help"], { cwd: ROOT, encoding: "utf8" });
     assert.match(help, /setup/);
     assert.match(help, /agents/);
+    assert.match(help, /tui/i);
+    assert.ok(fs.existsSync(path.join(ROOT, "tui/index.ts")));
+    assert.ok(fs.existsSync(path.join(ROOT, "tui/theme.ts")));
     const agents = execFileSync(process.execPath, ["bin/supercompress.js", "agents"], { cwd: ROOT, encoding: "utf8" });
     assert.match(agents, /Cursor/);
     assert.match(agents, /48 catalogued|Supported coding agents/i);

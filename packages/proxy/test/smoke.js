@@ -96,8 +96,9 @@ async function main() {
     cwd: PACKAGE_ROOT,
     encoding: "utf8",
   });
-  assert.match(help, /supercompress <command>/i);
+  assert.match(help, /Usage: supercompress/i);
   assert.match(help, /setup/);
+  assert.match(help, /tui/i);
 
   const localEngine = require(path.join(PACKAGE_ROOT, "src/local-engine"));
   const context = Array.from({ length: 80 }, (_, index) =>
