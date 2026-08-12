@@ -16,6 +16,7 @@ const {
   markWelcome,
   drainPendingWelcomes,
 } = require("./_lib/welcome");
+const { drainPendingPowerUsers } = require("./_lib/power-user");
 const {
   weeklyTick,
   listPendingWeekly,
@@ -582,6 +583,12 @@ module.exports = async (req, res) => {
     if (!drainSecretOk(req, body)) return json(res, 401, { detail: "Unauthorized" });
     try {
       const result = await drainPendingWelcomes();
+      let power_user = null;
+      try {
+        power_user = await drainPendingPowerUsers();
+      } catch (powerErr) {
+        power_user = { ok: false, error: powerErr.message || "power_user_drain_failed" };
+      }
       // Also nudge weekly queue so mid-week backlog clears on the daily cron.
       let weekly = null;
       try {
@@ -589,7 +596,7 @@ module.exports = async (req, res) => {
       } catch (weeklyErr) {
         weekly = { ok: false, error: weeklyErr.message || "weekly_tick_failed" };
       }
-      return json(res, 200, { ok: true, ...result, weekly });
+      return json(res, 200, { ok: true, ...result, power_user, weekly });
     } catch (err) {
       return json(res, err.status || 500, { detail: err.message });
     }
