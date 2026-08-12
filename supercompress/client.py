@@ -127,7 +127,12 @@ class SuperCompress:
             kept_line_ratio=float(data.get("kept_line_ratio", 0.0) or 0.0),
             policy_name=data.get("policy_name", "") or "supercompress",
             mode=data.get("mode", mode),
-            keep_ratio=float(data.get("keep_ratio", budget_ratio or 0.35) or 0.35),
+            keep_ratio=float(
+                data["keep_ratio"]
+                if data.get("keep_ratio") is not None
+                else budget_ratio if budget_ratio is not None
+                else 0.35
+            ),
             cache_prefix_applied=bool(data.get("cache_prefix_applied", False)),
             compression_risk=data.get("compression_risk"),
             confidence=data.get("confidence"),
