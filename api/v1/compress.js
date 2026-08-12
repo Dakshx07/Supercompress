@@ -213,20 +213,27 @@ module.exports = async (req, res) => {
         "rate_limit"
       );
     } catch (err) {
-      return json(res, 503, {
-        detail: "Rate limit service unavailable. Retry shortly.",
-        code: "rate_limit_unavailable",
-        request_id: requestId,
-      }, { "Idempotency-Key": requestId });
+      console.warn("durable rate limit timed out; using in-memory hourly IP:", err.message || err);
+      rl = { backend: "firestore-unavailable", error: err.message || "timeout", allowed: true };
     }
+    // Firestore durable RL is preferred, but must never hard-down compress when
+    // Cloud Firestore is disabled/timeout — fall back to in-memory hourly IP.
     if (rl.backend && rl.backend !== "firestore") {
-      return json(res, 503, {
-        detail: "Rate limit service unavailable. Retry shortly.",
-        code: "rate_limit_unavailable",
-        request_id: requestId,
-      }, { "Idempotency-Key": requestId });
-    }
-    if (!rl.allowed) {
+      console.warn(
+        "durable rate limit unavailable; using in-memory hourly IP fallback:",
+        rl.backend,
+        rl.error || ""
+      );
+      const rlHour = checkRateLimit(`v1ip:h:${ip}`, V1_IP_HOURLY, 60 * 60_000);
+      if (!rlHour.allowed) {
+        return jsonWithRateLimit(res, 429, {
+          detail: `IP rate limit exceeded (${V1_IP_HOURLY}/hour). Spread traffic or contact support.`,
+          retry_after_seconds: Math.max(1, Math.ceil((rlHour.resetMs - Date.now()) / 1000)),
+          request_id: requestId,
+        }, rlHour);
+      }
+      rl = { ...rlHour, backend: "memory-fallback", limit: V1_IP_HOURLY };
+    } else if (!rl.allowed) {
       return jsonWithRateLimit(res, 429, {
         detail: `IP rate limit exceeded (${V1_IP_HOURLY}/hour). Spread traffic or contact support.`,
         retry_after_seconds: Math.max(1, Math.ceil((rl.resetMs - Date.now()) / 1000)),

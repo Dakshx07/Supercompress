@@ -274,6 +274,16 @@ function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }
   };
 }
 
+function isFirestoreBackendDown(err) {
+  if (!err) return false;
+  const code = err.code;
+  if (code === 7 || code === "7" || code === "SERVICE_DISABLED") return true;
+  const msg = String(err.message || err || "");
+  return /SERVICE_DISABLED|Cloud Firestore API has not been used|firestore\.googleapis\.com|PERMISSION_DENIED: Cloud Firestore/i.test(
+    msg
+  );
+}
+
 async function loadLedger(uid, claims = {}) {
   if (!uid || !initFirebaseAdmin()) {
     throw billingError("billing_unavailable", "Billing ledger unavailable");
@@ -283,9 +293,100 @@ async function loadLedger(uid, claims = {}) {
     return normalizeLedger(snap.exists ? snap.data() : null, claims);
   } catch (err) {
     if (err.code === "billing_unavailable") throw err;
-    console.warn("billing-ledger load failed:", err.message || err);
-    throw billingError("billing_unavailable", "Billing ledger unavailable");
+    console.warn("billing-ledger load failed — using Auth claims:", err.message || err);
+    return normalizeLedger(null, claims);
   }
+}
+
+/**
+ * When Cloud Firestore is disabled/unavailable, bill via Auth claims only.
+ * Do not depend on gist here — gist rate limits caused the outage recovery path
+ * to fail. Replay text is not stored (claims size); retries recompress but do
+ * not double-bill (request id watermark on claims).
+ */
+async function applyUsageAndBurnClaimsFallback({
+  uid,
+  tokensIn,
+  tokensOut,
+  tokensSaved,
+  claims = {},
+  requestId,
+  fingerprint,
+  response = null,
+}) {
+  const rid = sanitizeRequestId(requestId);
+  const fp = String(fingerprint || "").trim() || null;
+  if (!rid) throw billingError("billing_unavailable", "Billing request id required");
+
+  const fresh = await admin().auth().getUser(uid);
+  const liveClaims = { ...(fresh.customClaims || {}), ...claims };
+  const recent = Array.isArray(liveClaims.sc_recent_billing)
+    ? liveClaims.sc_recent_billing
+    : [];
+  const prior = recent.find((r) => r && r.i === rid);
+  if (prior) {
+    assertUsageIdempotencyMatch(
+      {
+        fingerprint: prior.f || null,
+        tokens_in: prior.tin,
+        tokens_out: prior.tout,
+        tokens_saved: prior.ts,
+      },
+      {
+        fingerprint: fp,
+        tokensIn,
+        tokensOut,
+        tokensSaved,
+      }
+    );
+    return {
+      burned_micros: Number(prior.b || 0),
+      ledger: normalizeLedger(null, liveClaims),
+      already: true,
+      request_id: rid,
+      fingerprint: prior.f || fp || null,
+      response: null,
+      backend: "claims-fallback",
+    };
+  }
+
+  const ledger = normalizeLedger(null, liveClaims);
+  const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims: liveClaims });
+  const nextRecent = [
+    {
+      i: rid.slice(0, 64),
+      f: fp ? String(fp).slice(0, 32) : null,
+      tin: Number(tokensIn) || 0,
+      tout: Number(tokensOut) || 0,
+      ts: Number(tokensSaved) || 0,
+      b: planned.burned_micros,
+      t: Date.now(),
+    },
+    ...recent,
+  ].slice(0, 5);
+
+  await admin().auth().setCustomUserClaims(uid, {
+    ...liveClaims,
+    sc_usage: {
+      month: planned.ledger.month,
+      requests: planned.ledger.requests,
+      tokens_in: planned.ledger.tokens_in,
+      tokens_out: planned.ledger.tokens_out,
+      tokens_saved: planned.ledger.tokens_saved,
+      tokens_reported: planned.ledger.tokens_reported || 0,
+    },
+    sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
+    sc_recent_billing: nextRecent,
+  });
+
+  return {
+    ...planned,
+    already: false,
+    request_id: rid,
+    fingerprint: fp,
+    response: sanitizeReplayResponse(response),
+    backend: "claims-fallback",
+  };
 }
 
 /**
@@ -371,12 +472,22 @@ async function lookupUsageReplay(uid, requestId) {
   if (!uid || !rid || !initFirebaseAdmin()) return null;
   try {
     const snap = await db().collection("billing_usage").doc(`${uid}:${rid}`).get();
-    if (!snap.exists) return null;
-    return snap.data() || null;
+    if (snap.exists) return snap.data() || null;
   } catch (err) {
-    console.warn("lookupUsageReplay failed:", err?.message || err);
-    return null;
+    if (!isFirestoreBackendDown(err)) {
+      console.warn("lookupUsageReplay failed:", err?.message || err);
+    }
   }
+  // Firestore-down fallback: gist-backed idempotency rows.
+  try {
+    const { loadStore } = require("./store");
+    const store = await loadStore();
+    const prev = store.billing_usage_fallback?.[`${uid}:${rid}`];
+    if (prev) return prev;
+  } catch (err) {
+    console.warn("lookupUsageReplay fallback failed:", err?.message || err);
+  }
+  return null;
 }
 
 async function applyUsageAndBurn({
@@ -402,59 +513,95 @@ async function applyUsageAndBurn({
 
   const ref = db().collection("billing").doc(uid);
   const usageRef = db().collection("billing_usage").doc(`${uid}:${rid}`);
-  const result = await db().runTransaction(async (tx) => {
-    // All reads before writes (Firestore txn rule).
-    const usageSnap = await tx.get(usageRef);
-    const snap = await tx.get(ref);
-    const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
+  let result;
+  try {
+    result = await db().runTransaction(async (tx) => {
+      // All reads before writes (Firestore txn rule).
+      const usageSnap = await tx.get(usageRef);
+      const snap = await tx.get(ref);
+      const ledger = normalizeLedger(snap.exists ? snap.data() : null, claims);
 
-    if (usageSnap.exists) {
-      const prev = usageSnap.data() || {};
-      assertUsageIdempotencyMatch(prev, {
+      if (usageSnap.exists) {
+        const prev = usageSnap.data() || {};
+        assertUsageIdempotencyMatch(prev, {
+          fingerprint: fp,
+          tokensIn,
+          tokensOut,
+          tokensSaved,
+        });
+        // Backfill response on legacy rows that billed before replay storage existed.
+        if (replay && !prev.response) {
+          tx.set(usageRef, { response: replay }, { merge: true });
+        }
+        return {
+          burned_micros: Number(prev.burned_micros || 0),
+          ledger,
+          already: true,
+          request_id: rid,
+          fingerprint: prev.fingerprint || fp || null,
+          response: prev.response || replay || null,
+        };
+      }
+
+      const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
+      tx.set(ref, planned.ledger, { merge: true });
+      tx.set(
+        usageRef,
+        {
+          uid,
+          request_id: rid,
+          fingerprint: fp,
+          tokens_in: Number(tokensIn) || 0,
+          tokens_out: Number(tokensOut) || 0,
+          tokens_saved: Number(tokensSaved) || 0,
+          burned_micros: planned.burned_micros,
+          created_at: new Date().toISOString(),
+          ...(replay ? { response: replay } : {}),
+        },
+        { merge: false }
+      );
+      return {
+        ...planned,
+        already: false,
+        request_id: rid,
         fingerprint: fp,
+        response: replay,
+      };
+    });
+  } catch (err) {
+    if (err.paywall || err.code === "free_quota_exhausted" || err.code === "credits_exhausted" || err.code === "idempotency_conflict") {
+      throw err;
+    }
+    // Any Firestore outage (disabled API, timeout, permission) must not 100%-down compress.
+    console.warn(
+      "billing-ledger: Firestore txn failed — claims/gist billing fallback:",
+      err?.code,
+      err?.message || err
+    );
+    try {
+      return await applyUsageAndBurnClaimsFallback({
+        uid,
         tokensIn,
         tokensOut,
         tokensSaved,
-      });
-      // Backfill response on legacy rows that billed before replay storage existed.
-      if (replay && !prev.response) {
-        tx.set(usageRef, { response: replay }, { merge: true });
-      }
-      return {
-        burned_micros: Number(prev.burned_micros || 0),
-        ledger,
-        already: true,
-        request_id: rid,
-        fingerprint: prev.fingerprint || fp || null,
-        response: prev.response || replay || null,
-      };
-    }
-
-    const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
-    tx.set(ref, planned.ledger, { merge: true });
-    tx.set(
-      usageRef,
-      {
-        uid,
-        request_id: rid,
+        claims,
+        requestId: rid,
         fingerprint: fp,
-        tokens_in: Number(tokensIn) || 0,
-        tokens_out: Number(tokensOut) || 0,
-        tokens_saved: Number(tokensSaved) || 0,
-        burned_micros: planned.burned_micros,
-        created_at: new Date().toISOString(),
-        ...(replay ? { response: replay } : {}),
-      },
-      { merge: false }
-    );
-    return {
-      ...planned,
-      already: false,
-      request_id: rid,
-      fingerprint: fp,
-      response: replay,
-    };
-  });
+        response,
+      });
+    } catch (fallbackErr) {
+      if (
+        fallbackErr.paywall ||
+        fallbackErr.code === "free_quota_exhausted" ||
+        fallbackErr.code === "credits_exhausted" ||
+        fallbackErr.code === "idempotency_conflict"
+      ) {
+        throw fallbackErr;
+      }
+      console.error("billing-ledger claims fallback failed:", fallbackErr?.message || fallbackErr);
+      throw billingError("billing_unavailable", "Billing ledger unavailable");
+    }
+  }
 
   if (!result.already) {
     await mirrorClaims(uid, result.ledger);
