@@ -14,6 +14,7 @@ Public page: https://www.supercompress.dev/changelog
 ## [Unreleased]
 
 ### Site / docs
+- GitHub Sponsors on the Supercompress repo (`FUNDING.yml` + Sponsor badge) → [@arjunkshah12345-hash](https://github.com/sponsors/arjunkshah12345-hash)
 - Product mail campaign copy lives in private GitHub `Supercompress/email-campaigns` (not OSS); loaders read Vercel env / local mirror
 - Product mail (welcome + Sunday tip + Wednesday ship) sends from Resend on `hello@supercompress.dev`; Ideatrusa/gog drains paused offline
 - Remove weekly tip/ship campaign JSON from the OSS tree (private content dir + `WEEKLY_*_JSON` env)
