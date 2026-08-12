@@ -58,6 +58,7 @@ function emptyStore() {
     agent_links: {},
     welcome_emails: {},
     power_user_emails: {},
+    billing_usage_fallback: {},
     weekly_emails: {},
     weekly_unsubscribes: {},
     compress_logs: {},
@@ -84,6 +85,10 @@ function normalizeStore(raw) {
     agent_links: raw.agent_links && typeof raw.agent_links === "object" ? raw.agent_links : {},
     welcome_emails: raw.welcome_emails && typeof raw.welcome_emails === "object" ? raw.welcome_emails : {},
     power_user_emails: raw.power_user_emails && typeof raw.power_user_emails === "object" ? raw.power_user_emails : {},
+    billing_usage_fallback:
+      raw.billing_usage_fallback && typeof raw.billing_usage_fallback === "object"
+        ? raw.billing_usage_fallback
+        : {},
     weekly_emails: raw.weekly_emails && typeof raw.weekly_emails === "object" ? raw.weekly_emails : {},
     weekly_unsubscribes: raw.weekly_unsubscribes && typeof raw.weekly_unsubscribes === "object" ? raw.weekly_unsubscribes : {},
     compress_logs: raw.compress_logs && typeof raw.compress_logs === "object" ? raw.compress_logs : {},
