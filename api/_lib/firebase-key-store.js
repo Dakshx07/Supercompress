@@ -422,6 +422,24 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
 
   // Authoritative wallet/quota first — never bump analytics before a durable burn.
   let applied;
+  const schedulePowerUserIfCrossed = (prevTokens, nextTokens, extra = {}) => {
+    try {
+      const { schedulePowerUserEmail } = require("./power-user");
+      schedulePowerUserEmail({
+        uid: owner.uid,
+        email: owner.email || extra.email || "",
+        displayName: owner.displayName || extra.displayName || "",
+        prevTokens,
+        nextTokens,
+        tokensSaved: extra.tokensSaved != null ? extra.tokensSaved : tokensSaved,
+        requests: extra.requests != null ? extra.requests : Number(ownerClaims.sc_usage?.requests || 0) + 1,
+        source: extra.source || "compress",
+      });
+    } catch (err) {
+      console.warn("power-user email skipped:", err.message || err);
+    }
+  };
+
   try {
     applied = await applyUsageAndBurn({
       uid: owner.uid,
@@ -434,6 +452,14 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
       response: opts.response || null,
     });
   } catch (err) {
+    if (err.code === "free_quota_exhausted") {
+      const prev = Number(ownerClaims.sc_usage?.tokens_in || 0);
+      schedulePowerUserIfCrossed(prev, prev + Number(compressed.original_tokens || 0), {
+        tokensSaved: Number(ownerClaims.sc_usage?.tokens_saved || 0),
+        requests: Number(ownerClaims.sc_usage?.requests || 0),
+        source: "free_quota_wall",
+      });
+    }
     // Positive-but-insufficient balance: recharge once, retry same request id.
     if (err.code === "credits_exhausted") {
       let autoOn = Boolean(ownerClaims.sc_auto_recharge);
@@ -485,6 +511,15 @@ async function recordUsage(keyRec, owner, compressed, opts = {}) {
   // Per-key analytics only after successful (or idempotent replay) billing.
   // Skip on replay so timeout→retry does not inflate dashboard counters twice.
   if (!applied.already) {
+    const prevMonthly = Math.max(
+      0,
+      Number(ledger.tokens_in || 0) - Number(compressed.original_tokens || 0)
+    );
+    schedulePowerUserIfCrossed(prevMonthly, Number(ledger.tokens_in || 0), {
+      tokensSaved: Number(ledger.tokens_saved || 0),
+      requests: Number(ledger.requests || 0),
+    });
+
     let durableOk = false;
     try {
       const { trackKeyUsage } = require("./store");

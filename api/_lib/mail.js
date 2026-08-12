@@ -465,8 +465,9 @@ async function sendWelcomeEmail({ email, firstName }) {
 }
 
 /**
- * One-off power-user blast for accounts past 1M tokens.
- * @param {{ firstName: string, email: string, rank: number, tokensIn: number, tokensSaved: number, requests: number, morePct: number, cutPct: number }} opts
+ * Power-user email when someone newly crosses 1M tokens.
+ * Rank/leaderboard lines are optional (omit for the automatic trigger).
+ * @param {{ firstName?: string, email: string, rank?: number, tokensIn?: number, tokensSaved?: number, requests?: number, morePct?: number, cutPct?: number }} opts
  */
 function powerUserCopy({
   firstName,
@@ -480,13 +481,16 @@ function powerUserCopy({
 }) {
   const hi = firstName ? `Hey ${firstName}` : "Hey";
   const name = firstName || "there";
-  const subject = "You are officially a Supercompress power user!";
+  const subject = firstName
+    ? `${firstName}, congrats — you're a SuperCompress power user`
+    : "Congrats — you're a SuperCompress power user";
   const billingUrl = `${SITE}/dashboard?panel=billing`;
   const tin = Number(tokensIn || 0);
   const saved = Number(tokensSaved || 0);
   const reqs = Number(requests || 0);
   const more = Number(morePct || 0);
   const cut = Number(cutPct || 0);
+  const hasRank = Number(rank) > 0;
   const fmt = (n) => {
     const v = Number(n || 0);
     if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
@@ -509,41 +513,65 @@ function powerUserCopy({
     }
   };
 
+  const leadText = hasRank
+    ? `You've crossed a million tokens. Congratulations — you're ${ordinal(rank)} all-time.`
+    : "You've crossed a million tokens. Congratulations — you're officially a SuperCompress power user.";
+
+  const statsLines = [];
+  if (tin > 0) statsLines.push(`${fmt(tin)} tokens in`);
+  if (saved > 0) statsLines.push(`${fmt(saved)} tokens saved${cut > 0 ? ` (~${cut}% cut)` : ""}`);
+  if (reqs > 0) statsLines.push(`${fmt(reqs)} requests`);
+  if (more > 0) statsLines.push(`~${more}% more usage from the same context budget`);
+  const statsText = statsLines.length
+    ? `\nWith SuperCompress: ${statsLines.join("; ")}.\n`
+    : "\n";
+
   const text = `${hi},
 
 You're a SuperCompress power user.
 
-You've crossed a million tokens. Congratulations — you're ${ordinal(rank)} all-time on the leaderboard.
-
-With SuperCompress you've saved about ${fmt(saved)} tokens across ${fmt(reqs)} requests (roughly ${cut}% cut). That's about ${more}% more usage from the same raw context budget.
-
-We just lowered our API costs by ~70%. Pay-as-you-go is only $0.30 per million tokens now.
-
-Load some credits here: ${billingUrl}
+${leadText}
+${statsText}
+Pay-as-you-go is only $0.30 per million tokens. Load credits anytime: ${billingUrl}
 
 — Arjun
 Founder, SuperCompress
 `;
 
+  const statItems = [];
+  if (tin > 0) statItems.push(`<li style="margin:0 0 6px;"><strong>${fmt(tin)}</strong> tokens in</li>`);
+  if (saved > 0) {
+    statItems.push(
+      `<li style="margin:0 0 6px;"><strong>${fmt(saved)}</strong> tokens saved${cut > 0 ? ` (~${cut}% cut)` : ""}</li>`
+    );
+  }
+  if (reqs > 0) statItems.push(`<li style="margin:0 0 6px;"><strong>${fmt(reqs)}</strong> requests</li>`);
+  if (more > 0) {
+    statItems.push(
+      `<li style="margin:0 0 6px;">~<strong>${more}%</strong> more usage from the same context budget</li>`
+    );
+  }
+
   const bodyHtml = `
     ${eyebrow("Power user")}
     ${displayHeadline(`${hi} — you're a SuperCompress power user`)}
-    <p style="margin:0 0 14px;">You've crossed a million tokens. Congrats.</p>
-    ${proofCallout(`All-time leaderboard: ${ordinal(rank)} overall.`)}
-    <p style="margin:0 0 12px;">Your stats with SuperCompress:</p>
+    <p style="margin:0 0 14px;">${escapeHtml(leadText)}</p>
+    ${hasRank ? proofCallout(`All-time leaderboard: ${ordinal(rank)} overall.`) : ""}
+    ${
+      statItems.length
+        ? `<p style="margin:0 0 12px;">Your stats with SuperCompress:</p>
     <ul style="margin:0 0 16px;padding-left:18px;color:${INK};">
-      <li style="margin:0 0 6px;"><strong>${fmt(tin)}</strong> tokens in</li>
-      <li style="margin:0 0 6px;"><strong>${fmt(saved)}</strong> tokens saved (~${cut}% cut)</li>
-      <li style="margin:0 0 6px;"><strong>${fmt(reqs)}</strong> requests</li>
-      <li style="margin:0 0 6px;">~<strong>${more}%</strong> more usage from the same context budget</li>
-    </ul>
-    <p style="margin:0 0 12px;">We just lowered our API costs by ~70%. It's only <strong>$0.30 per million tokens</strong> now — you can load credits anytime.</p>
+      ${statItems.join("\n      ")}
+    </ul>`
+        : ""
+    }
+    <p style="margin:0 0 12px;">Pay-as-you-go is only <strong>$0.30 per million tokens</strong> — load credits anytime.</p>
     ${ctaButton("Load credits", billingUrl)}
     ${signatureBlock()}
   `;
 
   const html = brandedEmailHtml({
-    preheader: `${name}, you crossed 1M tokens — #${rank} all-time. $0.30/1M now.`,
+    preheader: `${name}, you crossed 1M tokens. Congrats — you're a SuperCompress power user.`,
     title: subject,
     bodyHtml,
     kind: "welcome",
