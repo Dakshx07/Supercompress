@@ -22,6 +22,8 @@ Public page: https://www.supercompress.dev/changelog
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
 ### API / dashboard
+- **Dashboard Analytics panel** (dither charts): live usage from `/api/keys` after sign-in — tokens saved, requests, coding agents, and key breakdown. `/analytics` stays inside `/dashboard?panel=analytics`.
+- Fix Analytics chart paint: Bayer wells + stacked dither canvases, wait for layout before draw, no demo/fake flash on production.
 - Align `/api/account?op=usage` + dashboard `account_usage` with the billing ledger (CLI no longer under-counts vs dashboard)
 - Idempotent compress: replay stored response for same Idempotency-Key + fingerprint (no free recompute)
 - Durable IP rate limit counts each client key (not payload fingerprint alone)

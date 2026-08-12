@@ -1705,14 +1705,16 @@ function openDashboardPanel(panel, { updateUrl = true } = {}) {
   }
   if (panel === "analytics") {
     const user = currentUser;
-    window.SCDashboardAnalytics?.show({
-      getIdToken: async () => {
-        if (idToken && String(idToken).startsWith("dev:")) return idToken;
-        if (user?.getIdToken) return getUserToken(user);
-        if (idToken) return idToken;
-        throw new Error("Not signed in");
-      },
-    });
+    const boot = () =>
+      window.SCDashboardAnalytics?.show({
+        getIdToken: async () => {
+          if (idToken && String(idToken).startsWith("dev:")) return idToken;
+          if (user?.getIdToken) return getUserToken(user);
+          if (idToken) return idToken;
+          throw new Error("Not signed in");
+        },
+      });
+    requestAnimationFrame(() => requestAnimationFrame(boot));
   }
 
   if (updateUrl && window.history?.replaceState) {

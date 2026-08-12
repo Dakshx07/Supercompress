@@ -8,12 +8,23 @@ const {
   aggregateUsage,
   bundleToSeries,
   demoBundle,
+  fakeKeysPayload,
   escapeHtml,
 } = require("./analytics-data.js");
 
 assert.strictEqual(isChartDay("2026-08-11"), true);
 assert.strictEqual(isChartDay("reconcile-2026-08"), false);
 assert.strictEqual(isChartDay(""), false);
+
+const fake = fakeKeysPayload();
+assert.strictEqual(fake._fake, true);
+assert.ok(fake.keys.length >= 3);
+const fakeSeries = bundleToSeries(aggregateUsage(fake));
+assert.ok(fakeSeries.totalSaved > 100000, "fake usage has meaty savings");
+assert.ok(fakeSeries.cut > 40 && fakeSeries.cut < 70, `fake cut=${fakeSeries.cut}`);
+assert.ok(fakeSeries.areaData.some((d) => d.y > 0));
+assert.ok(fakeSeries.agents.some((a) => a.label === "Cursor"));
+assert.ok(fakeSeries.keys.some((k) => k.label === "Production"));
 
 const demo = bundleToSeries(demoBundle());
 assert.ok(demo.totalSaved > 0, "demo has savings");

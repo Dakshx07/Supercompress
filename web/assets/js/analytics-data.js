@@ -121,6 +121,92 @@
     };
   }
 
+  /** Realistic /api/keys shape for local Analytics debug (never used in prod). */
+  function fakeKeysPayload() {
+    const days = dayKeys(30);
+    const mk = (i, scale) => {
+      const d = new Date(days[i] + "T12:00:00");
+      const weekend = d.getDay() === 0 || d.getDay() === 6 ? 0.32 : 1;
+      const wave = 0.62 + 0.38 * Math.sin(i / 2.35);
+      const ramp = 0.5 + (i / 29) * 0.75;
+      const saved = Math.max(0, Math.round((38000 + i * 2600) * wave * ramp * weekend * scale));
+      const tin = Math.round(saved / 0.53);
+      const requests = Math.max(
+        0,
+        Math.round((16 + i * 1.15 + Math.sin(i / 1.65) * 9) * weekend * scale)
+      );
+      return { tokens_saved: saved, tokens_in: tin, requests };
+    };
+
+    const buckets = [
+      ["fake_prod", 0.58],
+      ["fake_stg", 0.17],
+      ["fake_cursor", 0.25],
+    ];
+    const usage = {};
+    const totals = { requests: 0, tokens_in: 0, tokens_saved: 0, tokens_out: 0 };
+    for (const [id, scale] of buckets) {
+      const byDay = {};
+      let saved = 0;
+      let tin = 0;
+      let req = 0;
+      days.forEach((iso, i) => {
+        const rec = mk(i, scale);
+        byDay[iso] = rec;
+        saved += rec.tokens_saved;
+        tin += rec.tokens_in;
+        req += rec.requests;
+      });
+      usage[id] = {
+        total_requests: req,
+        total_tokens_in: tin,
+        total_tokens_out: Math.max(0, tin - saved),
+        total_tokens_saved: saved,
+        by_day: byDay,
+      };
+      totals.requests += req;
+      totals.tokens_in += tin;
+      totals.tokens_saved += saved;
+      totals.tokens_out += Math.max(0, tin - saved);
+    }
+
+    const month = new Date().toISOString().slice(0, 7);
+    const cursorShare = 0.58;
+    const codexShare = 0.24;
+    const claudeShare = 0.18;
+    return {
+      _fake: true,
+      keys: [
+        { id: "fake_prod", name: "Production", prefix: "sc_live_prod", created_at: "2026-06-02T00:00:00.000Z" },
+        { id: "fake_stg", name: "Staging", prefix: "sc_live_stg", created_at: "2026-07-11T00:00:00.000Z" },
+        { id: "fake_cursor", name: "Cursor plugin", prefix: "sc_live_cur", created_at: "2026-07-28T00:00:00.000Z" },
+      ],
+      usage,
+      account_usage: { month, ...totals },
+      coding_agent_usage: {
+        Cursor: {
+          requests: Math.round(totals.requests * cursorShare),
+          tokens_in: Math.round(totals.tokens_in * cursorShare),
+          tokens_saved: Math.round(totals.tokens_saved * cursorShare),
+          tokens_out: Math.round(totals.tokens_out * cursorShare),
+        },
+        Codex: {
+          requests: Math.round(totals.requests * codexShare),
+          tokens_in: Math.round(totals.tokens_in * codexShare),
+          tokens_saved: Math.round(totals.tokens_saved * codexShare),
+          tokens_out: Math.round(totals.tokens_out * codexShare),
+        },
+        "Claude Code": {
+          requests: Math.round(totals.requests * claudeShare),
+          tokens_in: Math.round(totals.tokens_in * claudeShare),
+          tokens_saved: Math.round(totals.tokens_saved * claudeShare),
+          tokens_out: Math.round(totals.tokens_out * claudeShare),
+        },
+      },
+      agent_plugin: { linked: true },
+    };
+  }
+
   function demoBundle() {
     const keys = dayKeys(30);
     const byDay = {};
@@ -284,6 +370,7 @@
     labelDay,
     isChartDay,
     aggregateUsage,
+    fakeKeysPayload,
     demoBundle,
     bundleToSeries,
     escapeHtml,
