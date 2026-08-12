@@ -31,15 +31,15 @@ assert.strictEqual(firstNameFromUser({ displayName: "Arjun Shah" }), "Arjun");
 assert.strictEqual(firstNameFromUser({ email: "maya.k@example.com" }), "maya");
 
 assert.strictEqual(
-  isDrainablePowerUser({ uid: "u1", status: "pending", email: "a@b.com" }),
+  isDrainablePowerUser({ uid: "u1", status: "pending", email: "user@example.com" }),
   true
 );
 assert.strictEqual(
-  isDrainablePowerUser({ uid: "u1", status: "failed", email: "a@b.com" }),
+  isDrainablePowerUser({ uid: "u1", status: "failed", email: "user@example.com" }),
   true
 );
 assert.strictEqual(
-  isDrainablePowerUser({ uid: "u1", status: "sent", email: "a@b.com" }),
+  isDrainablePowerUser({ uid: "u1", status: "sent", email: "user@example.com" }),
   false
 );
 assert.strictEqual(
