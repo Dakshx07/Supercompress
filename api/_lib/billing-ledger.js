@@ -572,9 +572,14 @@ async function applyUsageAndBurn({
     if (err.paywall || err.code === "free_quota_exhausted" || err.code === "credits_exhausted" || err.code === "idempotency_conflict") {
       throw err;
     }
-    if (isFirestoreBackendDown(err)) {
-      console.warn("billing-ledger: Firestore down — claims/gist billing fallback");
-      return applyUsageAndBurnClaimsFallback({
+    // Any Firestore outage (disabled API, timeout, permission) must not 100%-down compress.
+    console.warn(
+      "billing-ledger: Firestore txn failed — claims/gist billing fallback:",
+      err?.code,
+      err?.message || err
+    );
+    try {
+      return await applyUsageAndBurnClaimsFallback({
         uid,
         tokensIn,
         tokensOut,
@@ -584,8 +589,18 @@ async function applyUsageAndBurn({
         fingerprint: fp,
         response,
       });
+    } catch (fallbackErr) {
+      if (
+        fallbackErr.paywall ||
+        fallbackErr.code === "free_quota_exhausted" ||
+        fallbackErr.code === "credits_exhausted" ||
+        fallbackErr.code === "idempotency_conflict"
+      ) {
+        throw fallbackErr;
+      }
+      console.error("billing-ledger claims fallback failed:", fallbackErr?.message || fallbackErr);
+      throw billingError("billing_unavailable", "Billing ledger unavailable");
     }
-    throw err;
   }
 
   if (!result.already) {
