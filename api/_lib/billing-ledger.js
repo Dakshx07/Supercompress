@@ -293,18 +293,16 @@ async function loadLedger(uid, claims = {}) {
     return normalizeLedger(snap.exists ? snap.data() : null, claims);
   } catch (err) {
     if (err.code === "billing_unavailable") throw err;
-    if (isFirestoreBackendDown(err)) {
-      console.warn("billing-ledger: Firestore down — using Auth claims ledger");
-      return normalizeLedger(null, claims);
-    }
-    console.warn("billing-ledger load failed:", err.message || err);
-    throw billingError("billing_unavailable", "Billing ledger unavailable");
+    console.warn("billing-ledger load failed — using Auth claims:", err.message || err);
+    return normalizeLedger(null, claims);
   }
 }
 
 /**
- * When Cloud Firestore is disabled/unavailable, bill via Auth claims + gist
- * idempotency so compress does not 100%-outage. Prefer Firestore when healthy.
+ * When Cloud Firestore is disabled/unavailable, bill via Auth claims only.
+ * Do not depend on gist here — gist rate limits caused the outage recovery path
+ * to fail. Replay text is not stored (claims size); retries recompress but do
+ * not double-bill (request id watermark on claims).
  */
 async function applyUsageAndBurnClaimsFallback({
   uid,
@@ -318,75 +316,77 @@ async function applyUsageAndBurnClaimsFallback({
 }) {
   const rid = sanitizeRequestId(requestId);
   const fp = String(fingerprint || "").trim() || null;
-  const replay = sanitizeReplayResponse(response);
-  const { mutateStore } = require("./store");
-  const key = `${uid}:${rid}`;
+  if (!rid) throw billingError("billing_unavailable", "Billing request id required");
 
-  const result = await mutateStore((store) => {
-    if (!store.billing_usage_fallback) store.billing_usage_fallback = {};
-    const prev = store.billing_usage_fallback[key];
-    if (prev) {
-      assertUsageIdempotencyMatch(prev, {
+  const fresh = await admin().auth().getUser(uid);
+  const liveClaims = { ...(fresh.customClaims || {}), ...claims };
+  const recent = Array.isArray(liveClaims.sc_recent_billing)
+    ? liveClaims.sc_recent_billing
+    : [];
+  const prior = recent.find((r) => r && r.i === rid);
+  if (prior) {
+    assertUsageIdempotencyMatch(
+      {
+        fingerprint: prior.f || null,
+        tokens_in: prior.tin,
+        tokens_out: prior.tout,
+        tokens_saved: prior.ts,
+      },
+      {
         fingerprint: fp,
         tokensIn,
         tokensOut,
         tokensSaved,
-      });
-      return {
-        burned_micros: Number(prev.burned_micros || 0),
-        ledger: normalizeLedger(null, claims),
-        already: true,
-        request_id: rid,
-        fingerprint: prev.fingerprint || fp || null,
-        response: prev.response || replay || null,
-        backend: "claims-fallback",
-      };
-    }
-
-    const ledger = normalizeLedger(null, claims);
-    const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims });
-    store.billing_usage_fallback[key] = {
-      uid,
-      request_id: rid,
-      fingerprint: fp,
-      tokens_in: Number(tokensIn) || 0,
-      tokens_out: Number(tokensOut) || 0,
-      tokens_saved: Number(tokensSaved) || 0,
-      burned_micros: planned.burned_micros,
-      created_at: new Date().toISOString(),
-      ...(replay ? { response: replay } : {}),
-    };
-
-    // Bound growth — keep newest ~400 fallback rows.
-    const keys = Object.keys(store.billing_usage_fallback);
-    if (keys.length > 400) {
-      keys
-        .sort(
-          (a, b) =>
-            String(store.billing_usage_fallback[a]?.created_at || "").localeCompare(
-              String(store.billing_usage_fallback[b]?.created_at || "")
-            )
-        )
-        .slice(0, keys.length - 400)
-        .forEach((k) => {
-          delete store.billing_usage_fallback[k];
-        });
-    }
-
+      }
+    );
     return {
-      ...planned,
-      already: false,
+      burned_micros: Number(prior.b || 0),
+      ledger: normalizeLedger(null, liveClaims),
+      already: true,
       request_id: rid,
-      fingerprint: fp,
-      response: replay,
+      fingerprint: prior.f || fp || null,
+      response: null,
       backend: "claims-fallback",
     };
+  }
+
+  const ledger = normalizeLedger(null, liveClaims);
+  const planned = planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims: liveClaims });
+  const nextRecent = [
+    {
+      i: rid.slice(0, 64),
+      f: fp ? String(fp).slice(0, 32) : null,
+      tin: Number(tokensIn) || 0,
+      tout: Number(tokensOut) || 0,
+      ts: Number(tokensSaved) || 0,
+      b: planned.burned_micros,
+      t: Date.now(),
+    },
+    ...recent,
+  ].slice(0, 5);
+
+  await admin().auth().setCustomUserClaims(uid, {
+    ...liveClaims,
+    sc_usage: {
+      month: planned.ledger.month,
+      requests: planned.ledger.requests,
+      tokens_in: planned.ledger.tokens_in,
+      tokens_out: planned.ledger.tokens_out,
+      tokens_saved: planned.ledger.tokens_saved,
+      tokens_reported: planned.ledger.tokens_reported || 0,
+    },
+    sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
+    sc_recent_billing: nextRecent,
   });
 
-  if (!result.already) {
-    await mirrorClaims(uid, result.ledger);
-  }
-  return result;
+  return {
+    ...planned,
+    already: false,
+    request_id: rid,
+    fingerprint: fp,
+    response: sanitizeReplayResponse(response),
+    backend: "claims-fallback",
+  };
 }
 
 /**
