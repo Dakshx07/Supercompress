@@ -46,6 +46,7 @@ Public page: https://www.supercompress.dev/changelog
 - Durable hourly rate-limit hits use the **payload fingerprint**, not the client-chosen request id (stops limit evasion)
 
 ### Coding agent plugin
+- Register/unregister the proxy service via `execFileSync` argv (no shell-interpolated `launchctl` / `systemctl` paths)
 - **`supercompress` TUI** (`0.5.19`): paper-branded interactive UI (usage / account / connect / setup / plugin / agents / proxy). Default in a TTY; needs Bun. Classic commands unchanged.
 - **OpenClaw auto-compress parity with Hermes**: `supercompress setup` / `plugin` wires MCP (absolute node+mcp), `AGENTS.md`, managed skill, internal hooks (`agent:bootstrap` + `session:compact:before`), and an extension plugin that compresses large tool dumps into the inbox
 - **Session-scoped OpenClaw inbox** (`inbox/<sessionId>/latest.md`) so sessions/projects cannot cross-contaminate digests; honor `SUPERCOMPRESS_CONFIG_DIR`

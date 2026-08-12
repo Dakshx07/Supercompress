@@ -9,10 +9,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const os = require("os");
 
 const HOME = os.homedir();
+
+function runFile(cmd, args) {
+  execFileSync(cmd, args, { stdio: "ignore" });
+}
 
 /**
  * Generate the launchd plist content for macOS.
@@ -112,16 +116,16 @@ function registerService(configDir, configPath) {
       fs.writeFileSync(plistPath, plistContent);
       fs.chmodSync(plistPath, 0o644);
 
-      // Load the service
+      // Load the service (argv, not shell — plistPath may contain spaces)
       try {
-        execSync(`launchctl load ${plistPath}`, { stdio: "ignore" });
+        runFile("launchctl", ["load", plistPath]);
       } catch (loadErr) {
         // Try unloading first (in case it's already loaded)
         try {
-          execSync(`launchctl unload ${plistPath}`, { stdio: "ignore" });
+          runFile("launchctl", ["unload", plistPath]);
         } catch {}
         try {
-          execSync(`launchctl load ${plistPath}`, { stdio: "ignore" });
+          runFile("launchctl", ["load", plistPath]);
         } catch (e2) {
           console.error(`  ⚠ Could not load launchd service: ${e2.message}`);
           return false;
@@ -143,9 +147,9 @@ function registerService(configDir, configPath) {
 
       // Enable and start
       try {
-        execSync("systemctl --user daemon-reload", { stdio: "ignore" });
-        execSync("systemctl --user enable supercompress", { stdio: "ignore" });
-        execSync("systemctl --user start supercompress", { stdio: "ignore" });
+        runFile("systemctl", ["--user", "daemon-reload"]);
+        runFile("systemctl", ["--user", "enable", "supercompress"]);
+        runFile("systemctl", ["--user", "start", "supercompress"]);
       } catch (e) {
         console.error(`  ⚠ Could not enable systemd service: ${e.message}`);
         return false;
@@ -177,14 +181,14 @@ function unregisterService() {
     if (platform === "darwin") {
       const plistPath = path.join(HOME, "Library", "LaunchAgents", "com.supercompress.proxy.plist");
       if (fs.existsSync(plistPath)) {
-        try { execSync(`launchctl unload ${plistPath}`, { stdio: "ignore" }); } catch {}
+        try { runFile("launchctl", ["unload", plistPath]); } catch {}
         fs.unlinkSync(plistPath);
       }
       return true;
     } else if (platform === "linux") {
       try {
-        execSync("systemctl --user stop supercompress", { stdio: "ignore" });
-        execSync("systemctl --user disable supercompress", { stdio: "ignore" });
+        runFile("systemctl", ["--user", "stop", "supercompress"]);
+        runFile("systemctl", ["--user", "disable", "supercompress"]);
       } catch {}
       const unitPath = path.join(HOME, ".config", "systemd", "user", "supercompress.service");
       if (fs.existsSync(unitPath)) fs.unlinkSync(unitPath);
