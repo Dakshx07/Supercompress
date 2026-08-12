@@ -19,14 +19,51 @@
       "permanent": true
     },
     {
-      "source": "/((?!api(?:/|$)|v1(?:/|$)|retrieve(?:/|$)|health(?:/|$)|favicon\\.ico$).*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.supercompress.dev"
-        }
-      ],
-      "destination": "https://www.supercompress.dev/$1",
+      "source": "/dashboard",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/dashboard",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:path*",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/dashboard/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/analytics",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/dashboard?panel=analytics",
+      "permanent": false
+    },
+    {
+      "source": "/blog",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/blog",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:path*",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/blog/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/playground",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/playground",
+      "permanent": true
+    },
+    {
+      "source": "/benchmarks",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/benchmarks",
+      "permanent": true
+    },
+    {
+      "source": "/token-compression",
+      "has": [{ "type": "host", "value": "api.supercompress.dev" }],
+      "destination": "https://www.supercompress.dev/token-compression",
       "permanent": true
     },
     {

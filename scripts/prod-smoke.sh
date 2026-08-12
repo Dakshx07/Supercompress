@@ -140,10 +140,24 @@ COMPRESS_JSON='{"context":"production smoke context for supercompress","query":"
 for host_label in www api; do
   base="$WWW"
   [[ "$host_label" == api ]] && base="$API"
-  for path in /api/v1/compress /v1/compress /api/compress; do
-    check "${host_label} POST ${path}" 401 "$base$path" \
-      -X POST -H 'content-type: application/json' --data "$COMPRESS_JSON"
-    expect_body "${host_label} ${path} body" 'API key' "$TMP/body"
+  for path in /api/v1/compress /v1/compress /api/compress /compress; do
+    # Do not follow redirects — a 308 on /compress was a real outage (POST→GET).
+    body="$TMP/body"
+    code="$(curl -sS --max-time 45 -o "$body" -w '%{http_code}' \
+      -X POST -H 'content-type: application/json' --data "$COMPRESS_JSON" \
+      "$base$path" || echo 000)"
+    if [[ "$code" == "301" || "$code" == "302" || "$code" == "307" || "$code" == "308" ]]; then
+      echo "FAIL ${host_label} POST ${path} redirected ($code) — compress aliases must not bounce"
+      fail=$((fail + 1))
+    elif [[ "$code" != "401" ]]; then
+      echo "FAIL ${host_label} POST ${path} — expected HTTP 401, got $code"
+      head -c 240 "$body" 2>/dev/null | tr '\n' ' '; echo
+      fail=$((fail + 1))
+    else
+      echo "PASS ${host_label} POST ${path} ($code)"
+      pass=$((pass + 1))
+      expect_body "${host_label} ${path} body" 'API key' "$body"
+    fi
   done
 done
 
