@@ -9,6 +9,7 @@ const {
   crossedPowerUser,
   statsFromUsage,
   firstNameFromUser,
+  isDrainablePowerUser,
 } = require("./power-user");
 
 assert.strictEqual(POWER_USER_TOKENS, 1_000_000);
@@ -28,6 +29,24 @@ assert.strictEqual(crossedPowerUser("900000", "1000001"), true);
 
 assert.strictEqual(firstNameFromUser({ displayName: "Arjun Shah" }), "Arjun");
 assert.strictEqual(firstNameFromUser({ email: "maya.k@example.com" }), "maya");
+
+assert.strictEqual(
+  isDrainablePowerUser({ uid: "u1", status: "pending", email: "a@b.com" }),
+  true
+);
+assert.strictEqual(
+  isDrainablePowerUser({ uid: "u1", status: "failed", email: "a@b.com" }),
+  true
+);
+assert.strictEqual(
+  isDrainablePowerUser({ uid: "u1", status: "sent", email: "a@b.com" }),
+  false
+);
+assert.strictEqual(
+  isDrainablePowerUser({ uid: "u1", status: "pending", email: "" }),
+  false
+);
+assert.strictEqual(isDrainablePowerUser(null), false);
 
 {
   const copy = powerUserCopy({

@@ -65,6 +65,55 @@ async function markPowerUser(uid, patch) {
   });
 }
 
+function isDrainablePowerUser(rec) {
+  if (!rec || !rec.uid) return false;
+  if (rec.status !== "pending" && rec.status !== "failed") return false;
+  return String(rec.email || "").includes("@");
+}
+
+/**
+ * Retry pending/failed crossing emails. Never creates records — so people
+ * already over 1M with no row stay unmailed.
+ */
+async function drainPendingPowerUsers() {
+  const { loadStore } = require("./store");
+  const store = await loadStore();
+  const pending = Object.values(store.power_user_emails || {}).filter(isDrainablePowerUser);
+
+  let sent = 0;
+  let failed = 0;
+  for (const rec of pending) {
+    const firstName =
+      rec.first_name || firstNameFromUser({ email: rec.email, displayName: rec.display_name });
+    const result = await sendPowerUserEmail({
+      email: rec.email,
+      firstName,
+      ...statsFromUsage({
+        tokensIn: rec.tokens_in,
+        tokensSaved: rec.tokens_saved,
+        requests: rec.requests,
+      }),
+    });
+    if (result.ok) {
+      await markPowerUser(rec.uid, {
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        provider: result.provider || "resend",
+        error: null,
+      });
+      sent += 1;
+    } else {
+      failed += 1;
+      await markPowerUser(rec.uid, {
+        status: "pending",
+        error: result.error || "send_failed",
+        failed_at: new Date().toISOString(),
+      });
+    }
+  }
+  return { pending: pending.length, sent, failed };
+}
+
 /**
  * Send the branded power-user email only on a true 1M crossing (or a failed
  * prior send for that same crossing). People already over 1M with no record
@@ -85,8 +134,11 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: false, reason: "not_crossed" };
   }
 
+  const to = String(email || "").trim();
+  const firstName = firstNameFromUser({ displayName, email: to });
   const { claimed, record, reason } = await claimPowerUser(uid, {
-    email: email || "",
+    email: to,
+    first_name: firstName,
     tokens_in: Number(nextTokens) || 0,
     tokens_saved: Number(tokensSaved) || 0,
     requests: Number(requests) || 0,
@@ -96,7 +148,6 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: false, reason: reason || "already_claimed", record };
   }
 
-  const to = String(email || record?.email || "").trim();
   if (!to.includes("@")) {
     await markPowerUser(uid, {
       status: "skipped_no_email",
@@ -105,7 +156,6 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: false, reason: "no_email" };
   }
 
-  const firstName = firstNameFromUser({ displayName, email: to });
   const result = await sendPowerUserEmail({
     email: to,
     firstName,
@@ -126,12 +176,14 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: true };
   }
 
+  // Stay pending so welcome-drain can retry. Do not mark failed — that would
+  // strand the crossing if this lambda dies before drain.
   await markPowerUser(uid, {
-    status: "failed",
+    status: "pending",
     error: result.error || "send_failed",
     failed_at: new Date().toISOString(),
   });
-  return { ok: false, sent: false, reason: result.error || "send_failed" };
+  return { ok: false, sent: false, queued: true, reason: result.error || "send_failed" };
 }
 
 function schedulePowerUserEmail(opts) {
@@ -145,8 +197,10 @@ module.exports = {
   crossedPowerUser,
   statsFromUsage,
   firstNameFromUser,
+  isDrainablePowerUser,
   claimPowerUser,
   markPowerUser,
   maybeNotifyPowerUser,
+  drainPendingPowerUsers,
   schedulePowerUserEmail,
 };
