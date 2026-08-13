@@ -58,8 +58,13 @@ assert.strictEqual(series.totalReq, 12);
 assert.ok(series.cut >= 50 && series.cut <= 52, `cut=${series.cut}`);
 assert.ok(
   series.areaData.some((d) => d.y > 0),
-  "synthesizes a chart day when by_day empty / non-ISO only"
+  "synthesizes chart days when by_day empty / non-ISO only"
 );
+assert.ok(
+  series.areaData.filter((d) => d.y > 0).length > 1,
+  "spreads month totals across the calendar, not a single spike"
+);
+assert.ok(series.areaData.length >= 8, "full month-to-date axis");
 assert.ok(
   !series.areaData.some((d) => d.y === 99999),
   "ignores reconcile-* by_day keys"
@@ -94,7 +99,7 @@ assert.strictEqual(s2.totalSaved, 2000);
 assert.strictEqual(s2.totalIn, 5000);
 assert.strictEqual(s2.totalReq, 10);
 
-// Month meter ahead of partial by_day — chart catches up on today.
+// Month meter ahead of partial by_day — chart catches up across the month.
 const partial = aggregateUsage({
   keys: [{ id: "k1", name: "Production" }],
   usage: {
@@ -126,6 +131,10 @@ assert.strictEqual(
   s3.areaData.reduce((s, d) => s + d.y, 0),
   250000,
   "chart area matches month meter after gap fold"
+);
+assert.ok(
+  s3.areaData.filter((d) => d.y > 0).length > 1,
+  "gap is not dumped onto today only"
 );
 
 console.log("analytics-data.test.js: ok");

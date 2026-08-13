@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
           tokens_in: Math.max(Number(account_usage?.tokens_in || 0), agentTotals.tokens_in),
           tokens_out: Math.max(Number(account_usage?.tokens_out || 0), agentTotals.tokens_out),
           tokens_saved: Math.max(Number(account_usage?.tokens_saved || 0), agentTotals.tokens_saved),
+          ...(account_usage?.by_day ? { by_day: account_usage.by_day, by_day_source: account_usage.by_day_source } : {}),
         };
       }
       return json(res, 200, { ...keys, account_usage, coding_agent_usage, agent_plugin });

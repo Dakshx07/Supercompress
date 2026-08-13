@@ -937,22 +937,51 @@ function watchBillingMeter(track) {
       return;
     }
     if (document.getElementById("panel-billing")?.classList.contains("hidden")) return;
-    window.DitherKitLite?.renderDitherMeter?.(track, billingMeterOpts(track));
+    const kit = window.DitherKitLite;
+    if (!kit?.renderDitherMeter) return;
+    kit.renderDitherMeter(track, { ...billingMeterOpts(track), bloom: "aura" });
   });
   obs.observe(track);
   track._dkMeterObs = obs;
 }
 
-function paintBillingUsageMeter(track) {
+function paintBillingUsageMeter(track, { animate = true } = {}) {
   const kit = window.DitherKitLite;
   if (!track || !kit?.renderDitherMeter) return;
   watchBillingMeter(track);
   if (document.getElementById("panel-billing")?.classList.contains("hidden")) return;
-  const paint = () => {
+  kit.stopMeterDitherLoop?.(track);
+  if (typeof track._dkMeterCancel === "function") {
+    track._dkMeterCancel();
+    track._dkMeterCancel = null;
+  }
+  const opts = { ...billingMeterOpts(track), bloom: "aura" };
+  const target = Number(opts.progress) || 0;
+  const paint = (p) => {
     if (!track.isConnected) return;
-    kit.renderDitherMeter(track, billingMeterOpts(track));
+    kit.renderDitherMeter(track, { ...opts, progress: target * p });
   };
-  requestAnimationFrame(() => requestAnimationFrame(paint));
+  const finish = () => {
+    paint(1);
+    kit.startMeterDitherLoop?.(track, opts);
+  };
+  if (!animate || !kit.animateChart) {
+    requestAnimationFrame(() => requestAnimationFrame(finish));
+    return;
+  }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!track.isConnected) return;
+      if (track.getBoundingClientRect().width < 16) {
+        finish();
+        return;
+      }
+      track._dkMeterCancel = kit.animateChart((p) => {
+        paint(p);
+        if (p > 0.98) finish();
+      }, 900);
+    });
+  });
 }
 
 function renderSubscription(sub) {

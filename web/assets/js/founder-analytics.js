@@ -94,7 +94,7 @@
         color: "brand",
         variant: "gradient",
         bloom: "aura",
-        maxBars: 30,
+        maxBars: Math.max(8, series.reqs.length),
         progress: 1,
         yMax: reqMax,
         unit: "requests",

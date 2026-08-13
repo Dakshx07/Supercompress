@@ -619,54 +619,113 @@
     };
   }
 
+  function ensureMeterHost(el) {
+    if (!el) return null;
+    el.classList.add("dk-meter-host");
+    let crisp = el.querySelector("canvas.dk-meter");
+    let bloom = el.querySelector("canvas.dk-meter-bloom");
+    if (!crisp) {
+      bloom = document.createElement("canvas");
+      bloom.className = "dk-meter-bloom";
+      bloom.setAttribute("aria-hidden", "true");
+      crisp = document.createElement("canvas");
+      crisp.className = "dk-meter";
+      crisp.setAttribute("aria-hidden", "true");
+      el.appendChild(bloom);
+      el.appendChild(crisp);
+    }
+    return { host: el, crisp, bloom };
+  }
+
   /** Horizontal Bayer usage meter (billing free-allowance bar). */
   function renderDitherMeter(el, options = {}) {
     if (!el) return false;
-    el.querySelectorAll(".dash-billing-usage-fill").forEach((n) => n.remove());
-    let canvas = el.querySelector("canvas.dk-meter");
-    if (!canvas) {
-      canvas = document.createElement("canvas");
-      canvas.className = "dk-meter";
-      canvas.setAttribute("aria-hidden", "true");
-      el.appendChild(canvas);
-    }
-    const rect = el.getBoundingClientRect();
-    const cssW = Math.round(rect.width || el.clientWidth || 0);
-    const cssH = Math.round(rect.height || el.clientHeight || 0);
-    // Hidden panels are display:none → 0×0. Never fall back to a fake width.
+    const pack = ensureMeterHost(el);
+    if (!pack) return false;
+    const { host, crisp, bloom } = pack;
+    const rect = host.getBoundingClientRect();
+    const cssW = Math.round(rect.width || host.clientWidth || 0);
+    const cssH = Math.round(rect.height || host.clientHeight || 0);
+    // Hidden panels are display:none → 0×0. Keep the CSS fill until we can paint.
     if (cssW < 16 || cssH < 4) return false;
+    host.querySelectorAll(".dash-billing-usage-fill").forEach((n) => n.remove());
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(cssW * dpr);
-    canvas.height = Math.round(cssH * dpr);
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const c of [crisp, bloom]) {
+      c.width = Math.round(cssW * dpr);
+      c.height = Math.round(cssH * dpr);
+      c.style.width = "100%";
+      c.style.height = "100%";
+      c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    const ctx = crisp.getContext("2d");
     ctx.clearRect(0, 0, cssW, cssH);
 
-    const pct = clamp01((Number(options.progress) || 0) / (options.max || 1));
+    const max = options.max == null ? 1 : Number(options.max) || 1;
+    const pct = clamp01((Number(options.progress) || 0) / max);
     const colorName = options.color || (pct >= 0.9 ? "red" : pct >= 0.7 ? "orange" : "brand");
     const seed = seedOf(colorName);
-    const cell = 4;
-    const cols = Math.min(MAX_COLS, Math.max(8, Math.round(cssW / cell)));
-    const rows = Math.min(MAX_ROWS, Math.max(4, Math.round(cssH / cell)));
-    const off = document.createElement("canvas");
-    off.width = cols;
-    off.height = rows;
-    const octx = off.getContext("2d");
-    const fillCols = Math.round(cols * pct);
-    octx.fillStyle = "rgba(15,23,42,0.08)";
-    octx.fillRect(0, 0, cols, rows);
-    for (let x = 0; x < fillCols; x++) {
-      paintColumn(octx, x, 0, rows, seed, {
-        variant: "dotted",
-        intensity: 0.92,
-        dim: 1,
-      });
+    const phase = Number(options.phase) || 0;
+    const fillW = Math.max(pct > 0 ? 6 : 0, Math.round(cssW * pct));
+    const padY = 2;
+    const fillH = Math.max(8, cssH - padY * 2);
+
+    ctx.fillStyle = "rgba(23,23,23,0.05)";
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    if (fillW > 0) {
+      const { cols, rows } = backingSize(fillW, fillH);
+      const off = document.createElement("canvas");
+      off.width = cols;
+      off.height = rows;
+      const octx = off.getContext("2d");
+      for (let x = 0; x < cols; x++) {
+        paintColumn(octx, x, 0, rows, seed, {
+          variant: "gradient",
+          stacked: true,
+          dim: 1,
+          intensity: 0.22 + 0.1 * Math.sin(phase * 1.6 + x * 0.09),
+          phase,
+        });
+      }
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(off, 0, padY, fillW, fillH);
+      ctx.fillStyle = rgb(seed.line, 1, 0.55);
+      ctx.fillRect(Math.max(0, fillW - 2), padY, 2, fillH);
     }
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, 0, 0, cssW, cssH);
+
+    applyBloom(bloom, crisp, options.bloom || "aura", host);
+    host._dkLastMeter = { ...options, progress: pct, max: 1 };
     return true;
+  }
+
+  function startMeterDitherLoop(el, options = {}) {
+    if (!el) return;
+    stopMeterDitherLoop(el);
+    let phase = Number(options.phase) || 0;
+    let last = performance.now();
+    let acc = 0;
+    const tick = (now) => {
+      if (!el.isConnected) {
+        stopMeterDitherLoop(el);
+        return;
+      }
+      const dt = Math.min(48, now - last);
+      last = now;
+      acc += dt;
+      phase += dt * 0.00115;
+      if (acc >= 50 && el.getBoundingClientRect().width >= 16) {
+        acc = 0;
+        renderDitherMeter(el, { ...(el._dkLastMeter || {}), ...options, phase, bloom: options.bloom || "aura" });
+      }
+      el._dkMeterRaf = requestAnimationFrame(tick);
+    };
+    el._dkMeterRaf = requestAnimationFrame(tick);
+  }
+
+  function stopMeterDitherLoop(el) {
+    if (!el || !el._dkMeterRaf) return;
+    cancelAnimationFrame(el._dkMeterRaf);
+    el._dkMeterRaf = 0;
   }
 
   function ensureWashCanvas(el) {
@@ -818,6 +877,8 @@
     stopChartDitherLoop,
     animateChart,
     renderDitherMeter,
+    startMeterDitherLoop,
+    stopMeterDitherLoop,
     formatCompact,
     seedOf,
   };
