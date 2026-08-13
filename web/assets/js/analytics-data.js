@@ -8,15 +8,49 @@
 
   const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
+  function utcYmd(d = new Date()) {
+    return d.toISOString().slice(0, 10);
+  }
+
   function dayKeys(n = 30) {
     const out = [];
     for (let i = n - 1; i >= 0; i--) {
       const d = new Date();
-      d.setHours(12, 0, 0, 0);
-      d.setDate(d.getDate() - i);
+      d.setUTCHours(12, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
       out.push(d.toISOString().slice(0, 10));
     }
     return out;
+  }
+
+  function daysInMonth(month) {
+    const [y, m] = String(month || "").split("-").map(Number);
+    if (!y || !m) return 31;
+    return new Date(Date.UTC(y, m, 0)).getUTCDate();
+  }
+
+  /** Calendar days for the billing month through today (UTC), plus any earlier ISO days in `extra`. */
+  function monthKeys(month, throughIso, extra = []) {
+    const today = utcYmd();
+    const m = String(month || today.slice(0, 7));
+    const through = String(throughIso || today);
+    const end =
+      through.slice(0, 7) === m ? Math.max(1, Number(through.slice(8, 10)) || 1) : daysInMonth(m);
+    const out = [];
+    for (let i = 1; i <= end; i++) out.push(`${m}-${String(i).padStart(2, "0")}`);
+    const earlier = (extra || [])
+      .filter((d) => ISO_DAY.test(d) && d < out[0])
+      .sort();
+    const start = earlier[0];
+    if (!start) return out;
+    const merged = [];
+    let cur = new Date(start + "T12:00:00Z");
+    const last = new Date(out[out.length - 1] + "T12:00:00Z");
+    while (cur <= last && merged.length < 62) {
+      merged.push(cur.toISOString().slice(0, 10));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    return merged.length ? merged : out;
   }
 
   function labelDay(iso) {
@@ -71,10 +105,23 @@
   /**
    * Build chart + KPI bundle from /api/keys payload (or demo shape).
    */
+  function addDay(target, day, rec) {
+    if (!isChartDay(day)) return;
+    if (!target[day]) target[day] = emptyDay();
+    target[day].tokens_saved += Number(rec.tokens_saved || 0);
+    target[day].tokens_in += Number(rec.tokens_in || 0);
+    target[day].requests += Number(rec.requests || 0);
+  }
+
   function aggregateUsage(payload) {
-    const keys = dayKeys(30);
-    const byDay = Object.fromEntries(keys.map((k) => [k, emptyDay()]));
     const usage = payload.usage || {};
+    const account = payload.account_usage || {};
+    const month = account.month || utcYmd().slice(0, 7);
+    const accountDays = {};
+    for (const [day, rec] of Object.entries(account.by_day || {})) {
+      addDay(accountDays, day, rec);
+    }
+    const keyDays = {};
     const keyRows = [];
 
     for (const k of payload.keys || []) {
@@ -84,11 +131,21 @@
         value: Number(snap.total_tokens_saved || 0),
       });
       for (const [day, rec] of Object.entries(snap.by_day || {})) {
-        if (!isChartDay(day) || !byDay[day]) continue;
-        byDay[day].tokens_saved += Number(rec.tokens_saved || 0);
-        byDay[day].tokens_in += Number(rec.tokens_in || 0);
-        byDay[day].requests += Number(rec.requests || 0);
+        addDay(keyDays, day, rec);
       }
+    }
+
+    const accountHasDays = Object.values(accountDays).some(
+      (d) => d.tokens_in > 0 || d.tokens_saved > 0 || d.requests > 0
+    );
+    const sourceDays = accountHasDays ? accountDays : keyDays;
+    const keys = monthKeys(month, utcYmd(), Object.keys(sourceDays));
+    const byDay = Object.fromEntries(keys.map((k) => [k, emptyDay()]));
+    for (const [day, rec] of Object.entries(sourceDays)) {
+      if (!byDay[day]) byDay[day] = emptyDay();
+      byDay[day].tokens_saved += rec.tokens_saved;
+      byDay[day].tokens_in += rec.tokens_in;
+      byDay[day].requests += rec.requests;
     }
 
     const agents = Object.entries(payload.coding_agent_usage || {})
@@ -243,8 +300,18 @@
     };
   }
 
+  function chartDayList(bundle) {
+    const extra = Object.keys(bundle.byDay || {}).filter(isChartDay);
+    const month = (bundle.account && bundle.account.month) || utcYmd().slice(0, 7);
+    return monthKeys(month, utcYmd(), extra);
+  }
+
   function meterFromBundle(bundle) {
-    const keys = dayKeys(30);
+    if (!bundle.byDay) bundle.byDay = {};
+    const keys = chartDayList(bundle);
+    for (const iso of keys) {
+      if (!bundle.byDay[iso]) bundle.byDay[iso] = emptyDay();
+    }
     let daySaved = 0;
     let dayIn = 0;
     let dayReq = 0;
@@ -278,30 +345,47 @@
       Number(agentT.requests || 0)
     );
 
-    // Month meter ahead of ISO by_day (common when ledger/agent totals exist but
-    // daily rows lagged). Fold the gap onto today so the area chart matches KPIs.
+    // Month meter ahead of daily rows: spread the gap across the whole month
+    // (weighted toward days that already have activity). Never dump it on today.
     const gapSaved = saved - daySaved;
     const gapIn = tin - dayIn;
     const gapReq = req - dayReq;
     if (gapSaved > 500 || gapIn > 500 || gapReq > 0) {
-      const today = keys[keys.length - 1];
-      const cur = bundle.byDay[today] || emptyDay();
-      bundle.byDay[today] = {
-        tokens_saved: cur.tokens_saved + Math.max(0, gapSaved),
-        tokens_in: cur.tokens_in + Math.max(0, gapIn),
-        requests: cur.requests + Math.max(0, gapReq),
-      };
+      const weights = keys.map((iso) => {
+        const d = bundle.byDay[iso];
+        return 1 + (d && (d.requests || d.tokens_in) ? Math.max(d.requests || 0, 2) : 0);
+      });
+      const wSum = weights.reduce((s, w) => s + w, 0) || keys.length || 1;
+      let usedS = 0;
+      let usedI = 0;
+      let usedR = 0;
+      keys.forEach((iso, i) => {
+        const last = i === keys.length - 1;
+        const share = weights[i] / wSum;
+        const addS = last ? gapSaved - usedS : Math.round(gapSaved * share);
+        const addI = last ? gapIn - usedI : Math.round(gapIn * share);
+        const addR = last ? gapReq - usedR : Math.round(gapReq * share);
+        usedS += addS;
+        usedI += addI;
+        usedR += addR;
+        const cur = bundle.byDay[iso] || emptyDay();
+        bundle.byDay[iso] = {
+          tokens_saved: cur.tokens_saved + Math.max(0, addS),
+          tokens_in: cur.tokens_in + Math.max(0, addI),
+          requests: cur.requests + Math.max(0, addR),
+        };
+      });
       daySaved = saved;
       dayIn = tin;
       dayReq = req;
     }
 
-    return { saved, tin, req, daySaved, dayIn, dayReq };
+    return { saved, tin, req, daySaved, dayIn, dayReq, keys };
   }
 
   function bundleToSeries(bundle) {
-    const keys = dayKeys(30);
     const meter = meterFromBundle(bundle);
+    const keys = meter.keys || chartDayList(bundle);
     const areaData = keys.map((iso) => {
       const L = labelDay(iso);
       return { x: L.full, y: bundle.byDay[iso]?.tokens_saved || 0, iso };
@@ -367,6 +451,7 @@
 
   const api = {
     dayKeys,
+    monthKeys,
     labelDay,
     isChartDay,
     aggregateUsage,

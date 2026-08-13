@@ -10,6 +10,7 @@ const {
   rowFromUser,
   summarizeRows,
   mergeStoreDays,
+  mergeRowDays,
   analyticsBundle,
 } = require("./_lib/founder-usage");
 
@@ -54,11 +55,12 @@ module.exports = async (req, res) => {
     const rows = await scanAuthRows(month);
     const summary = summarizeRows(rows, month);
 
-    let byDay = {};
+    let byDay = mergeRowDays(rows);
     try {
       const { loadStore } = require("./_lib/store");
       const store = await loadStore({ forceRemote: false });
-      byDay = mergeStoreDays(store);
+      const { mergeDays } = require("./_lib/usage-days");
+      byDay = mergeDays(byDay, mergeStoreDays(store));
     } catch (_) {}
 
     const payload = {

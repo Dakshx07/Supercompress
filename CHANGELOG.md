@@ -26,6 +26,8 @@ Public page: https://www.supercompress.dev/changelog
 - AMCP scale-training stack (`scripts/amcp`) — JS-compatible wider keep-policy, coding-agent + QA oracles, Kaggle GPU entry (`kaggle/amcp-scale`)
 
 ### API / dashboard
+- Billing usage bar uses the same animated dither + bloom as Analytics (grow-in + shimmer), not a static dotted strip
+- Analytics charts the full billing month per signed-in account; missing daily rows spread across the month instead of dumping onto today
 - Founder admin on `internal.supercompress.dev` shows all-account usage (processed / in / out / saved / cut %, leaderboard) with the same dither charts as dashboard Analytics
 
 - Soft-200 scanner/probe noise (`softProbe`) so Vercel Observability error rate stays ~0; real clients with credentials still get proper 4xx

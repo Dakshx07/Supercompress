@@ -198,9 +198,11 @@ async function listKeys(ownerUid) {
   }
 
   let account_usage = null;
+  let ownerClaims = {};
   try {
     const owner = await ownerRecord(ownerUid);
     const claims = owner.customClaims || {};
+    ownerClaims = claims;
     const month = new Date().toISOString().slice(0, 7);
     // Prefer durable billing ledger (same source as compress paywall) over mirrored claims.
     try {
@@ -243,6 +245,28 @@ async function listKeys(ownerUid) {
       }
     }
   } catch (_) {}
+
+  if (account_usage) {
+    try {
+      const { expandPackedDays, daysFromRecentBilling, mergeDays, fillMonthGap } = require("./usage-days");
+      const month = account_usage.month;
+      const recorded = expandPackedDays(
+        ownerClaims.sc_usage?.month === month
+          ? { m: month, d: ownerClaims.sc_usage.d || {} }
+          : null,
+        month
+      );
+      const fromRecent = Object.keys(recorded).length
+        ? {}
+        : daysFromRecentBilling(ownerClaims.sc_recent_billing, month);
+      const filled = fillMonthGap(mergeDays(recorded, fromRecent), account_usage, month);
+      account_usage = {
+        ...account_usage,
+        by_day: filled.by_day,
+        by_day_source: filled.source,
+      };
+    } catch (_) {}
+  }
 
   // Attribute billing-meter gap onto a real key so the table never shows
   // "per-key store empty" when default + coding-agent keys exist.

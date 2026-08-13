@@ -3,6 +3,8 @@
  * Used by the founder dashboard on internal.supercompress.dev.
  */
 
+const { expandPackedDays, fillMonthGap, mergeDays } = require("./usage-days");
+
 const STUB_RE = /^(sck_|sc_lnk_|sc_at_|sc_ac_|sc_aff_)/;
 
 function monthKey(d = new Date()) {
@@ -51,6 +53,13 @@ function rowFromUser(user, month = monthKey()) {
     recorded_requests: requests,
     cut_pct: cutPct(current ? tokens_saved : tokens_saved, current ? tokens_in : tokens_in),
     created_at: user.metadata?.creationTime || null,
+    by_day: current
+      ? fillMonthGap(
+          expandPackedDays({ m: month, d: usage.d || {} }, month),
+          { tokens_in, tokens_out, tokens_saved, requests },
+          month
+        ).by_day
+      : {},
   };
 }
 
@@ -124,6 +133,14 @@ function mergeStoreDays(store) {
   return byDay;
 }
 
+function mergeRowDays(rows) {
+  let byDay = {};
+  for (const r of rows || []) {
+    byDay = mergeDays(byDay, r.by_day || {});
+  }
+  return byDay;
+}
+
 function analyticsBundle({ totals, leaderboard, plans, byDay }) {
   return {
     live: true,
@@ -157,6 +174,7 @@ module.exports = {
   rowFromUser,
   summarizeRows,
   mergeStoreDays,
+  mergeRowDays,
   analyticsBundle,
   STUB_RE,
 };

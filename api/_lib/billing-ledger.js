@@ -14,6 +14,7 @@
  */
 const crypto = require("crypto");
 const { initFirebaseAdmin } = require("./auth");
+const { bumpPackedDays, dayKey } = require("./usage-days");
 const {
   FREE_TOKENS_PER_MONTH,
   USD_PER_MILLION,
@@ -368,6 +369,16 @@ function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
     () => {
+      if (next.sc_usage?.d && typeof next.sc_usage.d === "object") {
+        const keys = Object.keys(next.sc_usage.d).sort();
+        if (keys.length > 14) {
+          const d = {};
+          for (const k of keys.slice(-14)) d[k] = next.sc_usage.d[k];
+          next.sc_usage = { ...next.sc_usage, d };
+        }
+      }
+    },
+    () => {
       delete next.sc_agent_plugin;
     },
     () => {
@@ -550,6 +561,18 @@ async function applyUsageAndBurnClaimsFallback({
           claims: liveClaims,
         });
         already = false;
+        const packed = bumpPackedDays(
+          liveClaims.sc_usage?.month === planned.ledger.month
+            ? { m: planned.ledger.month, d: liveClaims.sc_usage.d || {} }
+            : { m: planned.ledger.month, d: {} },
+          {
+            month: planned.ledger.month,
+            day: dayKey(),
+            tokens_in: tokensIn,
+            tokens_saved: tokensSaved,
+            requests: 1,
+          }
+        );
         return {
           ...liveClaims,
           sc_billing_rev: prevRev + 1,
@@ -560,6 +583,7 @@ async function applyUsageAndBurnClaimsFallback({
             tokens_out: planned.ledger.tokens_out,
             tokens_saved: planned.ledger.tokens_saved,
             tokens_reported: planned.ledger.tokens_reported || 0,
+            d: packed.d,
           },
           sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
           sc_recent_billing: [
@@ -766,6 +790,9 @@ async function mirrorClaims(uid, ledger) {
         tokens_out: ledger.tokens_out,
         tokens_saved: ledger.tokens_saved,
         tokens_reported: ledger.tokens_reported,
+        ...(prev.sc_usage?.month === ledger.month && prev.sc_usage?.d
+          ? { d: prev.sc_usage.d }
+          : {}),
       },
       sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
       ...(ledger.credit_limit_usd != null
