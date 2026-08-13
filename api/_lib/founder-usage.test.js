@@ -11,16 +11,16 @@ const {
 } = require("./founder-usage");
 
 assert.strictEqual(cutPct(50, 100), 50);
-assert.strictEqual(isHumanUser({ uid: "sck_abc", email: "x@y.com" }), false);
-assert.strictEqual(isHumanUser({ uid: "u1", email: "a@b.com" }), true);
-assert.strictEqual(isHumanUser({ uid: "u1", disabled: true, email: "a@b.com" }), false);
+assert.strictEqual(isHumanUser({ uid: "sck_abc", email: "x@example.com" }), false);
+assert.strictEqual(isHumanUser({ uid: "u1", email: "a@example.com" }), true);
+assert.strictEqual(isHumanUser({ uid: "u1", disabled: true, email: "a@example.com" }), false);
 
 const month = "2026-08";
 const rows = [
   rowFromUser(
     {
       uid: "a",
-      email: "one@x.com",
+      email: "one@example.com",
       displayName: "One",
       customClaims: { sc_plan: "payg", sc_usage: { month, tokens_in: 2_000_000, tokens_out: 200_000, tokens_saved: 1_600_000, requests: 40 } },
       metadata: {},
@@ -30,7 +30,7 @@ const rows = [
   rowFromUser(
     {
       uid: "b",
-      email: "two@x.com",
+      email: "two@example.com",
       displayName: "Two",
       customClaims: { sc_plan: "free", sc_usage: { month, tokens_in: 100_000, tokens_saved: 40_000, requests: 8 } },
       metadata: {},
@@ -40,7 +40,7 @@ const rows = [
   rowFromUser(
     {
       uid: "c",
-      email: "old@x.com",
+      email: "old@example.com",
       customClaims: { sc_usage: { month: "2026-07", tokens_in: 9_000_000, tokens_saved: 1 } },
       metadata: {},
     },
@@ -53,7 +53,7 @@ assert.strictEqual(sum.totals.users, 3);
 assert.strictEqual(sum.totals.users_with_usage, 2);
 assert.strictEqual(sum.totals.tokens_in, 2_100_000);
 assert.strictEqual(sum.totals.processed, 11_100_000);
-assert.strictEqual(sum.leaderboard[0].email, "one@x.com");
+assert.strictEqual(sum.leaderboard[0].email, "one@example.com");
 assert.ok(sum.totals.cut_pct > 0);
 
 const days = mergeStoreDays({
