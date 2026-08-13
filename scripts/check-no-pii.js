@@ -7,6 +7,7 @@ const { execSync } = require("child_process");
 
 const ALLOW = [
   /arjunkshah21@gmail\.com/i, // public founder support / reply-to
+  /arjunkshah12345@gmail\.com/i, // founder admin allowlist default
   /you@company\.com/i,
   /user@example\.com/i,
   /example\.com/i,

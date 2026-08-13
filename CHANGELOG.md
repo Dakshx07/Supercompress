@@ -22,7 +22,12 @@ Public page: https://www.supercompress.dev/changelog
 - Remove leftover Analytics spark DOM + unused series helpers from dashboard
 - Keep user emails / outreach dumps / welcome-drain ops **out of OSS** (gitignore + CI PII gate); drain scripts live under `~/agent-bridge/private/supercompress-email/`
 
+### Model
+- AMCP scale-training stack (`scripts/amcp`) — JS-compatible wider keep-policy, coding-agent + QA oracles, Kaggle GPU entry (`kaggle/amcp-scale`)
+
 ### API / dashboard
+- Founder admin on `internal.supercompress.dev` shows all-account usage (processed / in / out / saved / cut %, leaderboard) with the same dither charts as dashboard Analytics
+
 - Soft-200 scanner/probe noise (`softProbe`) so Vercel Observability error rate stays ~0; real clients with credentials still get proper 4xx
 - Auto branded **power-user email** when someone hits 1M tokens (once ever). Delivery is Auth-claim + Resend idempotency, not Firestore; welcome-drain backfills anyone already over 1M. Free users at 1M are paywalled from Auth claims even if Firestore is down.
 - Welcome-drain no longer aborts on gist/store errors before sending 1M power-user mail; `op=power-user-drain` can run that lane alone.

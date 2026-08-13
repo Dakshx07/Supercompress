@@ -21,12 +21,7 @@ const REF_BASE = "https://supercompress.dev";
 const TRACK_RPM = 30;
 const TRACK_FIELD_MAX = 300;
 const AFFILIATE_DAILY_RETENTION_DAYS = 120;
-const FOUNDER_EMAILS = new Set(
-  String(process.env.FOUNDER_ADMIN_EMAILS || "arjunkshah21@gmail.com")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-);
+const { FOUNDER_EMAILS, isFounderEmail } = require("./_lib/founder");
 const PLAN_PRICES = { starter: 1000, pro: 2000, business: 6000 };
 
 /* ── Helpers ── */

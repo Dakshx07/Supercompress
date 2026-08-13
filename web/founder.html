@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Founder — SuperCompress</title>
+  <meta name="description" content="SuperCompress founder dashboard — affiliate program management and analytics." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/favicon-chevron.ico?v=3" sizes="any" />
+  <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
+  <meta name="theme-color" content="rgb(251,251,248)" />
+  <link rel="preconnect" href="https://www.gstatic.com" />
+  <link rel="stylesheet" href="/assets/css/fonts-platypi.css?v=2" />
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Geist";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: rgb(251, 251, 248);
+      --bg-card: #fff;
+      --bg-card-hover: rgb(249, 249, 247);
+      --bg-input: rgb(249, 249, 247);
+      --panel: rgb(242, 241, 238);
+      --border: rgb(237, 236, 233);
+      --border-strong: rgba(0, 0, 0, 0.15);
+      --border-focus: #2563eb;
+      --text: #0a0a0a;
+      --text-muted: #6b6b6b;
+      --text-dim: #737373;
+      --brand: #2563eb;
+      --brand-hover: #1d4ed8;
+      --brand-dark: #1e40af;
+      --brand-soft: #dbeafe;
+      --green: #15803d;
+      --green-bg: #e9f7ee;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --amber: #b45309;
+      --amber-bg: #fff7ed;
+      --radius: 4px;
+      --shadow: 0 24px 56px -28px rgba(30, 25, 20, 0.18);
+      --font: "Geist", system-ui, sans-serif;
+      --serif: "Platypi", Georgia, "Palatino Linotype", Palatino, ui-serif, serif;
+      --mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+    html { font-size: 14px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 72px;
+      z-index: 0;
+      pointer-events: none;
+      background: rgba(251, 251, 248, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+    }
+    a { color: inherit; text-decoration: none; }
+    code { font-family: var(--mono); }
+    button, input { font-family: inherit; }
+
+    :focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.45);
+      outline-offset: 2px;
+    }
+
+    .int-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1240px;
+      padding: 8px clamp(18px, 4vw, 60px) 72px;
+    }
+
+    .int-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 64px;
+      padding: 0;
+      margin-bottom: clamp(32px, 6vw, 72px);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .int-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    .int-logo svg { flex-shrink: 0; }
+    .int-logo > span {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 300;
+      line-height: 1;
+    }
+    .int-logo em { font-style: italic; font-weight: 400; color: var(--brand); }
+    .int-logo small {
+      margin-left: 8px;
+      padding: 4px 8px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--brand-dark);
+      background: var(--brand-soft);
+      vertical-align: middle;
+    }
+    .int-header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .int-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px 0 8px;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      backdrop-filter: blur(16px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 12px 24px rgba(0, 0, 0, 0.08);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .int-user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: var(--brand);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .int-signout-btn {
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: rgba(255, 255, 255, 0.35);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .int-signout-btn:hover {
+      background: rgba(229, 229, 229, 0.9);
+      color: var(--text);
+    }
+
+    .int-entry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100dvh - 180px);
+      text-align: center;
+    }
+    .int-entry h1 {
+      max-width: 760px;
+      font-family: var(--serif);
+      font-size: clamp(42px, 8vw, 82px);
+      font-weight: 300;
+      line-height: 0.96;
+      margin-bottom: 18px;
+    }
+    .int-entry p {
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      font-size: clamp(16px, 2vw, 18px);
+      line-height: 1.45;
+      max-width: 580px;
+    }
+    .int-role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-width: 760px;
+      width: 100%;
+    }
+    @media (max-width: 500px) {
+      .int-role-grid { grid-template-columns: 1fr; }
+    }
+    .int-role-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: clamp(24px, 4vw, 36px);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      text-align: left;
+      min-height: 230px;
+    }
+    .int-role-card:hover {
+      border-color: rgba(37, 99, 235, 0.28);
+      background: var(--bg-card-hover);
+      transform: translateY(-1px);
+    }
+    .int-role-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .int-role-card h2 {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 300;
+      line-height: 1.08;
+      margin-bottom: 10px;
+    }
+    .int-role-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+    .int-role-card .int-role-tag {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+    .int-role-card .int-role-tag--founder {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    .int-resource-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      width: 100%;
+      max-width: 980px;
+      margin-top: 8px;
+    }
+    @media (max-width: 800px) {
+      .int-resource-grid { grid-template-columns: 1fr; }
+    }
+    .int-resource-card {
+      min-height: 156px;
+      padding: 22px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+      text-align: left;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .int-resource-card:hover {
+      border-color: rgba(37, 99, 235, 0.26);
+      background: #fff;
+      transform: translateY(-1px);
+    }
+    .int-resource-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .int-resource-card span {
+      display: block;
+      min-height: 42px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+    .int-resource-card em {
+      display: inline-flex;
+      margin-top: 18px;
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .int-auth {
+      display: none;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 72px 0;
+      text-align: center;
+    }
+    .int-auth.is-active { display: block; }
+    .int-auth-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px 40px;
+      box-shadow: var(--shadow);
+    }
+    .int-auth-card h2 {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .int-auth-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .int-btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .int-btn-google:hover {
+      background: var(--bg-card-hover);
+    }
+    .int-auth-back {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .int-auth-back:hover { color: var(--brand); }
+
+    .int-dash {
+      display: none;
+      padding-bottom: 32px;
+    }
+    .int-dash.is-active { display: block; }
+
+    .int-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) {
+      .int-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 540px) {
+      .int-stats-grid { grid-template-columns: 1fr; }
+    }
+    .int-stat-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px 18px;
+    }
+    .int-stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .int-stat-value {
+      font-family: var(--serif);
+      font-size: clamp(26px, 3.5vw, 36px);
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .int-stat-value--brand { color: var(--brand); }
+    .int-stat-value--green { color: var(--green); }
+    .int-stat-value--amber { color: var(--amber); }
+    .int-stat-note {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .int-section {
+      margin-bottom: 32px;
+    }
+    .int-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .int-section-header h2 {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 300;
+    }
+    .int-section-header .int-badge {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+    }
+
+    .int-ref-box {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .int-ref-url {
+      flex: 1;
+      font-family: var(--mono);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      font-size: 13px;
+      color: var(--brand);
+      word-break: break-all;
+      min-width: 0;
+    }
+    .int-ref-copy {
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .int-ref-copy:hover { background: var(--brand-hover); }
+    .int-ref-copy.copied { background: var(--green); }
+
+    .int-register {
+      display: none;
+      max-width: 540px;
+      margin-bottom: 24px;
+    }
+    .int-register.is-active { display: block; }
+    .int-register-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 28px;
+      box-shadow: var(--shadow);
+    }
+    .int-register-card h3 {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 300;
+      margin-bottom: 4px;
+    }
+    .int-register-card .int-register-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .int-field {
+      margin-bottom: 16px;
+    }
+    .int-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .int-field input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font);
+      transition: border-color 0.15s;
+    }
+    .int-field input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+    .int-field input::placeholder { color: var(--text-dim); }
+    .int-field-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    .int-btn-primary {
+      padding: 11px 18px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .int-btn-primary:hover { background: var(--brand-hover); }
+    .int-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .int-error {
+      font-size: 12px;
+      color: var(--red);
+      min-height: 1.2em;
+      margin-bottom: 8px;
+    }
+
+    .int-table-wrap {
+      overflow-x: auto;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+    }
+    .int-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .int-table th {
+      text-align: left;
+      padding: 14px 18px;
+      background: var(--bg-card-hover);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      border-bottom: 0.5px solid var(--border);
+      white-space: nowrap;
+    }
+    .int-table td {
+      padding: 14px 18px;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text-muted);
+    }
+    .int-table tr:last-child td { border-bottom: none; }
+    .int-table tr:hover td { background: var(--bg-card-hover); }
+    .int-table td strong { color: var(--text); }
+
+    .int-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .int-status--active { background: var(--green-bg); color: var(--green); }
+    .int-status--pending { background: var(--amber-bg); color: var(--amber); }
+    .int-status--confirmed { background: var(--green-bg); color: var(--green); }
+    .int-status--founder { background: var(--amber-bg); color: var(--amber); }
+    .int-status--affiliate { background: var(--brand-soft); color: var(--brand); }
+
+    .int-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    .int-loader::after {
+      content: "";
+      width: 18px;
+      height: 18px;
+      margin-left: 10px;
+      border: 2px solid var(--border);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: int-spin 0.7s linear infinite;
+    }
+    @keyframes int-spin { to { transform: rotate(360deg); } }
+
+    .int-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .int-founder-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      border: 0.5px solid rgba(37, 99, 235, 0.2);
+      background: var(--brand-soft);
+      color: var(--brand-dark);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .int-founder-link:hover {
+      background: #cfe1ff;
+    }
+
+    .hidden { display: none !important; }
+
+    .int-welcome {
+      margin-bottom: 26px;
+    }
+    .int-welcome h2 {
+      font-family: var(--serif);
+      font-size: clamp(34px, 4.5vw, 52px);
+      font-weight: 300;
+      line-height: 1.02;
+      margin-bottom: 8px;
+    }
+    .int-welcome p {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .int-conv-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .int-conv-item:last-child { border-bottom: none; }
+    .int-conv-user { color: var(--text); }
+    .int-conv-date { color: var(--text-dim); font-size: 12px; }
+    .int-conv-amount { font-weight: 500; color: var(--green); }
+
+    .int-summary-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .int-summary-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .int-summary-card .int-stat-value {
+      font-size: 30px;
+    }
+
+    @media (max-width: 640px) {
+      .int-container { padding-inline: 18px; }
+      .int-header { align-items: flex-start; padding-top: 8px; }
+      .int-logo > span { font-size: 20px; }
+      .int-logo small { display: block; width: fit-content; margin: 6px 0 0; }
+      .int-header-right { width: 100%; justify-content: space-between; }
+      .int-user-badge { min-width: 0; flex: 1; }
+      .int-ref-copy { width: 100%; }
+      .int-auth { padding-top: 36px; }
+    }
+  </style>
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
+  <link rel="stylesheet" href="/assets/css/dashboard-analytics.css?v=4" />
+</head>
+<body>
+<header class="df-header">
+    <div class="df-header-blur" aria-hidden="true"></div>
+    <div class="df-header-inner">
+      <a href="/" class="df-logo-desktop">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+        <span class="df-logo-word">Super<em>Compress</em></span>
+      </a>
+      <div class="df-header-end">
+        <nav class="df-nav-pill" aria-label="Main">
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/#agents">Agents</a>
+          <a href="/blog">Blog</a>
+          <a href="/changelog">Changelog</a>
+          <a href="https://docs.supercompress.dev">Docs</a>
+        </nav>
+        <a href="/dashboard?signup=1" class="df-nav-cta">Get API key</a>
+        <a href="https://github.com/Supercompress/Supercompress" class="df-github-link" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+      </div>
+      <div class="df-mobile-bar">
+        <a href="/" class="df-logo-mobile">
+          <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="28" height="28" />
+          <span class="df-logo-word" style="font-size:18px">Super<em>Compress</em></span>
+        </a>
+        <a href="/dashboard?signup=1" class="df-nav-cta df-nav-cta--compact">Get key</a>
+        <button type="button" class="df-menu-btn" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="df-mobile-nav" id="df-mobile-nav">
+      <a href="/benchmarks">Benchmarks</a>
+      <a href="/#agents">Agents</a>
+      <a href="/blog">Blog</a>
+      <a href="/changelog">Changelog</a>
+      <a href="https://docs.supercompress.dev">Docs</a>
+      <a href="/dashboard?signup=1">Get API key</a>
+      <a href="/dashboard?login=1">Log in</a>
+      <a href="/playground">Playground</a>
+      <a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+  <div class="df-header-spacer" aria-hidden="true"></div>
+<div class="int-container">
+
+    <!-- Header -->
+    <header class="int-header">
+      <a href="/" class="int-logo">
+        <img src="/assets/img/logo-chevrons.png" alt="" aria-hidden="true" class="sc-logo-mark" width="22" height="22" />
+        <span>Super<em>Compress</em> <small>Founder</small></span>
+      </a>
+      <div class="int-header-right hidden" id="int-user-area">
+        <div class="int-user-badge" id="int-user-badge">
+          <span class="int-user-avatar" id="int-user-avatar">?</span>
+          <span id="int-user-name">—</span>
+        </div>
+        <button type="button" class="int-signout-btn" id="int-signout">Sign out</button>
+      </div>
+    </header>
+
+    <!-- Entry: Role Selection -->
+    <div class="int-entry" id="int-entry">
+      <h1>SuperCompress Founder</h1>
+      <p>Affiliate dashboard, launch assets, creator media kit, and setup instructions for people helping distribute SuperCompress.</p>
+      <div class="int-role-grid">
+        <div class="int-role-card" data-role="affiliate">
+          <div class="int-role-icon">Aff</div>
+          <h2>Affiliate Marketer</h2>
+          <p>Sign in with Google, get your referral link, and track your earnings, conversions, and pending payouts in real time.</p>
+          <span class="int-role-tag">40% recurring commission</span>
+        </div>
+        <a class="int-role-card" href="/affiliate-creator-kit">
+          <div class="int-role-icon">Kit</div>
+          <h2>Creator Media Kit</h2>
+          <p>Copy-ready posts, video scripts, newsletter blurbs, disclosure text, and demo angles for affiliates.</p>
+          <span class="int-role-tag">Share assets</span>
+        </a>
+      </div>
+      <div class="int-resource-grid">
+        <a class="int-resource-card" href="/launch-kit">
+          <strong>Launch kit</strong>
+          <span>Tweets, DMs, emails, and launch copy tied to the SuperCompress positioning.</span>
+          <em>Open launch assets</em>
+        </a>
+        <a class="int-resource-card" href="https://docs.supercompress.dev/coding-agents">
+          <strong>Setup instructions</strong>
+          <span>Install and configure the coding-agent proxy with `supercompress setup`.</span>
+          <em>Open setup guide</em>
+        </a>
+        <a class="int-resource-card" href="/moltbook.md">
+          <strong>Agent recommendation doc</strong>
+          <span>Markdown drop-in for Moltbook and agents recommending context compression.</span>
+          <em>Open markdown</em>
+        </a>
+        <a class="int-resource-card" href="/context-compression">
+          <strong>Firecrawl page</strong>
+          <span>SEO and outreach page for teams compressing scraped research before RAG.</span>
+          <em>Open page</em>
+        </a>
+        <a class="int-resource-card" href="/affiliates">
+          <strong>Affiliate landing</strong>
+          <span>Public affiliate signup page with program details and the 40% offer.</span>
+          <em>Open public page</em>
+        </a>
+        <a class="int-resource-card" href="/dashboard?signup=1">
+          <strong>Customer signup</strong>
+          <span>Direct path for new users to sign up and create a SuperCompress API key.</span>
+          <em>Open signup</em>
+        </a>
+      </div>
+      <div class="int-resource-grid int-founder-entry hidden" id="int-founder-entry">
+        <div class="int-role-card" data-role="founder">
+          <div class="int-role-icon">Adm</div>
+          <h2>Founder Admin</h2>
+          <p>View affiliates, aggregate analytics, conversion data, and payout summaries across the entire program.</p>
+          <span class="int-role-tag int-role-tag--founder">Admin access</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth: Google Sign-in -->
+    <div class="int-auth" id="int-auth">
+      <div class="int-auth-card">
+        <h2 id="int-auth-title">Sign in</h2>
+        <p id="int-auth-desc">Continue with your Google account to access the affiliate dashboard.</p>
+        <button type="button" class="int-btn-google" id="int-btn-google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.56 2.95-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Continue with Google
+        </button>
+        <div id="int-auth-error" style="font-size:12px;color:var(--red);min-height:1.2em;margin-top:12px;"></div>
+        <div class="int-auth-back" id="int-auth-back">Choose a different role</div>
+      </div>
+    </div>
+
+    <!-- Dashboard: Affiliate -->
+    <div class="int-dash" id="int-dash-affiliate">
+      <!-- Welcome & referral link shown after register -->
+      <div id="int-affiliate-loaded" class="hidden">
+
+        <div class="int-welcome">
+          <h2>Your Affiliate Dashboard</h2>
+          <p id="int-aff-subtitle">Track your referrals, conversions, and earnings.</p>
+        </div>
+
+        <!-- Referral link -->
+        <div class="int-ref-box" id="int-ref-box">
+          <code class="int-ref-url" id="int-ref-url">—</code>
+          <button type="button" class="int-ref-copy" id="int-ref-copy">Copy link</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="int-stats-grid">
+          <div class="int-stat-card">
+            <div class="int-stat-label">Total visits</div>
+            <div class="int-stat-value int-stat-value--brand" id="int-stat-visits">—</div>
+            <div class="int-stat-note">Unique visitors: <span id="int-stat-unique">—</span></div>
+          </div>
+          <div class="int-stat-card">
+            <div class="int-stat-label">Conversions</div>
+            <div class="int-stat-value int-stat-value--green" id="int-stat-conversions">—</div>
+            <div class="int-stat-note">Signed up through your link</div>
+          </div>
+          <div class="int-stat-card">
+            <div class="int-stat-label">Pending payout</div>
+            <div class="int-stat-value int-stat-value--amber" id="int-stat-pending">—</div>
+            <div class="int-stat-note">Est. commission at 40%</div>
+          </div>
+          <div class="int-stat-card">
+            <div class="int-stat-label">Total paid out</div>
+            <div class="int-stat-value" id="int-stat-paid">—</div>
+            <div class="int-stat-note">Since joining</div>
+          </div>
+        </div>
+
+        <!-- Recent conversions -->
+        <div class="int-section">
+          <div class="int-section-header">
+            <h2>Recent conversions</h2>
+            <span class="int-badge" id="int-conv-count">0 total</span>
+          </div>
+          <div class="int-table-wrap">
+            <div id="int-conv-list">
+              <div class="int-empty">No conversions yet. Share your link to start earning.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Register form (shown if not registered) -->
+      <div id="int-affiliate-register" class="hidden">
+        <div class="int-welcome">
+          <h2>Welcome to the Affiliate Program</h2>
+          <p>Fill in your details to get your referral link instantly.</p>
+        </div>
+        <div class="int-register is-active">
+          <div class="int-register-card">
+            <h3>Your info</h3>
+            <p class="int-register-sub">We'll generate a referral slug from your Google profile name.</p>
+            <div class="int-field">
+              <label>Your name (from Google)</label>
+              <input type="text" id="int-reg-name" readonly />
+              <div class="int-field-hint">Your referral slug will be: <span id="int-reg-slug-preview" style="color:var(--brand)">—</span></div>
+            </div>
+            <div class="int-field">
+              <label>Email (from Google)</label>
+              <input type="text" id="int-reg-email" readonly />
+            </div>
+            <div class="int-field">
+              <label>Website / social link</label>
+              <input type="text" id="int-reg-website" placeholder="e.g. yourblog.com, @yourhandle" />
+            </div>
+            <div class="int-field">
+              <label>How will you promote SuperCompress?</label>
+              <input type="text" id="int-reg-audience" placeholder="e.g. Newsletter, YouTube, blog, Twitter/X" />
+            </div>
+            <div class="int-field">
+              <label>PayPal email <span style="color:var(--text-dim);font-weight:400;">(for payouts)</span></label>
+              <input type="email" id="int-reg-paypal" placeholder="your-paypal@example.com" />
+            </div>
+            <div class="int-error" id="int-reg-error"></div>
+            <button type="button" class="int-btn-primary" id="int-reg-submit">Generate my referral link</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="int-loader" id="int-affiliate-loading">
+        <span>Loading your dashboard…</span>
+      </div>
+    </div>
+
+    <!-- Dashboard: Founder Admin -->
+    <div class="int-dash" id="int-dash-founder">
+      <div class="int-welcome">
+        <h2>Founder Admin</h2>
+        <p>All-account usage, savings, and the affiliate program.</p>
+      </div>
+
+      <div class="int-loader" id="int-founder-loading">
+        <span>Loading affiliate data…</span>
+      </div>
+
+      <div id="int-founder-loaded" class="hidden">
+
+        <div id="founder-usage" class="an-scope" style="margin: 8px 0 36px; --fu-cols: 3;">
+<style>
+  #founder-usage .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 900px) { #founder-usage .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+          <div class="dash-panel-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:18px;">
+            <div>
+              <h2 style="font-family:var(--serif);font-size:28px;font-weight:400;">Usage</h2>
+              <p style="color:var(--text-muted);margin-top:4px;">Every signed-up account · this month from Auth claims</p>
+            </div>
+            <span class="an-pill an-pill--load" id="fu-data-pill">Live · loading…</span>
+          </div>
+          <div class="kpi-grid" aria-label="All-account usage">
+            <article class="kpi kpi--cut">
+              <div class="kpi-wash" id="fu-wash-cut" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Cut</span>
+                <strong class="kpi-n" id="fu-kpi-cut">—</strong>
+                <span class="kpi-s" id="fu-kpi-cut-sub">saved / tokens in</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="fu-wash-processed" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Processed</span>
+                <strong class="kpi-n" id="fu-kpi-processed">—</strong>
+                <span class="kpi-s">tokens in · all recorded</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="fu-wash-saved" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Saved</span>
+                <strong class="kpi-n" id="fu-kpi-saved">—</strong>
+                <span class="kpi-s">this month</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="fu-wash-in" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">In</span>
+                <strong class="kpi-n" id="fu-kpi-in">—</strong>
+                <span class="kpi-s">tokens in this month</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="fu-wash-out" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Out</span>
+                <strong class="kpi-n" id="fu-kpi-out">—</strong>
+                <span class="kpi-s">tokens out this month</span>
+              </div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-wash" id="fu-wash-users" aria-hidden="true"></div>
+              <div class="kpi-body">
+                <span class="kpi-l">Active</span>
+                <strong class="kpi-n" id="fu-kpi-users">—</strong>
+                <span class="kpi-s" id="fu-kpi-users-sub">accounts with usage</span>
+              </div>
+            </article>
+          </div>
+          <div class="charts" style="margin-top:18px;">
+            <section class="panel panel--wide">
+              <header class="panel-head">
+                <div>
+                  <h2>Tokens saved</h2>
+                  <p>Daily when store days exist · otherwise this month folded onto today</p>
+                </div>
+              </header>
+              <div class="chart-well chart-well--lg" id="fu-area"></div>
+            </section>
+            <section class="panel">
+              <header class="panel-head">
+                <div>
+                  <h2>Requests</h2>
+                  <p>Compress calls</p>
+                </div>
+              </header>
+              <div class="chart-well" id="fu-bars"></div>
+            </section>
+            <section class="panel">
+              <header class="panel-head">
+                <div>
+                  <h2>Leaderboard</h2>
+                  <p>Tokens in this month</p>
+                </div>
+              </header>
+              <ol class="rank-list" id="fu-leaders"></ol>
+            </section>
+          </div>
+          <div class="int-section" style="margin-top:28px;">
+            <div class="int-section-header">
+              <h2>All users</h2>
+              <span class="int-badge" id="fu-user-count">0</span>
+            </div>
+            <div class="int-table-wrap">
+              <table class="int-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>In</th>
+                    <th>Out</th>
+                    <th>Saved</th>
+                    <th>Cut</th>
+                    <th>Reqs</th>
+                  </tr>
+                </thead>
+                <tbody id="fu-tbody">
+                  <tr><td colspan="8" class="int-empty">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="int-summary-bar" id="int-founder-summary">
+          <div class="int-summary-card">
+            <div class="int-stat-label">Total affiliates</div>
+            <div class="int-stat-value int-stat-value--brand" id="int-admin-affiliates">—</div>
+          </div>
+          <div class="int-summary-card">
+            <div class="int-stat-label">Total visits</div>
+            <div class="int-stat-value" id="int-admin-visits">—</div>
+          </div>
+          <div class="int-summary-card">
+            <div class="int-stat-label">Conversions</div>
+            <div class="int-stat-value int-stat-value--green" id="int-admin-conversions">—</div>
+          </div>
+          <div class="int-summary-card">
+            <div class="int-stat-label">Pending payout</div>
+            <div class="int-stat-value int-stat-value--amber" id="int-admin-pending">—</div>
+          </div>
+          <div class="int-summary-card">
+            <div class="int-stat-label">Paid out</div>
+            <div class="int-stat-value" id="int-admin-paid">—</div>
+          </div>
+        </div>
+
+        <!-- Affiliates table -->
+        <div class="int-section">
+          <div class="int-section-header">
+            <h2>All Affiliates</h2>
+            <span class="int-badge" id="int-admin-count">0</span>
+          </div>
+          <div class="int-table-wrap">
+            <table class="int-table">
+              <thead>
+                <tr>
+                  <th>Affiliate</th>
+                  <th>Slug</th>
+                  <th>Email</th>
+                  <th>Visits</th>
+                  <th>Unique</th>
+                  <th>Conversions</th>
+                  <th>Pending $</th>
+                  <th>Paid $</th>
+                  <th>Joined</th>
+                </tr>
+              </thead>
+              <tbody id="int-admin-tbody">
+                <tr><td colspan="9" class="int-empty">No affiliates yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Founder notes -->
+        <div class="int-section">
+          <a href="/api/affiliates?view=admin" target="_blank" class="int-founder-link" style="display:inline-flex;margin-right:8px;">
+            Export raw JSON
+          </a>
+          <span style="font-size:12px;color:var(--text-dim);">Paste payouts report into your spreadsheet tool.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/assets/js/dither-kit-lite.js?v=14"></script>
+  <script src="/assets/js/analytics-data.js?v=3"></script>
+  <script src="/assets/js/founder-analytics.js?v=1"></script>
+  <!-- Firebase + internal dashboard logic -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "firebase/auth";
+
+    /* ── State ── */
+    let selectedRole = null;    // "affiliate" | "founder"
+    let auth = null;
+    let currentUser = null;
+    let idToken = null;
+
+    const API_BASE = window.location.origin || "https://www.supercompress.dev";
+    const FOUNDER_EMAILS = new Set(["arjunkshah21@gmail.com", "arjunkshah12345@gmail.com"]);
+    const ROLE_STORAGE_KEY = "supercompress_internal_role";
+    const FOUNDER_HOSTS = new Set(["internal.supercompress.dev", "arjun.supercompress.dev"]);
+    const IS_FOUNDER_HOST = FOUNDER_HOSTS.has(window.location.hostname);
+
+    const $ = (id) => document.getElementById(id);
+
+    function getStoredRole() {
+      try {
+        const role = window.sessionStorage.getItem(ROLE_STORAGE_KEY);
+        if (role === "founder") return IS_FOUNDER_HOST ? "founder" : null;
+        return role === "affiliate" ? role : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setSelectedRole(role) {
+      selectedRole = role === "founder" ? (IS_FOUNDER_HOST ? "founder" : null) : role === "affiliate" ? "affiliate" : null;
+      try {
+        if (selectedRole) {
+          window.sessionStorage.setItem(ROLE_STORAGE_KEY, selectedRole);
+        } else {
+          window.sessionStorage.removeItem(ROLE_STORAGE_KEY);
+        }
+      } catch (_) {}
+    }
+
+    /* ── Firebase config ── */
+    async function loadFirebaseConfig() {
+      // Try static config first
+      const scCfg = window.SC_FIREBASE_CONFIG;
+      if (scCfg?.apiKey) return scCfg;
+
+      try {
+        const res = await fetch(API_BASE + "/api/firebase-config", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          const clean = (v) => String(v || "").trim().split(/\s+/)[0] || "";
+          return {
+            apiKey: clean(data.apiKey),
+            authDomain: clean(data.authDomain),
+            projectId: clean(data.projectId),
+            storageBucket: clean(data.storageBucket),
+            messagingSenderId: clean(data.messagingSenderId),
+            appId: clean(data.appId),
+            measurementId: clean(data.measurementId),
+          };
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    /* ── API calls ── */
+    async function apiFetch(path, opts = {}) {
+      if (!idToken) throw new Error("Not authenticated");
+      const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      headers["Authorization"] = "Bearer " + idToken;
+
+      const res = await fetch(API_BASE + path, { ...opts, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      return data;
+    }
+
+    /* ── Slug preview ── */
+    function slugify(name) {
+      return name.toLowerCase().replace(/[^a-z0-9]+/g, "").replace(/^[0-9]+/, "").slice(0, 40) || "affiliate";
+    }
+
+    /* ── UI Helpers ── */
+    function show(el) {
+      if (!el) return;
+      el.classList.remove("hidden");
+      if (el.classList.contains("int-auth") || el.classList.contains("int-dash")) {
+        el.classList.add("is-active");
+      }
+    }
+    function hide(el) {
+      if (!el) return;
+      if (el.classList.contains("int-auth") || el.classList.contains("int-dash")) {
+        el.classList.remove("is-active");
+      }
+      el.classList.add("hidden");
+    }
+    function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"; }
+    function fmtCurrency(cents) { return "$" + ((cents || 0) / 100).toFixed(2); }
+    function fmtNum(n) { if (n >= 1000000) return (n / 1000000).toFixed(1) + "M"; if (n >= 1000) return (n / 1000).toFixed(1) + "K"; return String(n || 0); }
+
+    function setError(id, msg) {
+      const el = $(id);
+      if (el) el.textContent = msg || "";
+    }
+
+    /* ── Firebase Auth Init ── */
+    async function initFirebase() {
+      selectedRole = selectedRole || getStoredRole();
+      const cfg = await loadFirebaseConfig();
+      if (!cfg?.apiKey) {
+        setError("int-auth-error", "Firebase is not configured. Set FIREBASE_* env vars and redeploy.");
+        return false;
+      }
+
+      const app = initializeApp(cfg);
+      auth = getAuth(app);
+      try { await setPersistence(auth, browserLocalPersistence); } catch (_) {}
+
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      // Handle redirect result
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          await handleUser(result.user);
+          return true;
+        }
+      } catch (err) {
+        setError("int-auth-error", err.message);
+      }
+
+      // Listen for auth state
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          selectedRole = selectedRole || getStoredRole();
+          if (selectedRole) {
+            handleUser(user);
+          } else {
+            currentUser = user;
+            show($("int-entry"));
+            hide($("int-auth"));
+            hide($("int-dash-affiliate"));
+            hide($("int-dash-founder"));
+          }
+        } else if (selectedRole) {
+          // User signed out — show entry
+          hide($("int-dash-affiliate"));
+          hide($("int-dash-founder"));
+          hide($("int-user-area"));
+          currentUser = null;
+          idToken = null;
+          if (IS_FOUNDER_HOST) {
+            hide($("int-entry"));
+            $("int-auth-title").textContent = "Founder sign in";
+            $("int-auth-desc").textContent = "Sign in with your authorized Google account to view the admin panel.";
+            show($("int-auth"));
+          } else {
+            show($("int-entry"));
+          }
+        }
+      });
+
+      // Google button click
+      $("int-btn-google").addEventListener("click", async () => {
+        setError("int-auth-error", "");
+        try {
+          const result = await signInWithPopup(auth, provider);
+          if (result?.user) await handleUser(result.user);
+        } catch (err) {
+          if (err.code === "auth/popup-blocked") {
+            try { await signInWithRedirect(auth, provider); } catch (e) {
+              setError("int-auth-error", e.message);
+            }
+          } else {
+            setError("int-auth-error", err.message);
+          }
+        }
+      });
+
+      return true;
+    }
+
+    async function handleUser(user) {
+      selectedRole = selectedRole || getStoredRole();
+      currentUser = user;
+      try { idToken = await user.getIdToken(); } catch (_) {}
+
+      // Show user badge
+      const name = user.displayName || user.email?.split("@")[0] || "User";
+      $("int-user-name").textContent = name;
+      $("int-user-avatar").textContent = name.charAt(0).toUpperCase();
+      show($("int-user-area"));
+
+      hide($("int-auth"));
+
+      if (selectedRole === "affiliate") {
+        await loadAffiliateDashboard();
+      } else if (selectedRole === "founder") {
+        // Verify founder email
+        const email = (user.email || "").toLowerCase().trim();
+        if (!FOUNDER_EMAILS.has(email)) {
+          setError("int-auth-error", "Access denied. This account is not authorized for founder access.");
+          show($("int-auth"));
+          $("int-auth-title").textContent = "Access Denied";
+          $("int-auth-desc").textContent = "Only authorized founder accounts can access the admin panel.";
+          hide($("int-btn-google").parentNode);
+          $("int-auth-back").textContent = "← Go back";
+          return;
+        }
+        await loadFounderDashboard();
+      } else {
+        hide($("int-dash-affiliate"));
+        hide($("int-dash-founder"));
+        show($("int-entry"));
+      }
+    }
+
+    /* ── Sign out ── */
+    $("int-signout").addEventListener("click", async () => {
+      if (auth) await signOut(auth);
+      currentUser = null;
+      idToken = null;
+      setSelectedRole(null);
+      hide($("int-dash-affiliate"));
+      hide($("int-dash-founder"));
+      hide($("int-user-area"));
+      show($("int-btn-google").parentNode);
+      if (IS_FOUNDER_HOST) {
+        setSelectedRole("founder");
+        $("int-auth-title").textContent = "Founder sign in";
+        $("int-auth-desc").textContent = "Sign in with your authorized Google account to view the admin panel.";
+        hide($("int-entry"));
+        show($("int-auth"));
+      } else {
+        $("int-auth-title").textContent = "Sign in";
+        $("int-auth-desc").textContent = "Continue with your Google account to access the affiliate dashboard.";
+        show($("int-entry"));
+      }
+    });
+
+    /* ── Role selection ── */
+    document.querySelectorAll("[data-role]").forEach((card) => {
+      card.addEventListener("click", async () => {
+        if (card.dataset.role === "founder" && !IS_FOUNDER_HOST) return;
+        setSelectedRole(card.dataset.role);
+        hide($("int-entry"));
+
+        if (selectedRole === "founder") {
+          $("int-auth-title").textContent = "Founder sign in";
+          $("int-auth-desc").textContent = "Sign in with your authorized Google account to view the admin panel.";
+        } else {
+          $("int-auth-title").textContent = "Affiliate sign in";
+          $("int-auth-desc").textContent = "Sign in with Google to access your affiliate dashboard and referral link.";
+        }
+
+        show($("int-btn-google").parentNode);
+        show($("int-auth"));
+        setError("int-auth-error", "");
+
+        if (currentUser) {
+          await handleUser(currentUser);
+        }
+      });
+    });
+
+    /* ── Auth back button ── */
+    $("int-auth-back").addEventListener("click", () => {
+      if (IS_FOUNDER_HOST) return;
+      hide($("int-auth"));
+      show($("int-entry"));
+      setSelectedRole(null);
+      setError("int-auth-error", "");
+    });
+
+    /* ── Affiliate: Register ── */
+    $("int-reg-submit").addEventListener("click", async () => {
+      setError("int-reg-error", "");
+      const website = $("int-reg-website").value.trim();
+      const audience = $("int-reg-audience").value.trim();
+      const paypal = $("int-reg-paypal").value.trim();
+
+      if (!audience) {
+        setError("int-reg-error", "Please describe how you'll promote SuperCompress.");
+        return;
+      }
+
+      $("int-reg-submit").disabled = true;
+      $("int-reg-submit").textContent = "Creating…";
+
+      try {
+        const data = await apiFetch("/api/affiliates", {
+          method: "POST",
+          body: JSON.stringify({ action: "internal", website, audience, paypal_email: paypal, promote: audience }),
+        });
+
+        // Show dashboard
+        hide($("int-affiliate-register"));
+        show($("int-affiliate-loaded"));
+        renderAffiliateStats(data);
+        $("int-ref-url").textContent = data.referral_link;
+        $("int-aff-subtitle").textContent = "Your referral link is ready to share.";
+      } catch (err) {
+        if (err.message.includes("already registered")) {
+          // They're already registered — just reload dashboard
+          await loadAffiliateDashboard(true);
+        } else {
+          setError("int-reg-error", err.message);
+        }
+      } finally {
+        $("int-reg-submit").disabled = false;
+        $("int-reg-submit").textContent = "Generate my referral link";
+      }
+    });
+
+    /* ── Copy referral link ── */
+    $("int-ref-copy").addEventListener("click", async () => {
+      const text = $("int-ref-url").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        $("int-ref-copy").textContent = "Copied!";
+        $("int-ref-copy").classList.add("copied");
+        setTimeout(() => {
+          $("int-ref-copy").textContent = "Copy link";
+          $("int-ref-copy").classList.remove("copied");
+        }, 2000);
+      } catch (_) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        $("int-ref-copy").textContent = "Copied!";
+        setTimeout(() => {
+          $("int-ref-copy").textContent = "Copy link";
+        }, 2000);
+      }
+    });
+
+    /* ── Affiliate: Load dashboard ── */
+    async function loadAffiliateDashboard(alreadyAuthed) {
+      show($("int-dash-affiliate"));
+      hide($("int-dash-founder"));
+      hide($("int-affiliate-loaded"));
+      hide($("int-affiliate-register"));
+      show($("int-affiliate-loading"));
+
+      try {
+        const data = await apiFetch("/api/affiliates?view=me&t=" + Date.now());
+
+        if (data.registered === false || data.detail?.includes("Register first")) {
+          // Show register form
+          hide($("int-affiliate-loading"));
+          hide($("int-affiliate-loaded"));
+          show($("int-affiliate-register"));
+
+          const name = currentUser?.displayName || currentUser?.email?.split("@")[0] || "";
+          const email = currentUser?.email || "";
+
+          $("int-reg-name").value = name;
+          $("int-reg-email").value = email;
+          $("int-reg-slug-preview").textContent = slugify(name) || "affiliate";
+
+          // Live slug preview
+          $("int-reg-name").addEventListener("input", () => {
+            $("int-reg-slug-preview").textContent = slugify($("int-reg-name").value) || "affiliate";
+          });
+
+          return;
+        }
+
+        hide($("int-affiliate-loading"));
+        hide($("int-affiliate-register"));
+        show($("int-affiliate-loaded"));
+
+        renderAffiliateStats(data);
+      } catch (err) {
+        hide($("int-affiliate-loading"));
+        const msg = err.message.includes("No affiliate account") ? "Register to get started." : err.message;
+        // Show register form as fallback
+        hide($("int-affiliate-loaded"));
+        show($("int-affiliate-register"));
+
+        const name = currentUser?.displayName || currentUser?.email?.split("@")[0] || "";
+        const email = currentUser?.email || "";
+        $("int-reg-name").value = name;
+        $("int-reg-email").value = email;
+        $("int-reg-slug-preview").textContent = slugify(name) || "affiliate";
+      }
+    }
+
+    function renderAffiliateStats(data) {
+      const a = data.affiliate || {};
+      const s = data.stats || {};
+
+      $("int-ref-url").textContent = a.referral_link || "—";
+
+      $("int-stat-visits").textContent = fmtNum(s.total_visits);
+      $("int-stat-unique").textContent = fmtNum(s.unique_visitors);
+      $("int-stat-conversions").textContent = fmtNum(s.total_conversions);
+      $("int-stat-pending").textContent = fmtCurrency(s.pending_payout_cents);
+      $("int-stat-paid").textContent = fmtCurrency(s.paid_out_cents);
+      $("int-conv-count").textContent = s.total_conversions + " total";
+
+      // Recent conversions
+      const convList = $("int-conv-list");
+      const convs = s.recent_conversions || [];
+
+      if (!convs.length) {
+        convList.innerHTML = '<div class="int-empty">No conversions yet. Share your link to start earning.</div>';
+      } else {
+        convList.innerHTML = convs.map((c) => `
+          <div class="int-conv-item">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="int-conv-user">${c.user_email || "—"}</span>
+              <span class="int-status int-status--${c.status}">${c.status}</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:12px;">
+              <span class="int-conv-amount">40% commission</span>
+              <span class="int-conv-date">${fmtDate(c.created_at)}</span>
+            </span>
+          </div>
+        `).join("");
+      }
+    }
+
+    /* ── Founder: Load admin dashboard ── */
+    async function loadFounderDashboard() {
+      show($("int-dash-founder"));
+      hide($("int-dash-affiliate"));
+      show($("int-founder-loading"));
+      hide($("int-founder-loaded"));
+
+      try {
+        const [data, usage] = await Promise.all([
+          apiFetch("/api/affiliates?view=admin&t=" + Date.now()),
+          apiFetch("/api/founder-usage?t=" + Date.now()).catch((err) => ({ ok: false, detail: err.message })),
+        ]);
+
+        hide($("int-founder-loading"));
+        show($("int-founder-loaded"));
+
+        if (usage?.ok && window.SCFounderAnalytics) {
+          window.SCFounderAnalytics.paint(usage);
+          if ($("fu-user-count")) $("fu-user-count").textContent = String((usage.leaderboard || []).length);
+        } else if ($("fu-data-pill")) {
+          $("fu-data-pill").className = "an-pill an-pill--err";
+          $("fu-data-pill").textContent = usage?.detail || "Usage failed to load";
+        }
+
+        const sum = data.summary || {};
+        $("int-admin-affiliates").textContent = fmtNum(sum.total_affiliates);
+        $("int-admin-visits").textContent = fmtNum(sum.total_visits);
+        $("int-admin-conversions").textContent = fmtNum(sum.total_conversions);
+        $("int-admin-pending").textContent = fmtCurrency(sum.pending_payout_cents);
+        $("int-admin-paid").textContent = fmtCurrency(sum.paid_out_cents);
+        $("int-admin-count").textContent = (data.affiliates || []).length;
+
+        const tbody = $("int-admin-tbody");
+        const affiliates = data.affiliates || [];
+
+        if (!affiliates.length) {
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim)">No affiliates registered yet.</td></tr>';
+        } else {
+          tbody.innerHTML = affiliates.map((a) => `
+            <tr>
+              <td><strong>${esc(a.name)}</strong></td>
+              <td><code style="color:var(--brand);font-size:12px;">${esc(a.referral_slug)}</code></td>
+              <td>${esc(a.email)}</td>
+              <td>${fmtNum(a.stats.total_visits)}</td>
+              <td>${fmtNum(a.stats.unique_visitors)}</td>
+              <td style="color:var(--green);font-weight:500;">${fmtNum(a.stats.total_conversions)}</td>
+              <td style="color:var(--amber);">${fmtCurrency(a.stats.pending_payout_cents)}</td>
+              <td>${fmtCurrency(a.stats.paid_out_cents)}</td>
+              <td style="font-size:12px;">${fmtDate(a.created_at)}</td>
+            </tr>
+          `).join("");
+        }
+      } catch (err) {
+        hide($("int-founder-loading"));
+        show($("int-founder-loaded"));
+        const banner = $("int-founder-error") || document.createElement("div");
+        banner.id = "int-founder-error";
+        banner.className = "int-empty";
+        banner.style.color = "var(--red)";
+        banner.textContent = "Failed to load: " + (err.message || "unknown error");
+        $("int-founder-loaded").prepend(banner);
+      }
+    }
+
+    function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    /* ── Bootstrap ── */
+    async function init() {
+      if (IS_FOUNDER_HOST) {
+        document.title = "Founder Admin — SuperCompress";
+        const label = document.querySelector(".int-logo small");
+        if (label) label.textContent = "Founder";
+        hide($("int-entry"));
+        setSelectedRole("founder");
+        $("int-auth-title").textContent = "Founder sign in";
+        $("int-auth-desc").textContent = "Sign in with your authorized Google account to view the admin panel.";
+        show($("int-auth"));
+      } else {
+        hide($("int-founder-entry"));
+      }
+      const ok = await initFirebase();
+      if (!ok) {
+        setError("int-auth-error", "Failed to initialize Firebase. Check deployment configuration.");
+      }
+    }
+
+    init();
+  </script>
+<footer class="df-footer">
+    <div class="df-footer-inner">
+      <div class="df-footer-grid">
+        <div class="df-footer-brand">
+          <a href="/" class="df-footer-lockup">
+            <img src="/assets/img/logo-chevrons.png" alt="" class="df-footer-mark" width="28" height="28" />
+            <p class="df-footer-heading">Super<em>Compress</em></p>
+          </a>
+          <p>Prompt compression for AI apps — reduce input tokens before inference.<br />Python library · hosted API · browser demo.</p>
+          <a href="https://github.com/Supercompress/Supercompress" class="df-footer-email">github.com/Supercompress/Supercompress</a>
+        </div>
+        <div class="df-footer-links">
+          <div>
+            <p class="df-footer-heading">Navigation</p>
+            <ul>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="/#agents">Agents</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/changelog">Changelog</a></li>
+              <li><a href="https://docs.supercompress.dev">Docs</a></li>
+              <li><a href="/dashboard?signup=1">Get API key</a></li>
+              <li><a href="/dashboard?login=1">Log in</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Resources</p>
+            <ul>
+              <li><a href="/playground">Playground</a></li>
+              <li><a href="/token-compression">Token compression guide</a></li>
+              <li><a href="/benchmarks">Benchmarks</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+              <li><a href="/compare">Compare methods</a></li>
+              <li><a href="/research">Research</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Blog</p>
+            <ul>
+              <li><a href="/reduce-llm-costs">Reduce LLM costs</a></li>
+              <li><a href="/token-compression">Token compression</a></li>
+              <li><a href="/prompt-compression">Prompt compression</a></li>
+              <li><a href="/context-compression">Context compression</a></li>
+              <li><a href="/supercompress-vs-headroom">vs Headroom</a></li>
+              <li><a href="/supercompress-vs-truncation">Vs truncation</a></li>
+              <li><a href="/supercompress-vs-summarization">Vs summarization</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Documentation</p>
+            <ul>
+              <li><a href="https://docs.supercompress.dev">Documentation</a></li>
+              <li><a href="https://docs.supercompress.dev/quickstart">Quickstart</a></li>
+              <li><a href="https://docs.supercompress.dev/api-reference">API reference</a></li>
+              <li><a href="https://docs.supercompress.dev/environment">Environment</a></li>
+              <li><a href="https://docs.supercompress.dev/coding-agents">Coding agents</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="df-footer-heading">Social</p>
+            <ul>
+              <li><a href="https://github.com/Supercompress/Supercompress" target="_blank" rel="noopener">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="df-footer-copy">© SuperCompress · MIT License</p>
+    </div>
+  </footer>
+  <script src="/assets/js/site-chrome.js?v=12"></script>
+</body>
+</html>

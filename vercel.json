@@ -320,7 +320,7 @@
           "value": "internal.supercompress.dev"
         }
       ],
-      "destination": "/dashboard",
+      "destination": "/founder",
       "permanent": false
     },
     {
