@@ -33,6 +33,7 @@ const EXTRA_PROTECTED = [
   "/api/stats",
   "/api/firebase-config",
   "/api/affiliates",
+  "/api/founder-usage",
   "/api/demo/compress",
 ];
 

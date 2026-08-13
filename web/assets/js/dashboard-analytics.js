@@ -204,7 +204,7 @@
     }
 
     requestAnimationFrame(() => {
-      document.querySelectorAll("#panel-analytics .rank-fill").forEach((el) => {
+      document.querySelectorAll(".an-scope .rank-fill").forEach((el) => {
         el.style.width = `${el.getAttribute("data-w")}%`;
       });
     });
