@@ -293,6 +293,24 @@ async function applyCreditTopUp(session) {
   console.log(
     `Credited $${creditUsd}${bonusUsd ? ` + $${bonusUsd} first-pay bonus` : ""} to ${userId}; balance=$${newBalance}`
   );
+
+  try {
+    const { schedulePaymentThankYou, firstNameFromUser } = require("./payment-thank-you");
+    schedulePaymentThankYou({
+      uid: userId,
+      email: user.email || "",
+      firstName: firstNameFromUser(user),
+      creditUsd,
+      autoRecharge,
+      paymentKey: session.id,
+      kind,
+      paymentCreatedSec: session.created,
+      alreadyCredited: false,
+    });
+  } catch (err) {
+    console.warn("payment thank-you schedule skipped:", err.message || err);
+  }
+
   return {
     applied: true,
     already: false,

@@ -546,6 +546,89 @@ async function sendWelcomeEmail({ email, firstName, idempotencyKey }) {
 }
 
 /**
+ * Heartfelt founder thank-you after a successful prepaid credit purchase.
+ * Auto-recharge charges should not use this — only intentional Checkout pays.
+ */
+function paymentThankYouCopy({ firstName, email, creditUsd, autoRecharge }) {
+  const hi = firstName ? `Hey ${firstName}` : "Hey";
+  const amount = Number(creditUsd);
+  const amountLabel =
+    Number.isFinite(amount) && amount > 0 ? `$${amount.toFixed(amount % 1 ? 2 : 0)}` : null;
+  const subject = firstName
+    ? `${firstName}, thank you — means more than you know`
+    : "Thank you — means more than you know";
+
+  const text = `${hi},
+
+It's Arjun, founder of SuperCompress.
+
+I just saw your payment come through${amountLabel ? ` (${amountLabel})` : ""} — thank you. Seriously. Building this is lonely sometimes, and every person who puts real money behind SuperCompress is a huge deal to me.
+
+We're going to make the product 100× better for you and everyone else using it. If anything feels off, confusing, missing, or just "I wish it did X" — hit reply. I read every note myself.
+
+Dashboard: ${SITE}/dashboard
+Coding agents: ${SITE}/docs/coding-agents
+
+${autoRecharge ? "Auto-recharge is on so you shouldn't hit a wall mid-session — you can change that anytime in Billing.\n\n" : ""}Thanks again for trusting us with this.
+Arjun
+Founder, SuperCompress
+${REPLY_TO}`;
+
+  const bodyHtml = `
+<p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
+${eyebrow("Thank you")}
+${displayHeadline("Means more than you know")}
+<p style="margin:0 0 16px;">It's <strong>Arjun</strong>, founder of SuperCompress.</p>
+<p style="margin:0 0 16px;">I just saw your payment come through${
+    amountLabel ? ` (<strong>${escapeHtml(amountLabel)}</strong>)` : ""
+  } — thank you. Seriously. Building this is lonely sometimes, and every person who puts real money behind SuperCompress is a huge deal to me.</p>
+<p style="margin:0 0 16px;">We're going to make the product <strong>100× better</strong> for you and everyone else using it. If anything feels off, confusing, missing, or just “I wish it did X” — <strong>hit reply</strong>. I read every note myself.</p>
+${
+    autoRecharge
+      ? proofCallout("Auto-recharge is on so you shouldn’t hit a wall mid-session. Change it anytime in Billing.")
+      : ""
+  }
+${ctaButton("Open your dashboard →", `${SITE}/dashboard`)}
+<p style="margin:12px 0 0;font-size:14px;">
+  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Coding agents setup</a>
+  · <a href="${SITE}/dashboard#billing" style="color:${BRAND};text-decoration:none;font-weight:600;">Billing</a>
+</p>
+${signatureBlock()}`;
+
+  const html = brandedEmailHtml({
+    preheader: "Thank you for paying for SuperCompress — reply anytime with feedback.",
+    title: subject,
+    bodyHtml,
+    kind: "payment_thanks",
+  });
+
+  return { subject, text, html, to: email };
+}
+
+async function sendPaymentThankYouEmail({
+  email,
+  firstName,
+  creditUsd,
+  autoRecharge,
+  idempotencyKey,
+}) {
+  if (!email || !String(email).includes("@")) {
+    return { ok: false, error: "missing email" };
+  }
+  const copy = paymentThankYouCopy({
+    firstName,
+    email: String(email).trim(),
+    creditUsd,
+    autoRecharge: Boolean(autoRecharge),
+  });
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: idempotencyKey || null,
+  });
+  return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
+}
+
+/**
  * Power-user email when someone newly crosses 1M tokens.
  * Rank/leaderboard lines are optional (omit for the automatic trigger).
  * @param {{ firstName?: string, email: string, rank?: number, tokensIn?: number, tokensSaved?: number, requests?: number, morePct?: number, cutPct?: number }} opts
@@ -911,6 +994,7 @@ async function sendWeeklyEmail({ email, firstName, campaignId, unsubUrl, listUns
 module.exports = {
   welcomeCopy,
   powerUserCopy,
+  paymentThankYouCopy,
   weeklyCopy,
   shipCopy,
   weeklyEmailCopy,
@@ -923,6 +1007,7 @@ module.exports = {
   sendViaResend,
   sendWelcomeEmail,
   sendPowerUserEmail,
+  sendPaymentThankYouEmail,
   sendWeeklyEmail,
   DEFAULT_FROM,
 };
