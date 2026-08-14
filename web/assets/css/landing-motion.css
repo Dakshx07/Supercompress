@@ -350,20 +350,18 @@ html.gsap-ready .logo-marquee-track { animation: none !important; }
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
-  margin-top: 28px;
+  margin-top: 72px;
   margin-bottom: 24px;
 }
 
-.live-tokens-band {
-  margin-top: 56px;
-  padding: 28px 0 0;
+.cta-live-tokens {
+  max-width: 34rem;
+  margin: 0 0 28px;
 }
-.live-tokens-inner {
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto;
-}
-.live-tokens-kicker {
+.cta-live-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 8px;
   color: var(--blue);
   font-size: 11px;
@@ -371,35 +369,50 @@ html.gsap-ready .logo-marquee-track { animation: none !important; }
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.live-tokens-line {
+.cta-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+  animation: cta-live-pulse 1.6s ease-out infinite;
+}
+@keyframes cta-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+.cta-live-line {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
+  gap: 8px 12px;
   align-items: baseline;
-  justify-content: center;
   font-family: var(--serif);
-  color: var(--ink, #171717);
+  color: #171717;
 }
-.live-tokens-line strong {
+.cta-live-line strong {
   font-weight: 300;
-  font-size: clamp(42px, 7vw, 72px);
+  font-size: clamp(36px, 5.5vw, 56px);
   letter-spacing: -0.04em;
   line-height: 1;
   color: var(--blue);
   font-variant-numeric: tabular-nums;
 }
-.live-tokens-line span {
-  font-size: clamp(22px, 3.2vw, 32px);
+.cta-live-line span {
+  font-size: clamp(18px, 2.4vw, 24px);
   font-weight: 400;
   letter-spacing: -0.02em;
   color: #3a3a38;
 }
-.live-tokens-sub {
-  margin: 10px 0 0;
+.cta-live-sub {
+  margin: 8px 0 0;
   color: #80807c;
   font-size: 13px;
   line-height: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-live-dot { animation: none; }
 }
 .micro-dither-strip {
   position: absolute;
@@ -928,6 +941,7 @@ html.gsap-ready .bar > i { transform: scaleX(0); }
   padding: 80px 0;
   /* keep .container width + horizontal centering — don't override with max-width/margin:0 */
 }
+.cta-copy .cta-live-tokens,
 .cta-copy .cta-brand,
 .cta-copy h2,
 .cta-copy .cta-lead,
