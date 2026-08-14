@@ -411,16 +411,40 @@ async function main() {
 
   // ── F. Placeholder env key ignored on MCP + compressor ──
   try {
-    const replies = await mcpSession(
-      { SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR, SUPERCOMPRESS_API_KEY: "${SUPERCOMPRESS_API_KEY}" },
-      [{
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: { name: "compress_context", arguments: { context: codingDump(45, 9), query: "What does transform9 return?" } },
-      }]
-    );
-    const parsed = parseMcpTool(replies.find((r) => r.id === 1));
+    let parsed = null;
+    let lastErr = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const replies = await mcpSession(
+          { SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR, SUPERCOMPRESS_API_KEY: "${SUPERCOMPRESS_API_KEY}" },
+          [{
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: {
+              name: "compress_context",
+              arguments: {
+                context: codingDump(45, 9) + `\n// placeholder-attempt ${Date.now()}-${attempt}\n`,
+                query: "What does transform9 return?",
+                session_id: `launch-placeholder-${Date.now()}-${attempt}`,
+              },
+            },
+          }]
+        );
+        parsed = parseMcpTool(replies.find((r) => r.id === 1));
+        if (parsed.isError && /503|billing unavailable|temporar/i.test(String(parsed.text || "")) && attempt < 3) {
+          await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+          continue;
+        }
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt === 3) throw e;
+        await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+      }
+    }
+    if (lastErr) throw lastErr;
     assert.ok(!parsed.isError, parsed.text);
     const compressed = parsed.data.compressed_text || parsed.data.compressed_context;
     assert.ok(compressed);
@@ -453,27 +477,34 @@ async function main() {
 
   // ── G. Concurrent MCP compressions ──
   try {
-    const jobs = await Promise.all(
-      [1, 2, 3, 4, 5].map((n) =>
-        mcpSession(
-          { SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR },
-          [{
-            jsonrpc: "2.0",
-            id: 1,
-            method: "tools/call",
-            params: {
-              name: "compress_context",
-              arguments: {
-                context: codingDump(30, n),
-                query: `What does transform${n} return?`,
-              },
+    const stamp = Date.now();
+    const runOne = async (n, attempt = 0) => {
+      const replies = await mcpSession(
+        { SUPERCOMPRESS_CONFIG_DIR: CONFIG_DIR },
+        [{
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "compress_context",
+            arguments: {
+              context: codingDump(30, n) + `\n// concurrent-burst ${stamp}-${n}-${attempt}\n`,
+              query: `What does transform${n} return?`,
+              session_id: `launch-concurrent-${stamp}-${n}`,
             },
-          }]
-        )
-      )
-    );
+          },
+        }]
+      );
+      const parsed = parseMcpTool(replies.find((r) => r.id === 1));
+      if (parsed.isError && /503|timeout|temporar/i.test(String(parsed.text || "")) && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        return runOne(n, attempt + 1);
+      }
+      return parsed;
+    };
+    const jobs = await Promise.all([1, 2, 3, 4, 5].map((n) => runOne(n)));
     for (let i = 0; i < jobs.length; i++) {
-      const parsed = parseMcpTool(jobs[i].find((r) => r.id === 1));
+      const parsed = jobs[i];
       assert.ok(!parsed.isError, parsed.text);
       const compressed = parsed.data.compressed_text || parsed.data.compressed_context;
       assert.match(String(compressed), new RegExp(`transform${i + 1}`, "i"));

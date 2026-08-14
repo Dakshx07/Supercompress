@@ -308,59 +308,84 @@ async function compressOnce(context, query, codingAgent, opts = {}) {
     mode: "compiler",
     query,
   });
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 14000);
-  try {
-    const res = await fetch(COMPRESS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey,
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify({
-        context,
-        query,
-        mode: "compiler",
-        coding_agent: codingAgent || "Cursor",
-        source: opts.source || "cursor-hook",
-        session_id: opts.sessionId || null,
+  const maxAttempts = Number(opts.maxAttempts || 3);
+  let lastSkip = "error";
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 14000);
+    try {
+      const res = await fetch(COMPRESS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          context,
+          query,
+          mode: "compiler",
+          coding_agent: codingAgent || "Cursor",
+          source: opts.source || "cursor-hook",
+          session_id: opts.sessionId || null,
+          request_id: idempotencyKey,
+          idempotency_key: idempotencyKey,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        lastSkip = `http_${res.status}`;
+        // Retry transient platform pressure; idempotency key makes this billing-safe.
+        if ((res.status === 503 || res.status === 429 || res.status >= 520) && attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+          continue;
+        }
+        return { compressed: context, skipped: lastSkip };
+      }
+      const body = await res.json();
+      const compressed =
+        body.compressed_text ||
+        body.compressed_context ||
+        body.compressed ||
+        context;
+      const inTok = body.original_tokens || Math.round(context.length / 4);
+      const outTok = body.kept_tokens || body.compressed_tokens || Math.round(compressed.length / 4);
+      const pct =
+        body.tokens_saved_pct != null
+          ? Math.round(body.tokens_saved_pct)
+          : body.kv_savings_pct != null
+            ? Math.round(body.kv_savings_pct)
+            : inTok > 0
+              ? Math.round(((inTok - outTok) / inTok) * 100)
+              : 0;
+      return {
+        compressed,
+        original_tokens: inTok,
+        compressed_tokens: outTok,
+        savings_pct: pct,
+        latency_ms: body.latency_ms || null,
         request_id: idempotencyKey,
-        idempotency_key: idempotencyKey,
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) return { compressed: context, skipped: `http_${res.status}` };
-    const body = await res.json();
-    const compressed =
-      body.compressed_text ||
-      body.compressed_context ||
-      body.compressed ||
-      context;
-    const inTok = body.original_tokens || Math.round(context.length / 4);
-    const outTok = body.kept_tokens || body.compressed_tokens || Math.round(compressed.length / 4);
-    const pct =
-      body.tokens_saved_pct != null
-        ? Math.round(body.tokens_saved_pct)
-        : body.kv_savings_pct != null
-          ? Math.round(body.kv_savings_pct)
-          : inTok > 0
-            ? Math.round(((inTok - outTok) / inTok) * 100)
-            : 0;
-    return {
-      compressed,
-      original_tokens: inTok,
-      compressed_tokens: outTok,
-      savings_pct: pct,
-      latency_ms: body.latency_ms || null,
-      request_id: idempotencyKey,
-    };
-  } catch (err) {
-    if (err?.name === "AbortError") return { compressed: context, skipped: "timeout" };
-    return { compressed: context, skipped: "error" };
-  } finally {
-    clearTimeout(timer);
+      };
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        lastSkip = "timeout";
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+          continue;
+        }
+        return { compressed: context, skipped: "timeout" };
+      }
+      lastSkip = "error";
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+        continue;
+      }
+      return { compressed: context, skipped: "error" };
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return { compressed: context, skipped: lastSkip };
 }
 
 /** Compress context against a query. Query is never sent as compressible context. */

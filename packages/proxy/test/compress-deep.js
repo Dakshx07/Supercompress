@@ -275,14 +275,29 @@ async function main() {
 
   for (const [label, env] of mcpCases) {
     try {
-      const replies = await mcpCall(env, "compress_context", {
-        context: variedContext(45),
-        query: "What does fetch7 return?",
-      });
-      const tools = replies.find((r) => r.id === 2);
-      assert.ok(tools?.result?.tools?.some((t) => t.name === "compress_context"), "tools/list missing compress_context");
-      const call = replies.find((r) => r.id === 3);
-      const stats = unwrapMcpCompress(call);
+      let lastErr = null;
+      let stats = null;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${attempt}`;
+          const replies = await mcpCall(env, "compress_context", {
+            context: `${variedContext(45)}\n\n// deep-session ${stamp} ${label}\n`,
+            query: "What does fetch7 return?",
+            session_id: `compress-deep-${stamp}`,
+          });
+          const tools = replies.find((r) => r.id === 2);
+          assert.ok(tools?.result?.tools?.some((t) => t.name === "compress_context"), "tools/list missing compress_context");
+          const call = replies.find((r) => r.id === 3);
+          stats = unwrapMcpCompress(call);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (!/503|billing unavailable|temporar/i.test(String(e.message || e)) || attempt === 3) throw e;
+          await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+        }
+      }
+      if (lastErr) throw lastErr;
       pass(`MCP compress (${label})`, `orig=${stats.orig} saved=${stats.saved} kv=${stats.kv}%`);
     } catch (e) {
       fail(`MCP compress (${label})`, e.message);
