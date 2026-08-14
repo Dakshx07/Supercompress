@@ -815,10 +815,6 @@
         /(error|fail|exception|timeout|denied|invalid|reuse|revoke|fatal)/i.test(line) &&
         (specific.some((e) => line.includes(e)) ||
           terms.some((t) => lower.includes(String(t).toLowerCase())));
-      if ((hitSpecific || hitErrorQuery) && /unused\d+\s*=/.test(line)) {
-        const why = specific.filter((e) => line.includes(e));
-        if (why.length) console.error("CRITICAL_WHY", line.slice(0, 60), why);
-      }
       if (hitSpecific || hitErrorQuery) critical.push({ index: i, line });
     }
 
@@ -1369,8 +1365,9 @@
     if (/^#{1,6}\s+/.test(t)) return "heading";
     if (/^(```|~~~)/.test(t)) return "fence";
     if (/^(Traceback|Caused by:|Error:|Exception:|[A-Za-z]+Error\b|at\s+\S+\(|\s*File\s+".+", line \d+)/.test(t)) return "trace";
+    if (/^\[(ERR|ERROR|FAIL|FATAL|WARN|WARNING)\]|\b(ERR|ERROR|FAIL|FATAL)\b.*\b(reset|failed|timeout|denied|exception)\b/i.test(t)) return "trace";
     if (/^\[turn \d+\]|^\[log \d+\]|tool:\s*|composio:/i.test(t)) return "tool";
-    if (/^\[?(20\d\d-\d\d-\d\d|\d\d:\d\d:\d\d|INFO|WARN|WARNING|ERROR|DEBUG|TRACE)\]?/.test(t)) return "log";
+    if (/^\[?(20\d\d-\d\d-\d\d|\d\d:\d\d:\d\d|INFO|WARN|WARNING|ERROR|DEBUG|TRACE|ERR|FAIL|FATAL|OK)\]?/.test(t)) return "log";
     if (/^(import|from)\s+|^#include\s+|^using\s+/.test(t)) return "import";
     if (
       /^(export\s+)?((public|private|protected|internal|static|async|abstract|virtual|partial|sealed|readonly|unsafe|final|override)\s+)*(async\s+)?function\s+\w+/.test(t) ||
