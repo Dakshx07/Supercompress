@@ -4,6 +4,12 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.20] — 2026-08-14
+
+- **Accept Auth-backed API keys** (`sc_live_sck_…`): compressor `isValidApiKey` no longer rejects real linked keys (was treating `_` in the secret as invalid → “API key not found” / zero-looking usage until re-setup).
+- Hosted compress retries on transient **503/429/timeout** with the same Idempotency-Key (billing-safe).
+- Tests: unique MCP `session_id`s; concurrent MCP soft-retries on platform 503s.
+
 ## [0.5.19] — 2026-08-12
 
 - **Interactive TUI** (`supercompress` / `supercompress tui`): paper-branded OpenTUI dashboard with live usage, account, connect, setup, plugin, agents, proxy, and MCP check. Needs [Bun](https://bun.sh); classic commands still work without it (`SUPERCOMPRESS_TUI=0` or `--plain`).

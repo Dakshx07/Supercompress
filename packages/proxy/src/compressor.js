@@ -23,8 +23,9 @@ function isValidApiKey(value) {
   if (key.includes("${") || /SUPERCOMPRESS_API_KEY|your.?key|xxx|placeholder/i.test(key)) {
     return false;
   }
-  // Real keys look like sc_live_… / sc_<agent>_…
-  return /^sc_[a-z0-9]+_[A-Za-z0-9]{12,}$/.test(key);
+  // Real keys: sc_live_<secret> or legacy Auth-backed sc_live_sck_<uid>_<secret>
+  // (and agent-scoped sc_<agent>_…). Underscores after the env segment are allowed.
+  return /^sc_[a-z0-9]+_[A-Za-z0-9_]{16,}$/.test(key);
 }
 
 function getApiKey() {
@@ -392,6 +393,7 @@ module.exports = {
   compress,
   assembleMessages,
   getApiKey,
+  isValidApiKey,
   hasStructuredProtocol,
   messageText,
   splitCompressiblePrefix,

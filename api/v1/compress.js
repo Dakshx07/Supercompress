@@ -315,7 +315,7 @@ module.exports = async (req, res) => {
     if (clientIdem) {
       const lease = await withTimeout(
         reserveIdempotencyLease(authenticated.ownerUid, clientIdem, fingerprint),
-        4000,
+        10000,
         "idempotency_lease"
       );
       if (lease.status === "completed") {
@@ -484,7 +484,7 @@ module.exports = async (req, res) => {
           fingerprint,
           response: responseBody,
         }),
-        Math.max(1500, Math.min(12000, remainingMs() - 2000)),
+        Math.max(2500, Math.min(20000, remainingMs() - 1500)),
         "record_usage"
       );
     } catch (err) {

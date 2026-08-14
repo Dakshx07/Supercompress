@@ -247,7 +247,8 @@ async function main() {
     assert.equal(a.query, "What is left?");
     assert.match(a.context, /\[user\]: old/);
     assert.match(a.context, /\[assistant\]: reply/);
-    assert.equal(a.systemMsg.content, "sys");
+    assert.equal(a.systemMsgs.length, 1);
+    assert.equal(a.systemMsgs[0].content, "sys");
     pass("assembleMessages splits context/query");
   } catch (err) {
     fail("assembleMessages splits context/query", err.message);
