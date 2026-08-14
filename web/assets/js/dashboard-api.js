@@ -15,6 +15,10 @@ import {
   setPersistence,
   browserLocalPersistence,
   getAdditionalUserInfo,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+  sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 const API_BASE = window.SC_API_BASE || "";
@@ -1896,6 +1900,7 @@ function initModals() {
   $("btn-cancel-rename")?.addEventListener("click", () => hide($("modal-rename")));
   $("btn-confirm-rename")?.addEventListener("click", confirmRename);
   $("btn-test-key")?.addEventListener("click", sendTestRequest);
+  initPasswordControls();
 
   const refreshAgents = async () => {
     try {
@@ -1906,6 +1911,177 @@ function initModals() {
   };
   $("btn-test-proxy")?.addEventListener("click", refreshAgents);
   $("btn-refresh-agents")?.addEventListener("click", refreshAgents);
+}
+
+function userHasPasswordProvider(user) {
+  return Boolean(
+    user?.providerData?.some((p) => p?.providerId === "password")
+  );
+}
+
+function setPasswordModalError(msg) {
+  const err = $("password-error");
+  const ok = $("password-ok");
+  if (ok) {
+    ok.textContent = "";
+    hide(ok);
+  }
+  if (!err) return;
+  if (!msg) {
+    err.textContent = "";
+    hide(err);
+    return;
+  }
+  err.textContent = msg;
+  show(err);
+}
+
+function setPasswordModalOk(msg) {
+  const err = $("password-error");
+  const ok = $("password-ok");
+  if (err) {
+    err.textContent = "";
+    hide(err);
+  }
+  if (!ok) return;
+  ok.textContent = msg || "";
+  if (msg) show(ok);
+  else hide(ok);
+}
+
+function openPasswordModal() {
+  const user = auth?.currentUser || currentUser;
+  if (!user) {
+    setError("Sign in to change your password.");
+    return;
+  }
+  const emailFields = $("password-email-fields");
+  const googleOnly = $("password-google-only");
+  const title = $("password-modal-title");
+  const lead = $("password-modal-lead");
+  setPasswordModalError("");
+  setPasswordModalOk("");
+  ["password-current", "password-new", "password-confirm"].forEach((id) => {
+    const el = $(id);
+    if (el) el.value = "";
+  });
+  if (userHasPasswordProvider(user)) {
+    show(emailFields);
+    hide(googleOnly);
+    if (title) title.textContent = "Change password";
+    if (lead) lead.textContent = "Update the password for this SuperCompress account.";
+  } else {
+    hide(emailFields);
+    show(googleOnly);
+    if (title) title.textContent = "Account password";
+    if (lead) {
+      lead.textContent = "This account uses Google sign-in.";
+    }
+  }
+  show($("modal-password"));
+}
+
+async function confirmPasswordChange() {
+  const user = auth?.currentUser;
+  if (!user?.email) {
+    setPasswordModalError("Sign in again, then retry.");
+    return;
+  }
+  const current = String($("password-current")?.value || "");
+  const next = String($("password-new")?.value || "");
+  const confirm = String($("password-confirm")?.value || "");
+  if (current.length < 6 || next.length < 6) {
+    setPasswordModalError("Passwords must be at least 6 characters.");
+    return;
+  }
+  if (next !== confirm) {
+    setPasswordModalError("New password and confirmation do not match.");
+    return;
+  }
+  if (next === current) {
+    setPasswordModalError("Choose a new password different from the current one.");
+    return;
+  }
+  const btn = $("btn-confirm-password");
+  if (btn) btn.disabled = true;
+  try {
+    const cred = EmailAuthProvider.credential(user.email, current);
+    await reauthenticateWithCredential(user, cred);
+    await updatePassword(user, next);
+    setPasswordModalOk("Password updated.");
+    setTimeout(() => hide($("modal-password")), 900);
+  } catch (err) {
+    const code = err?.code || "";
+    if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+      setPasswordModalError("Current password is incorrect.");
+    } else if (code === "auth/requires-recent-login") {
+      setPasswordModalError("Please sign out, sign back in, then change your password.");
+    } else if (code === "auth/weak-password") {
+      setPasswordModalError("Choose a stronger password (at least 6 characters).");
+    } else {
+      setPasswordModalError(err?.message || "Could not update password.");
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function sendAccountPasswordReset() {
+  const user = auth?.currentUser || currentUser;
+  const email = user?.email || String($("auth-email")?.value || "").trim();
+  if (!email) {
+    setPasswordModalError("Add your account email, then try again.");
+    setError("Enter your email to receive a password reset link.");
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    setPasswordModalOk(`Reset link sent to ${email}.`);
+    setError("");
+  } catch (err) {
+    setPasswordModalError(err?.message || "Could not send reset email.");
+  }
+}
+
+function initPasswordControls() {
+  $("dash-change-password")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openPasswordModal();
+  });
+  $("btn-cancel-password")?.addEventListener("click", () => hide($("modal-password")));
+  $("btn-confirm-password")?.addEventListener("click", () => {
+    void confirmPasswordChange();
+  });
+  $("btn-send-password-reset")?.addEventListener("click", () => {
+    void sendAccountPasswordReset();
+  });
+  $("btn-forgot-password")?.addEventListener("click", async () => {
+    const email = String($("auth-email")?.value || "").trim();
+    if (!email) {
+      setError("Enter your email above, then click Forgot password.");
+      return;
+    }
+    if (!auth) {
+      setError("Auth is still loading — try again in a moment.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError("");
+      const msg = $("auth-error");
+      if (msg) {
+        msg.textContent = `Password reset email sent to ${email}.`;
+        msg.style.color = "#166534";
+        show(msg);
+        setTimeout(() => {
+          msg.style.color = "";
+          hide(msg);
+        }, 5000);
+      }
+    } catch (err) {
+      setError(err?.message || "Could not send reset email.");
+    }
+  });
 }
 
 function initDevAuth(message) {
@@ -1984,6 +2160,11 @@ async function initFirebaseAuth() {
     if (submit) submit.textContent = authTab === "signup" ? "Create free account" : "Log in";
     const pw = $("auth-password");
     if (pw) pw.autocomplete = authTab === "signup" ? "new-password" : "current-password";
+    const forgot = $("btn-forgot-password");
+    if (forgot) {
+      if (authTab === "signin") show(forgot);
+      else hide(forgot);
+    }
     // Default dashboard auth copy (plugin OAuth uses applyConnectAuthCopy)
     if (!connectCodeFromUrl()) {
       const title = $("auth-title");

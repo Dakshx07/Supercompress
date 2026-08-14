@@ -736,6 +736,9 @@ async function printUsageCommand(args = []) {
   console.log(`  → Tokens in:     ${formatNum(tokensIn)}`);
   console.log(`  → Tokens out:    ${formatNum(tokensOut)}`);
   console.log(`  → Tokens saved:  ${formatNum(saved)}${tokensIn > 0 ? ` (−${savingsPct}%)` : ""}`);
+  if (saved === 0 && requests === 0) {
+    console.log("  → Tip: savings appear after SuperCompress compresses context in your agent.");
+  }
 
   if (data.payg_enabled && Number(data.billable_tokens || 0) > 0) {
     console.log(`  → Billable:      ${formatNum(data.billable_tokens)} (~$${Number(data.estimated_overage_usd || 0).toFixed(2)})`);
@@ -788,10 +791,18 @@ async function printUsageSummary(apiKey, opts = {}) {
   }
 
   printPlanStatus(data);
+  const saved = Number(data.total_tokens_saved || 0);
+  const requests = Number(data.total_requests || 0);
   const agentCount = Object.keys(data.coding_agent_usage || {}).length;
-  console.log(
-    `  → Saved ${formatNum(data.total_tokens_saved || 0)} tokens across ${agentCount} coding agent${agentCount === 1 ? "" : "s"} (${formatNum(data.total_requests || 0)} requests)`
-  );
+  if (saved > 0 || requests > 0) {
+    console.log(
+      `  → Saved ${formatNum(saved)} tokens across ${agentCount} coding agent${agentCount === 1 ? "" : "s"} (${formatNum(requests)} requests)`
+    );
+  } else {
+    console.log("  → Account linked — no compress activity recorded on this key yet.");
+    console.log("  → After your coding agent runs with SuperCompress, savings show here.");
+    console.log("  → Details: `supercompress usage` · Dashboard: https://www.supercompress.dev/dashboard");
+  }
   if (opts.compact) return;
 
   const entries = Object.entries(data.coding_agent_usage || {});
