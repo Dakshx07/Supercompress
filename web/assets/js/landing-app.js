@@ -3,7 +3,7 @@
   const hasGsap = Boolean(window.gsap && window.ScrollTrigger);
   if (hasGsap && !reduced) document.documentElement.classList.add('gsap-ready');
 
-  // —— Live tokens processed (public /api/stats) — continuous odometer, always xxx,xxx,xxx
+  // —— Live tokens processed (public /api/stats) — real totals only, always xxx,xxx,xxx
   (function bootLiveTokens() {
     const el = document.getElementById("live-tokens-n");
     const sub = document.getElementById("live-tokens-sub");
@@ -12,13 +12,10 @@
     let display = 0;
     let target = 0;
     let savedTarget = null;
-    let ratePerSec = 0; // estimated from poll deltas
-    let lastPollAt = 0;
-    let lastServer = null;
     let raf = 0;
     let lastPaint = "";
-    const POLL_MS = 3000;
-    const MAX_RATE = 250000; // tokens/sec cap so a big resync doesn't runaway
+    let lastTickAt = 0;
+    const POLL_MS = 2500;
 
     const fmtFull = (n) =>
       Math.max(0, Math.round(Number(n) || 0)).toLocaleString("en-US");
@@ -30,36 +27,16 @@
         el.textContent = text;
       }
       if (sub && savedTarget != null) {
-        const s = fmtFull(savedTarget);
-        const next = `${s} tokens saved · across SuperCompress`;
+        const next = `${fmtFull(savedTarget)} tokens saved · across SuperCompress`;
         if (sub.textContent !== next) sub.textContent = next;
       }
     };
 
     const onServer = (processed, saved) => {
       const next = Math.max(0, Number(processed) || 0);
-      const now = performance.now();
-      if (lastServer != null && lastPollAt > 0) {
-        const dt = Math.max(0.25, (now - lastPollAt) / 1000);
-        const d = next - lastServer;
-        if (d >= 0) {
-          const measured = d / dt;
-          ratePerSec =
-            ratePerSec > 0
-              ? ratePerSec * 0.65 + measured * 0.35
-              : measured;
-          ratePerSec = Math.min(MAX_RATE, Math.max(0, ratePerSec));
-        }
-      }
-      lastServer = next;
-      lastPollAt = now;
-      target = Math.max(target, next);
-      // Snap forward if we're behind the server; never go backwards.
-      if (display < next) {
-        // Catch up over ~0.8s without jumping the whole delta at once.
-        target = next;
-      }
-      if (display === 0 && next > 0) display = next;
+      // Never invent tokens — only move toward real server totals.
+      target = next;
+      if (display === 0 || display > next) display = next;
       if (saved != null) savedTarget = Math.max(0, Number(saved) || 0);
       paint();
     };
@@ -75,21 +52,14 @@
       const dt = Math.min(0.1, Math.max(0, (now - lastTickAt) / 1000));
       lastTickAt = now;
 
-      // Creep toward server target using measured rate; if rate is tiny, still
-      // ease 1–2 units/sec so the counter never looks frozen between polls.
-      const creep = Math.max(ratePerSec, target > display ? 2 : 0);
       if (display < target) {
-        display = Math.min(target, display + creep * dt);
-      } else if (ratePerSec > 0.5) {
-        // Keep ticking past last poll using residual rate (clamped so we don't
-        // invent more than ~1 poll-interval of speculation).
-        const aheadCap = target + ratePerSec * (POLL_MS / 1000) * 1.25;
-        display = Math.min(aheadCap, display + ratePerSec * dt);
-        target = Math.max(target, display);
+        const gap = target - display;
+        // Ease toward the real total; never overshoot past server truth.
+        const step = Math.max(gap * 4 * dt, Math.min(gap, 1));
+        display = Math.min(target, display + step);
       }
       paint();
     };
-    let lastTickAt = 0;
 
     const pull = () => {
       const q = `/api/stats?fresh=1&_=${Date.now()}`;
