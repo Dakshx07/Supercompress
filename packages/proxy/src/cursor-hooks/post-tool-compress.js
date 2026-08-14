@@ -29,6 +29,34 @@ function extractText(toolOutput) {
   }
 }
 
+/** Prefer concrete symbols/paths over a generic "preserve everything" ask. */
+function buildToolCompressQuery(toolName, text) {
+  const sample = String(text || "").slice(0, 12000);
+  const focus = [];
+  const push = (v) => {
+    const s = String(v || "").trim();
+    if (!s || s.length < 3 || s.length > 80) return;
+    if (!focus.includes(s)) focus.push(s);
+  };
+  for (const m of sample.match(/(?:^|[\s"'`(])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z][A-Za-z0-9]{0,7})/g) || []) {
+    push(m.replace(/^[\s"'`(]+/, ""));
+  }
+  for (const m of sample.match(
+    /\b(?:export\s+)?(?:async\s+)?(?:function|class|const|let|var|def|fn|func)\s+([A-Za-z_][\w]*)/g
+  ) || []) {
+    push(m.replace(/^[\s\S]*\s/, ""));
+  }
+  for (const m of sample.match(/\b([A-Z][A-Z0-9_]{3,})\b/g) || []) {
+    if (!/^(HTTP|JSON|HTML|CSS|UTF|NULL|TRUE|FALSE|WARN|INFO|ERROR|DEBUG)$/.test(m)) push(m);
+  }
+  const tool = String(toolName || "tool").trim() || "tool";
+  const base =
+    `Coding-agent ${tool} output. Keep stack traces, errors, file contents, ` +
+    "return values, and symbols needed for the current task.";
+  if (!focus.length) return base;
+  return `${base} Focus: ${focus.slice(0, 12).join(", ")}`;
+}
+
 /** Resolve coding-agent label for usage tracking. */
 function resolveAgentHint(input = {}) {
   const envName = String(process.env.SUPERCOMPRESS_AGENT_NAME || "").trim();
@@ -81,9 +109,7 @@ process.stdin.on("end", async () => {
     const agentHint = resolveAgentHint(input);
     const sessionId = resolveSessionId(input);
 
-    const query =
-      `Compress new ${toolName || "tool"} output for the current coding task. ` +
-      "Preserve code, paths, errors, numbers, and decisions.";
+    const query = buildToolCompressQuery(toolName, bounded);
 
     const result = await compressIncremental({
       context: bounded,
