@@ -2,6 +2,11 @@
 
 Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](../../CHANGELOG.md) · [GitHub Releases](https://github.com/Supercompress/Supercompress/releases)
 
+## [0.5.20] — 2026-08-14
+
+### Improved
+- `status` / `usage` copy when an account is linked but no compress savings are recorded yet
+
 ## [Unreleased]
 
 ## [0.5.19] — 2026-08-12
