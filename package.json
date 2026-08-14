@@ -8,6 +8,7 @@
     "prod:smoke": "bash scripts/prod-smoke.sh",
     "prod:domains": "bash scripts/ensure-prod-domains.sh",
     "check:api-host": "node scripts/check-api-host-routes.js",
+    "check:stylesheet-paths": "node scripts/check-stylesheet-paths.js",
     "release:check": "bash scripts/release-check.sh",
     "mcp": "node mcp/server.js",
     "check:version": "node scripts/check-versions.js"

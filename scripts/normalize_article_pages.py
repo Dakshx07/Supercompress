@@ -29,7 +29,7 @@ SKIP = {
     "unsubscribe.html",
 }
 
-CSS_BLOCK = """<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
+CSS_BLOCK = """<link rel="stylesheet" href="/assets/css/supercompress.css?v=105" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
   <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
   <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />"""
