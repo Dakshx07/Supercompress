@@ -465,7 +465,8 @@ async function compressIncremental({ context, query, codingAgent, sessionId, kin
   const newText = newBlocks.join("\n\n");
   const deltaResult = await compressContext(
     newText,
-    query || "Compress new context for the coding task. Keep code, paths, errors, decisions.",
+    query ||
+      "Coding-agent context dump. Keep stack traces, errors, file contents, return values, and task symbols.",
     codingAgent,
     { source: kind === "mcp" ? "mcp" : kind || "cursor-hook", sessionId: sid }
   );

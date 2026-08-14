@@ -308,10 +308,134 @@
     return { lines: collapsed, preprocessor: "log" };
   }
 
+  // ── Domain preprocessor: Coding-agent tool dumps (Cursor / Claude / shell) ──
+  // Crush install/lock/progress noise before ML keep/drop so real code wins budget.
+  function looksLikeAgentToolDump(lines) {
+    const sample = (lines || []).slice(0, 120).join("\n");
+    let hits = 0;
+    if (/(Cursor tool:|Claude Code|PostToolUse|tool_output|#\s*Cursor\b)/i.test(sample)) hits += 2;
+    if (/^===\s*(Shell|Read|Grep|Edit|Write|Bash|Terminal)/m.test(sample)) hits += 2;
+    if (/npm WARN deprecated|yarn (?:warn|BERYLLIUM)|pnpm (?:warn|notice)/i.test(sample)) hits += 1;
+    if (/node_modules\/|"resolved":\s*"https?:\/\/registry\./i.test(sample)) hits += 1;
+    if (/^(path|file):\s+\S+\.\w+/im.test(sample)) hits += 1;
+    if (/^\s*at\s+\S+\s+\(/m.test(sample)) hits += 1;
+    if (/^(User|Assistant|System|Tool):/m.test(sample)) hits += 1;
+    return hits >= 2;
+  }
+
+  function isInstallNoiseLine(line) {
+    const t = String(line || "").trim();
+    if (!t) return false;
+    if (/^npm WARN deprecated\b/i.test(t)) return true;
+    if (/^(npm|yarn|pnpm)\s+(warn|notice)\b/i.test(t) && !/\b(error|err!|failed)\b/i.test(t)) return true;
+    if (/^added \d+ packages?\b/i.test(t)) return true;
+    if (/^packages are looking for funding\b/i.test(t)) return true;
+    if (/^run `npm fund`/i.test(t)) return true;
+    if (/^[│╚╔╗═╠╣\-|]+\s*$/.test(t)) return true; // box-drawing progress chrome
+    return false;
+  }
+
+  function isLockfileNoiseLine(line) {
+    const t = String(line || "").trim();
+    if (!t) return false;
+    if (/^"?node_modules\//.test(t)) return true;
+    if (/^"resolved":\s*"https?:\/\/registry\./.test(t)) return true;
+    if (/^"integrity":\s*"sha[0-9]-/.test(t)) return true;
+    if (/^"(?:dev|optional|peer)?Dependencies":\s*\{?\s*$/.test(t)) return true;
+    if (/^"version":\s*"[\d.+\-]+",?\s*$/.test(t)) return true;
+    if (/^"license":\s*"[^"]+",?\s*$/.test(t)) return true;
+    if (/^"engines":\s*\{/.test(t)) return true;
+    return false;
+  }
+
+  function crushAgentToolNoise(lines) {
+    const out = [];
+    let npmRun = 0;
+    let lockRun = 0;
+    let prevFp = "";
+    let fpCount = 0;
+
+    const flushNpm = () => {
+      if (npmRun > 2) out.push(`… ${npmRun - 2} more npm/yarn install warnings collapsed`);
+      npmRun = 0;
+    };
+    const flushLock = () => {
+      if (lockRun > 2) out.push(`… ${lockRun - 2} more package-lock / node_modules lines collapsed`);
+      lockRun = 0;
+    };
+
+    for (const raw of lines) {
+      let line = String(raw || "").replace(/\u001b\[[0-9;]*[A-Za-z]/g, "");
+      if (isInstallNoiseLine(line)) {
+        flushLock();
+        npmRun += 1;
+        if (npmRun <= 2) out.push(line);
+        continue;
+      }
+      if (isLockfileNoiseLine(line)) {
+        flushNpm();
+        lockRun += 1;
+        if (lockRun <= 2) out.push(line);
+        continue;
+      }
+      flushNpm();
+      flushLock();
+
+      const fp = line
+        .trim()
+        .replace(/\d+/g, "#")
+        .replace(/\s+/g, " ")
+        .slice(0, 160);
+      if (fp && fp === prevFp) {
+        fpCount += 1;
+        if (fpCount <= 2) out.push(line);
+        else if (fpCount === 3) out.push(`${line}  [repeated…]`);
+        continue;
+      }
+      prevFp = fp;
+      fpCount = 1;
+      out.push(line);
+    }
+    flushNpm();
+    flushLock();
+
+    const collapsed = [];
+    let blankRun = 0;
+    for (const line of out) {
+      if (String(line).trim() === "") {
+        blankRun += 1;
+        if (blankRun <= 1) collapsed.push(line);
+      } else {
+        blankRun = 0;
+        collapsed.push(line);
+      }
+    }
+    return { lines: collapsed, preprocessor: "agent" };
+  }
+
   // ── Domain preprocessor: Orchestrator ──
   // Detects content type and applies the appropriate preprocessor.
   function preprocessLines(lines, question) {
     if (!lines || lines.length === 0) return { lines, preprocessor: "none" };
+    // Coding-agent dumps first — install/lock noise must not consume keep budget.
+    if (looksLikeAgentToolDump(lines)) {
+      const crushed = crushAgentToolNoise(lines);
+      // Optionally tidy remaining code/log structure on the crushed lines.
+      const route = routeContentType(crushed.lines);
+      if (route === "code") {
+        const code = compressCodeLines(crushed.lines);
+        return { lines: code.lines, preprocessor: "agent", language: code.language };
+      }
+      if (route === "log") {
+        const logs = compressLogLines(crushed.lines, question || "");
+        return { lines: logs.lines, preprocessor: "agent" };
+      }
+      if (route === "json") {
+        const json = crushJSONLines(crushed.lines);
+        return { lines: json.lines, preprocessor: "agent" };
+      }
+      return crushed;
+    }
     const route = routeContentType(lines);
     switch (route) {
       case "json":
@@ -360,6 +484,11 @@
       "explore", "paper", "extraction", "collected", "collection",
       "mexican", "multinational", "beverage", "retailer", "utility", "holding",
       "company", "channel", "aired", "whom", "which", "work",
+      // Generic coding-agent hook queries — never treat as answer entities.
+      "compress", "compressed", "compression", "preserve", "coding", "task",
+      "output", "tool", "current", "shell", "grep", "read", "write", "edit",
+      "bash", "terminal", "paths", "path", "code", "new", "across", "people",
+      "prefer", "session", "digest", "raw", "dump", "keep", "keeps", "keeping",
     ]);
     const ids = question.match(/[\p{L}_][\p{L}0-9_./:-]*/gu) || [];
     const out = ids.filter((x) => x.length > 2 && !stop.has(x.toLowerCase()));
@@ -422,11 +551,92 @@
     return q;
   }
 
+  function isGenericCodingAgentQuery(q) {
+    const s = String(q || "");
+    return (
+      /compress new .+ output for the current coding task/i.test(s) ||
+      /compress new context for the coding task/i.test(s) ||
+      /preserve code,\s*paths,\s*errors,\s*numbers,\s*and\s*decisions/i.test(s) ||
+      /keep code,\s*paths,\s*errors,\s*decisions/i.test(s)
+    );
+  }
+
+  function extractFocusSymbolsFromContext(lines) {
+    const arr = lines || [];
+    // Prefer Read/file definition regions over Grep/npm chrome.
+    const preferred = [];
+    const rest = [];
+    let mode = "rest";
+    for (const line of arr) {
+      if (/^(#\s*)?(Cursor tool:\s*)?(Read|Edit|Write)\b|^===\s*Read\b|^path:\s+/i.test(String(line).trim())) {
+        mode = "preferred";
+      } else if (/^(#\s*)?(Cursor tool:\s*)?(Shell|Grep|Bash|Terminal)\b|^===\s*(Shell|Grep|package-lock)/i.test(String(line).trim())) {
+        mode = "rest";
+      }
+      (mode === "preferred" ? preferred : rest).push(line);
+    }
+    const out = [];
+    const push = (v) => {
+      const s = String(v || "").trim();
+      if (!s || s.length < 3 || s.length > 80) return;
+      if (/^(compress|preserve|coding|task|output|tool|shell|path|paths|errors|numbers|decisions|unused\d*|file_\d+|dep-\d+|pkg-\d+|old_\d+)$/i.test(s)) return;
+      if (/^(unused|tmp|temp|foo|bar|baz|test)\d+$/i.test(s)) return;
+      if (/\/(legacy|vendor|node_modules|dist|build)\//i.test(s)) return;
+      if (/\bold_\d+\.|\bfile_\d+\.|\bunused\d*\b/i.test(s)) return;
+      if (!out.includes(s)) out.push(s);
+    };
+    const harvest = (text, { paths = true, defs = true } = {}) => {
+      if (!text) return;
+      if (paths) {
+        for (const m of text.match(/(?:^|[\s"'`(])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z][A-Za-z0-9]{0,7})/g) || []) {
+          push(m.replace(/^[\s"'`(]+/, ""));
+        }
+      }
+      if (defs) {
+        for (const m of text.match(
+          /\b(?:export\s+)?(?:async\s+)?(?:function|class|const|let|var|def|fn|func|type|interface|enum|struct)\s+([A-Za-z_][\w]*)/g
+        ) || []) {
+          push(m.replace(/^[\s\S]*\s/, ""));
+        }
+        for (const m of text.match(/\b([A-Z][A-Z0-9_]{2,}\b)/g) || []) {
+          if (!/^(HTTP|JSON|HTML|CSS|API|URL|UTF|SQL|NULL|TRUE|FALSE|WARN|INFO|ERROR|DEBUG)$/.test(m)) {
+            push(m);
+          }
+        }
+        for (const m of text.match(/\b([A-Za-z_][\w]*)Error\b/g) || []) push(m);
+      }
+    };
+    // Paths only from Read/Edit regions — Grep path spam must not become "critical".
+    harvest(preferred.join("\n"), { paths: true, defs: true });
+    harvest(rest.slice(0, 80).join("\n"), { paths: false, defs: true });
+    return out.slice(0, 14);
+  }
+
+  function enrichCodingAgentQuery(question, lines) {
+    let q = normalizeQuestion(question);
+    const ents = extractQuestionEntities(q);
+    if (!isGenericCodingAgentQuery(q) && ents.length >= 2) return q;
+    const focus = extractFocusSymbolsFromContext(lines);
+    if (!focus.length) {
+      if (isGenericCodingAgentQuery(q)) {
+        return "Keep function/class definitions, file paths, return values, stack traces, and error messages from this coding-agent dump.";
+      }
+      return q;
+    }
+    const base = isGenericCodingAgentQuery(q)
+      ? "Keep the code, paths, errors, and return values needed for this coding task."
+      : q;
+    return `${base}\nFocus symbols and paths: ${focus.join(", ")}`;
+  }
+
   function questionForContent(question, lines) {
     const raw = String(question || "").trim();
     const route = routeContentType(lines);
     if (looksLikeCodePrefix(raw) || ((!raw || /^Passage\s*:/i.test(raw)) && route === "code")) {
       return focusCodeQuery(raw);
+    }
+    if (looksLikeAgentToolDump(lines) || isGenericCodingAgentQuery(raw)) {
+      return enrichCodingAgentQuery(raw, lines);
     }
     if (raw && !/^Passage\s*:/i.test(raw)) return normalizeQuestion(question);
     if (route === "code") {
@@ -596,12 +806,19 @@
       if (/^\s*(import\s|from\s+\w+\s+import|using\s|package\s|#include\s)/.test(line)) continue;
       if (/^\s*(\*|\/\/|\/\*|\*\/)/.test(line) && /@see|@param|@return|@throws|TODO|FIXME/.test(line)) continue;
       if (/^\s*\*\s*$/.test(line)) continue;
+      if (isInstallNoiseLine(line) || isLockfileNoiseLine(line)) continue;
+      if (/more npm\/yarn install warnings collapsed|more package-lock \/ node_modules lines collapsed/i.test(line)) continue;
+      if (/:\s*\/\/ old comment\b/i.test(line)) continue;
       const lower = line.toLowerCase();
       const hitSpecific = specific.some((e) => line.includes(e));
       const hitErrorQuery =
         /(error|fail|exception|timeout|denied|invalid|reuse|revoke|fatal)/i.test(line) &&
         (specific.some((e) => line.includes(e)) ||
           terms.some((t) => lower.includes(String(t).toLowerCase())));
+      if ((hitSpecific || hitErrorQuery) && /unused\d+\s*=/.test(line)) {
+        const why = specific.filter((e) => line.includes(e));
+        if (why.length) console.error("CRITICAL_WHY", line.slice(0, 60), why);
+      }
       if (hitSpecific || hitErrorQuery) critical.push({ index: i, line });
     }
 
@@ -610,16 +827,23 @@
     if (critical.length > 0 && specific.length > 0) {
       const picked = [];
       const perEntity = new Map();
+      // Precompute DF once per entity — nested per-critical rescans were O(critical×entities×lines).
+      const linesLower = lines.map((line) => line.toLowerCase());
+      const entityDf = new Map();
+      for (const e of specific) {
+        const lower = e.toLowerCase();
+        let df = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLower[i].includes(lower)) df += 1;
+        }
+        entityDf.set(e, df);
+      }
       const scored = critical.map((item) => {
         let bestDf = n;
         let hit = null;
         for (const e of specific) {
           if (!item.line.includes(e)) continue;
-          let df = 0;
-          const lower = e.toLowerCase();
-          for (const line of lines) {
-            if (line.includes(e) || line.toLowerCase().includes(lower)) df += 1;
-          }
+          const df = entityDf.get(e) || 0;
           if (df < bestDf) {
             bestDf = df;
             hit = e;
@@ -717,25 +941,51 @@
     let lineIdx = 0;
     let tokInLine = 0;
 
+    // O(n) freq table — entropy/divergence used to rescan all tokens per token (O(n²)).
+    const tokFreq = new Map();
+    for (let i = 0; i < tokens.length; i++) {
+      const key = tokens[i].toLowerCase();
+      tokFreq.set(key, (tokFreq.get(key) || 0) + 1);
+    }
+    // Pre-tokenize lines once (avoid rematching the same line on every token).
+    const lineParts = lines.map((line) => {
+      const re = /[A-Za-z_][A-Za-z0-9_]*|[^\s]/g;
+      return line.match(re) || [" "];
+    });
+    // Line-level features are identical for every token on a line — cache them.
+    const qText = question || "";
+    const lineFeatCache = new Map();
+    const lineFeats = (idx, lineCtx) => {
+      let cached = lineFeatCache.get(idx);
+      if (cached) return cached;
+      cached = {
+        semFingerprint: computeSemanticFingerprint(lineCtx, qText),
+        ngramSim: computeNgramSim(lineCtx, qText),
+        lineLenNorm: Math.min(lineCtx.length / 500, 1.0),
+        indent: estimateIndentDepth(lineCtx),
+      };
+      lineFeatCache.set(idx, cached);
+      return cached;
+    };
+
     for (let pos = 0; pos < tokens.length; pos++) {
       const tok = tokens[pos];
       while (lineIdx < lines.length) {
-        const re = /[A-Za-z_][A-Za-z0-9_]*|[^\s]/g;
-        const parts = lines[lineIdx].match(re) || [" "];
+        const parts = lineParts[lineIdx] || [" "];
         if (tokInLine < parts.length) break;
         lineIdx++;
         tokInLine = 0;
       }
       const lineCtx = lineIdx < lines.length ? lines[lineIdx] : "";
+      const lf = lineFeats(lineIdx, lineCtx);
       const sem = classifyTokenSemantic(tok, lineCtx);
       const ageNorm = pos / Math.max(seqLen - 1, 1);
       const entityMatch = entities.has(tok) ? 1 : 0;
       const attn = deterministicAttention(sem, entityMatch, ageNorm, lineCtx, tok);
-      // AMCP features 12-15: compute per-Token, not per-line
-      const entropy = computeTokenEntropy(tok, tokens);
-      const semFingerprint = computeSemanticFingerprint(lineCtx, question || '');
+      // AMCP features 12-15: entropy/divergence from precomputed freq (O(1) per token).
+      const entropy = computeTokenEntropy(tok, tokens, tokFreq);
       const crossSim = computeCrossContextSimilarity(tok, entities);
-      const ctxDiv = computeContextDivergence(tok, tokens);
+      const ctxDiv = computeContextDivergence(tok, tokens, tokFreq);
       records.push({
         text: tok,
         position: pos,
@@ -749,12 +999,12 @@
         line_text: lineCtx,
         // Features 8-11
         position_encoding: sinusoidalPositionEncoding(pos, lines.length),
-        ngram_sim: computeNgramSim(lineCtx, question || ''),
-        line_length_norm: Math.min(lineCtx.length / 500, 1.0),
-        indent_depth: estimateIndentDepth(lineCtx),
+        ngram_sim: lf.ngramSim,
+        line_length_norm: lf.lineLenNorm,
+        indent_depth: lf.indent,
         // AMCP proprietary features 12-15
         entropy: entropy,
-        semantic_fingerprint: semFingerprint,
+        semantic_fingerprint: lf.semFingerprint,
         cross_context_sim: crossSim,
         context_divergence: ctxDiv,
       });
@@ -1253,6 +1503,17 @@
       const duplicateCount = fpCounts.get(blockFingerprint(block)) || 0;
       if (duplicateCount > 1) score -= Math.min(3, duplicateCount * 0.8);
 
+      // Coding-agent install/lock chrome — demote so force-drop can reclaim budget.
+      if (
+        /npm WARN deprecated/i.test(text) ||
+        /"resolved":\s*"https?:\/\/registry\./i.test(text) ||
+        /"?node_modules\//.test(text) ||
+        /more npm\/yarn install warnings collapsed|more package-lock/i.test(text)
+      ) {
+        score -= 7;
+        if (entityHits === 0 && termHits === 0) reason = "install/lock noise";
+      }
+
       // Optional neural cross-encoder boost (hosted BGE reranker): [0,1] → score space
       let nBoost = null;
       if (neuralBoost && typeof neuralBoost.get === "function") nBoost = neuralBoost.get(block.id);
@@ -1356,18 +1617,20 @@
     const keptBlockIds = new Set(blocks.map((b) => b.id));
     let protectedPassageBlocks = new Set();
     const specificEntities = specificQuestionEntities(q, blocks);
+    const linesLower = lines.map((line) => line.toLowerCase());
     const rareEntities = distinctiveEntitiesInCorpus(extractQuestionEntities(q), original)
       .filter((e) => {
         let df = 0;
         const lower = e.toLowerCase();
-        for (const line of lines) {
-          if (line.includes(e) || line.toLowerCase().includes(lower)) df += 1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLower[i].includes(lower)) df += 1;
         }
         return df > 0 && df <= Math.max(4, Math.ceil(lines.length * 0.04));
       });
     const definitionCount = blocks.filter((b) => b.type === "definition").length;
     const codeHeavy = definitionCount >= 2 &&
       blocks.filter((b) => ["definition", "import", "comment", "fence"].includes(b.type)).length >= Math.min(4, Math.ceil(blocks.length * 0.15));
+    const agentToolDoc = looksLikeAgentToolDump(lines);
 
     // Few-shot classification dumps (TREC-style): many "Question:/Type:" pairs.
     const qLineCount = lines.filter((l) => /^Question\s*:/i.test(String(l || "").trim())).length;
@@ -2932,15 +3195,15 @@
     // If still keeping too much, force-drop zero-overlap noise.
     let keptTok = [...keptBlockIds].reduce((s, id) => s + (blocks[id].tokens || 0), 0);
     const totalTok = blocks.reduce((s, b) => s + (b.tokens || 0), 0) || 1;
-    const forceKeepCeil = proseDoc ? 0.48 : 0.40;
-    const forceKeepFloor = proseDoc ? 0.42 : 0.35;
+    const forceKeepCeil = agentToolDoc ? 0.30 : proseDoc ? 0.48 : 0.40;
+    const forceKeepFloor = agentToolDoc ? 0.16 : proseDoc ? 0.42 : 0.35;
     if (keptTok / totalTok > forceKeepCeil && !fewShotTypeBank) {
       const forceDrop = [...keptBlockIds]
         .map((id) => blocks[id])
         .filter((b) => b.start !== 0 && !importantIds.has(b.id))
         .filter((b) => !protectedPassageBlocks.has(b.id))
         .filter((b) => !rareEntities.some((e) => softIncludes(b.text, e)))
-        .filter((b) => (b.score || 0) < (proseDoc ? 14 : 8))
+        .filter((b) => (b.score || 0) < (agentToolDoc ? 12 : proseDoc ? 14 : 8))
         .sort((a, b) => a.score - b.score || b.tokens - a.tokens);
       for (const b of forceDrop) {
         if (keptTok / totalTok <= forceKeepFloor) break;
@@ -3010,13 +3273,15 @@
       const dfCap = proseDoc
         ? Math.max(2, Math.ceil(lines.length * 0.04))
         : Math.max(16, Math.ceil(lines.length * 0.1));
+      const linesLowerForLock = lines.map((line) => line.toLowerCase());
       lockEntities = extractQuestionEntities(q).filter((e) => {
         if (e.length < 4) return false;
         // Skip common question verbs/adjectives that appear throughout prose.
         if (/^(which|what|when|where|whose|whom|basic|best|itself|perform|used|model|models|data|based|using|system|paper|results?)$/i.test(e)) return false;
         let df = 0;
-        for (const line of lines) {
-          if (line.includes(e) || line.toLowerCase().includes(e.toLowerCase())) df += 1;
+        const lower = e.toLowerCase();
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(e) || linesLowerForLock[i].includes(lower)) df += 1;
         }
         return df > 0 && df <= dfCap;
       });
@@ -3197,9 +3462,11 @@
 
   // ── Enhanced compressAdaptive: runs preprocessors before compression ──
   // options.neuralBoost: Map|Object of blockId -> [0,1] cross-encoder scores
+  // options.includeAnnotations: build per-line annotations (default true; API skips for latency)
   function compressAdaptive(text, question, model = null, options = null) {
     const opts = options && typeof options === "object" ? options : {};
     const neuralBoost = opts.neuralBoost || null;
+    const includeAnnotations = opts.includeAnnotations !== false;
     if (!text || !text.trim()) {
       return {
         original_text: text,
@@ -3279,23 +3546,32 @@
     let critical = measureCriticalRetention(original, compressed, q);
     if (critical.critical_lines_dropped && critical.critical_lines_dropped.length) {
       let restored = false;
+      // Exact-trim index for O(1) restore; fall back to short linear scan only for fuzzy.
+      const trimIndex = new Map();
+      for (let i = 0; i < preprocLines.length; i++) {
+        const key = preprocLines[i].trim();
+        if (!key || keptLineSet.has(i)) continue;
+        if (!trimIndex.has(key)) trimIndex.set(key, i);
+      }
       for (const dropped of critical.critical_lines_dropped) {
         const needle = String(dropped.text || "").trim();
         if (!needle) continue;
+        const exact = trimIndex.get(needle);
+        if (exact != null) {
+          keptLineSet.add(exact);
+          trimIndex.delete(needle);
+          restored = true;
+          continue;
+        }
         const needleNorm = normalizeEvidenceLine(needle);
+        if (needleNorm.length < 20) continue;
         for (let i = 0; i < preprocLines.length; i++) {
           if (keptLineSet.has(i)) continue;
-          const pl = preprocLines[i];
-          const plTrim = pl.trim();
-          const plNorm = normalizeEvidenceLine(pl);
-          if (
-            plTrim === needle ||
-            pl.includes(needle) ||
-            needle.includes(plTrim) ||
-            (needleNorm.length >= 20 && plNorm.length >= 20 && (plNorm.includes(needleNorm) || needleNorm.includes(plNorm)))
-          ) {
+          const plNorm = normalizeEvidenceLine(preprocLines[i]);
+          if (plNorm.length >= 20 && (plNorm.includes(needleNorm) || needleNorm.includes(plNorm))) {
             keptLineSet.add(i);
             restored = true;
+            break;
           }
         }
       }
@@ -3317,14 +3593,16 @@
 
     const entities = extractQuestionEntities(q);
     const terms = questionTerms(q);
-    const annotations = preprocLines.map((line, i) => {
-      const kept = keptLineSet.has(i);
-      let reason = kept ? "compiler kept evidence block" : "removed as low-value context";
-      if (i < 1) reason = "attention sink (always kept)";
-      else if (entities.some((e) => line.includes(e))) reason = "question entity match";
-      else if (terms.some((t) => line.toLowerCase().includes(t.toLowerCase()))) reason = "question keyword match";
-      return { line_index: i, text: line, kept, reason };
-    });
+    const annotations = includeAnnotations
+      ? preprocLines.map((line, i) => {
+          const kept = keptLineSet.has(i);
+          let reason = kept ? "compiler kept evidence block" : "removed as low-value context";
+          if (i < 1) reason = "attention sink (always kept)";
+          else if (entities.some((e) => line.includes(e))) reason = "question entity match";
+          else if (terms.some((t) => line.toLowerCase().includes(t.toLowerCase()))) reason = "question keyword match";
+          return { line_index: i, text: line, kept, reason };
+        })
+      : [];
 
     const verifier = compiler ? { ...compiler.verifier } : null;
     const reportedImportant =
@@ -3908,11 +4186,16 @@ Answer the question: ${query}`;
 
   // ── AMCP proprietary feature helpers (16-dim) ──
 
-  function computeTokenEntropy(tok, allTokens) {
+  function computeTokenEntropy(tok, allTokens, freqMap = null) {
     if (!allTokens || allTokens.length < 3) return 0.5;
     const tLower = tok.toLowerCase();
-    let count = 0;
-    for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
+    let count;
+    if (freqMap && typeof freqMap.get === "function") {
+      count = freqMap.get(tLower) || 0;
+    } else {
+      count = 0;
+      for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
+    }
     const freq = count / allTokens.length;
     return Math.min(1, Math.max(0, 1 - freq * 3));
   }
@@ -3953,13 +4236,9 @@ Answer the question: ${query}`;
     return maxSim;
   }
 
-  function computeContextDivergence(tok, allTokens) {
-    if (!allTokens || allTokens.length < 3) return 0.5;
-    const tLower = tok.toLowerCase();
-    let count = 0;
-    for (const t of allTokens) if (t.toLowerCase() === tLower) count++;
-    const freq = count / allTokens.length;
-    return Math.min(1, Math.max(0, 1 - freq * 3));
+  function computeContextDivergence(tok, allTokens, freqMap = null) {
+    // Same rarity signal as entropy — share the optional freq map to stay O(1)/token.
+    return computeTokenEntropy(tok, allTokens, freqMap);
   }
 
   // ── Improved feature helpers for 12-dim model ──

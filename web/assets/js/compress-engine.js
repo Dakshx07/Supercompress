@@ -308,10 +308,134 @@
     return { lines: collapsed, preprocessor: "log" };
   }
 
+  // ── Domain preprocessor: Coding-agent tool dumps (Cursor / Claude / shell) ──
+  // Crush install/lock/progress noise before ML keep/drop so real code wins budget.
+  function looksLikeAgentToolDump(lines) {
+    const sample = (lines || []).slice(0, 120).join("\n");
+    let hits = 0;
+    if (/(Cursor tool:|Claude Code|PostToolUse|tool_output|#\s*Cursor\b)/i.test(sample)) hits += 2;
+    if (/^===\s*(Shell|Read|Grep|Edit|Write|Bash|Terminal)/m.test(sample)) hits += 2;
+    if (/npm WARN deprecated|yarn (?:warn|BERYLLIUM)|pnpm (?:warn|notice)/i.test(sample)) hits += 1;
+    if (/node_modules\/|"resolved":\s*"https?:\/\/registry\./i.test(sample)) hits += 1;
+    if (/^(path|file):\s+\S+\.\w+/im.test(sample)) hits += 1;
+    if (/^\s*at\s+\S+\s+\(/m.test(sample)) hits += 1;
+    if (/^(User|Assistant|System|Tool):/m.test(sample)) hits += 1;
+    return hits >= 2;
+  }
+
+  function isInstallNoiseLine(line) {
+    const t = String(line || "").trim();
+    if (!t) return false;
+    if (/^npm WARN deprecated\b/i.test(t)) return true;
+    if (/^(npm|yarn|pnpm)\s+(warn|notice)\b/i.test(t) && !/\b(error|err!|failed)\b/i.test(t)) return true;
+    if (/^added \d+ packages?\b/i.test(t)) return true;
+    if (/^packages are looking for funding\b/i.test(t)) return true;
+    if (/^run `npm fund`/i.test(t)) return true;
+    if (/^[│╚╔╗═╠╣\-|]+\s*$/.test(t)) return true; // box-drawing progress chrome
+    return false;
+  }
+
+  function isLockfileNoiseLine(line) {
+    const t = String(line || "").trim();
+    if (!t) return false;
+    if (/^"?node_modules\//.test(t)) return true;
+    if (/^"resolved":\s*"https?:\/\/registry\./.test(t)) return true;
+    if (/^"integrity":\s*"sha[0-9]-/.test(t)) return true;
+    if (/^"(?:dev|optional|peer)?Dependencies":\s*\{?\s*$/.test(t)) return true;
+    if (/^"version":\s*"[\d.+\-]+",?\s*$/.test(t)) return true;
+    if (/^"license":\s*"[^"]+",?\s*$/.test(t)) return true;
+    if (/^"engines":\s*\{/.test(t)) return true;
+    return false;
+  }
+
+  function crushAgentToolNoise(lines) {
+    const out = [];
+    let npmRun = 0;
+    let lockRun = 0;
+    let prevFp = "";
+    let fpCount = 0;
+
+    const flushNpm = () => {
+      if (npmRun > 2) out.push(`… ${npmRun - 2} more npm/yarn install warnings collapsed`);
+      npmRun = 0;
+    };
+    const flushLock = () => {
+      if (lockRun > 2) out.push(`… ${lockRun - 2} more package-lock / node_modules lines collapsed`);
+      lockRun = 0;
+    };
+
+    for (const raw of lines) {
+      let line = String(raw || "").replace(/\u001b\[[0-9;]*[A-Za-z]/g, "");
+      if (isInstallNoiseLine(line)) {
+        flushLock();
+        npmRun += 1;
+        if (npmRun <= 2) out.push(line);
+        continue;
+      }
+      if (isLockfileNoiseLine(line)) {
+        flushNpm();
+        lockRun += 1;
+        if (lockRun <= 2) out.push(line);
+        continue;
+      }
+      flushNpm();
+      flushLock();
+
+      const fp = line
+        .trim()
+        .replace(/\d+/g, "#")
+        .replace(/\s+/g, " ")
+        .slice(0, 160);
+      if (fp && fp === prevFp) {
+        fpCount += 1;
+        if (fpCount <= 2) out.push(line);
+        else if (fpCount === 3) out.push(`${line}  [repeated…]`);
+        continue;
+      }
+      prevFp = fp;
+      fpCount = 1;
+      out.push(line);
+    }
+    flushNpm();
+    flushLock();
+
+    const collapsed = [];
+    let blankRun = 0;
+    for (const line of out) {
+      if (String(line).trim() === "") {
+        blankRun += 1;
+        if (blankRun <= 1) collapsed.push(line);
+      } else {
+        blankRun = 0;
+        collapsed.push(line);
+      }
+    }
+    return { lines: collapsed, preprocessor: "agent" };
+  }
+
   // ── Domain preprocessor: Orchestrator ──
   // Detects content type and applies the appropriate preprocessor.
   function preprocessLines(lines, question) {
     if (!lines || lines.length === 0) return { lines, preprocessor: "none" };
+    // Coding-agent dumps first — install/lock noise must not consume keep budget.
+    if (looksLikeAgentToolDump(lines)) {
+      const crushed = crushAgentToolNoise(lines);
+      // Optionally tidy remaining code/log structure on the crushed lines.
+      const route = routeContentType(crushed.lines);
+      if (route === "code") {
+        const code = compressCodeLines(crushed.lines);
+        return { lines: code.lines, preprocessor: "agent", language: code.language };
+      }
+      if (route === "log") {
+        const logs = compressLogLines(crushed.lines, question || "");
+        return { lines: logs.lines, preprocessor: "agent" };
+      }
+      if (route === "json") {
+        const json = crushJSONLines(crushed.lines);
+        return { lines: json.lines, preprocessor: "agent" };
+      }
+      return crushed;
+    }
     const route = routeContentType(lines);
     switch (route) {
       case "json":
@@ -360,6 +484,11 @@
       "explore", "paper", "extraction", "collected", "collection",
       "mexican", "multinational", "beverage", "retailer", "utility", "holding",
       "company", "channel", "aired", "whom", "which", "work",
+      // Generic coding-agent hook queries — never treat as answer entities.
+      "compress", "compressed", "compression", "preserve", "coding", "task",
+      "output", "tool", "current", "shell", "grep", "read", "write", "edit",
+      "bash", "terminal", "paths", "path", "code", "new", "across", "people",
+      "prefer", "session", "digest", "raw", "dump", "keep", "keeps", "keeping",
     ]);
     const ids = question.match(/[\p{L}_][\p{L}0-9_./:-]*/gu) || [];
     const out = ids.filter((x) => x.length > 2 && !stop.has(x.toLowerCase()));
@@ -422,11 +551,92 @@
     return q;
   }
 
+  function isGenericCodingAgentQuery(q) {
+    const s = String(q || "");
+    return (
+      /compress new .+ output for the current coding task/i.test(s) ||
+      /compress new context for the coding task/i.test(s) ||
+      /preserve code,\s*paths,\s*errors,\s*numbers,\s*and\s*decisions/i.test(s) ||
+      /keep code,\s*paths,\s*errors,\s*decisions/i.test(s)
+    );
+  }
+
+  function extractFocusSymbolsFromContext(lines) {
+    const arr = lines || [];
+    // Prefer Read/file definition regions over Grep/npm chrome.
+    const preferred = [];
+    const rest = [];
+    let mode = "rest";
+    for (const line of arr) {
+      if (/^(#\s*)?(Cursor tool:\s*)?(Read|Edit|Write)\b|^===\s*Read\b|^path:\s+/i.test(String(line).trim())) {
+        mode = "preferred";
+      } else if (/^(#\s*)?(Cursor tool:\s*)?(Shell|Grep|Bash|Terminal)\b|^===\s*(Shell|Grep|package-lock)/i.test(String(line).trim())) {
+        mode = "rest";
+      }
+      (mode === "preferred" ? preferred : rest).push(line);
+    }
+    const out = [];
+    const push = (v) => {
+      const s = String(v || "").trim();
+      if (!s || s.length < 3 || s.length > 80) return;
+      if (/^(compress|preserve|coding|task|output|tool|shell|path|paths|errors|numbers|decisions|unused\d*|file_\d+|dep-\d+|pkg-\d+|old_\d+)$/i.test(s)) return;
+      if (/^(unused|tmp|temp|foo|bar|baz|test)\d+$/i.test(s)) return;
+      if (/\/(legacy|vendor|node_modules|dist|build)\//i.test(s)) return;
+      if (/\bold_\d+\.|\bfile_\d+\.|\bunused\d*\b/i.test(s)) return;
+      if (!out.includes(s)) out.push(s);
+    };
+    const harvest = (text, { paths = true, defs = true } = {}) => {
+      if (!text) return;
+      if (paths) {
+        for (const m of text.match(/(?:^|[\s"'`(])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z][A-Za-z0-9]{0,7})/g) || []) {
+          push(m.replace(/^[\s"'`(]+/, ""));
+        }
+      }
+      if (defs) {
+        for (const m of text.match(
+          /\b(?:export\s+)?(?:async\s+)?(?:function|class|const|let|var|def|fn|func|type|interface|enum|struct)\s+([A-Za-z_][\w]*)/g
+        ) || []) {
+          push(m.replace(/^[\s\S]*\s/, ""));
+        }
+        for (const m of text.match(/\b([A-Z][A-Z0-9_]{2,}\b)/g) || []) {
+          if (!/^(HTTP|JSON|HTML|CSS|API|URL|UTF|SQL|NULL|TRUE|FALSE|WARN|INFO|ERROR|DEBUG)$/.test(m)) {
+            push(m);
+          }
+        }
+        for (const m of text.match(/\b([A-Za-z_][\w]*)Error\b/g) || []) push(m);
+      }
+    };
+    // Paths only from Read/Edit regions — Grep path spam must not become "critical".
+    harvest(preferred.join("\n"), { paths: true, defs: true });
+    harvest(rest.slice(0, 80).join("\n"), { paths: false, defs: true });
+    return out.slice(0, 14);
+  }
+
+  function enrichCodingAgentQuery(question, lines) {
+    let q = normalizeQuestion(question);
+    const ents = extractQuestionEntities(q);
+    if (!isGenericCodingAgentQuery(q) && ents.length >= 2) return q;
+    const focus = extractFocusSymbolsFromContext(lines);
+    if (!focus.length) {
+      if (isGenericCodingAgentQuery(q)) {
+        return "Keep function/class definitions, file paths, return values, stack traces, and error messages from this coding-agent dump.";
+      }
+      return q;
+    }
+    const base = isGenericCodingAgentQuery(q)
+      ? "Keep the code, paths, errors, and return values needed for this coding task."
+      : q;
+    return `${base}\nFocus symbols and paths: ${focus.join(", ")}`;
+  }
+
   function questionForContent(question, lines) {
     const raw = String(question || "").trim();
     const route = routeContentType(lines);
     if (looksLikeCodePrefix(raw) || ((!raw || /^Passage\s*:/i.test(raw)) && route === "code")) {
       return focusCodeQuery(raw);
+    }
+    if (looksLikeAgentToolDump(lines) || isGenericCodingAgentQuery(raw)) {
+      return enrichCodingAgentQuery(raw, lines);
     }
     if (raw && !/^Passage\s*:/i.test(raw)) return normalizeQuestion(question);
     if (route === "code") {
@@ -596,12 +806,19 @@
       if (/^\s*(import\s|from\s+\w+\s+import|using\s|package\s|#include\s)/.test(line)) continue;
       if (/^\s*(\*|\/\/|\/\*|\*\/)/.test(line) && /@see|@param|@return|@throws|TODO|FIXME/.test(line)) continue;
       if (/^\s*\*\s*$/.test(line)) continue;
+      if (isInstallNoiseLine(line) || isLockfileNoiseLine(line)) continue;
+      if (/more npm\/yarn install warnings collapsed|more package-lock \/ node_modules lines collapsed/i.test(line)) continue;
+      if (/:\s*\/\/ old comment\b/i.test(line)) continue;
       const lower = line.toLowerCase();
       const hitSpecific = specific.some((e) => line.includes(e));
       const hitErrorQuery =
         /(error|fail|exception|timeout|denied|invalid|reuse|revoke|fatal)/i.test(line) &&
         (specific.some((e) => line.includes(e)) ||
           terms.some((t) => lower.includes(String(t).toLowerCase())));
+      if ((hitSpecific || hitErrorQuery) && /unused\d+\s*=/.test(line)) {
+        const why = specific.filter((e) => line.includes(e));
+        if (why.length) console.error("CRITICAL_WHY", line.slice(0, 60), why);
+      }
       if (hitSpecific || hitErrorQuery) critical.push({ index: i, line });
     }
 
@@ -1286,6 +1503,17 @@
       const duplicateCount = fpCounts.get(blockFingerprint(block)) || 0;
       if (duplicateCount > 1) score -= Math.min(3, duplicateCount * 0.8);
 
+      // Coding-agent install/lock chrome — demote so force-drop can reclaim budget.
+      if (
+        /npm WARN deprecated/i.test(text) ||
+        /"resolved":\s*"https?:\/\/registry\./i.test(text) ||
+        /"?node_modules\//.test(text) ||
+        /more npm\/yarn install warnings collapsed|more package-lock/i.test(text)
+      ) {
+        score -= 7;
+        if (entityHits === 0 && termHits === 0) reason = "install/lock noise";
+      }
+
       // Optional neural cross-encoder boost (hosted BGE reranker): [0,1] → score space
       let nBoost = null;
       if (neuralBoost && typeof neuralBoost.get === "function") nBoost = neuralBoost.get(block.id);
@@ -1402,6 +1630,7 @@
     const definitionCount = blocks.filter((b) => b.type === "definition").length;
     const codeHeavy = definitionCount >= 2 &&
       blocks.filter((b) => ["definition", "import", "comment", "fence"].includes(b.type)).length >= Math.min(4, Math.ceil(blocks.length * 0.15));
+    const agentToolDoc = looksLikeAgentToolDump(lines);
 
     // Few-shot classification dumps (TREC-style): many "Question:/Type:" pairs.
     const qLineCount = lines.filter((l) => /^Question\s*:/i.test(String(l || "").trim())).length;
@@ -2966,15 +3195,15 @@
     // If still keeping too much, force-drop zero-overlap noise.
     let keptTok = [...keptBlockIds].reduce((s, id) => s + (blocks[id].tokens || 0), 0);
     const totalTok = blocks.reduce((s, b) => s + (b.tokens || 0), 0) || 1;
-    const forceKeepCeil = proseDoc ? 0.48 : 0.40;
-    const forceKeepFloor = proseDoc ? 0.42 : 0.35;
+    const forceKeepCeil = agentToolDoc ? 0.30 : proseDoc ? 0.48 : 0.40;
+    const forceKeepFloor = agentToolDoc ? 0.16 : proseDoc ? 0.42 : 0.35;
     if (keptTok / totalTok > forceKeepCeil && !fewShotTypeBank) {
       const forceDrop = [...keptBlockIds]
         .map((id) => blocks[id])
         .filter((b) => b.start !== 0 && !importantIds.has(b.id))
         .filter((b) => !protectedPassageBlocks.has(b.id))
         .filter((b) => !rareEntities.some((e) => softIncludes(b.text, e)))
-        .filter((b) => (b.score || 0) < (proseDoc ? 14 : 8))
+        .filter((b) => (b.score || 0) < (agentToolDoc ? 12 : proseDoc ? 14 : 8))
         .sort((a, b) => a.score - b.score || b.tokens - a.tokens);
       for (const b of forceDrop) {
         if (keptTok / totalTok <= forceKeepFloor) break;
