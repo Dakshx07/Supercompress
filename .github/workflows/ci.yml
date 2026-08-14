@@ -108,7 +108,7 @@ jobs:
       - name: Version pins
         run: node scripts/check-versions.js
       - name: Static stylesheet path guard
-        run: node scripts/check-stylesheet-paths.js
+        run: npm run check:stylesheet-paths
       - name: API host redirect guard (no catch-all /compress 308)
         run: |
           node scripts/check-api-host-routes.test.js

@@ -23,25 +23,34 @@ function htmlFiles(dir) {
 
 function stylesheetHrefs(html) {
   return [...html.matchAll(/<link\b[^>]*>/gi)].flatMap(([tag]) => {
-    const rel = tag.match(/\brel\s*=\s*(["'])(.*?)\1/i)?.[2];
-    const href = tag.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
-    return rel?.split(/\s+/).includes("stylesheet") && href ? [href] : [];
+    const attribute = (name) => {
+      const match = tag.match(
+        new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>\\x60]+))`, "i")
+      );
+      return match?.slice(1).find((value) => value !== undefined);
+    };
+    const rel = attribute("rel");
+    const href = attribute("href");
+    return rel?.toLowerCase().split(/\s+/).includes("stylesheet") && href ? [href] : [];
   });
 }
 
-const invalidPaths = htmlFiles(WEB).flatMap((file) =>
-  stylesheetHrefs(fs.readFileSync(file, "utf8"))
-    .filter((href) => !href.startsWith("/") && !/^https?:\/\//i.test(href))
-    .map((href) => `${path.relative(ROOT, file)}: ${href}`)
-);
+module.exports = { stylesheetHrefs };
 
-if (invalidPaths.length) {
-  throw new Error(
-    `Stylesheet URLs must be root-relative or external:\n${invalidPaths.join("\n")}`
+function main() {
+  const invalidPaths = htmlFiles(WEB).flatMap((file) =>
+    stylesheetHrefs(fs.readFileSync(file, "utf8"))
+      .filter((href) => !href.startsWith("/") && !/^https?:\/\//i.test(href))
+      .map((href) => `${path.relative(ROOT, file)}: ${href}`)
   );
-}
 
-const normalizerCheck = String.raw`
+  if (invalidPaths.length) {
+    throw new Error(
+      `Stylesheet URLs must be root-relative or external:\n${invalidPaths.join("\n")}`
+    );
+  }
+
+  const normalizerCheck = String.raw`
 import importlib.util
 from pathlib import Path
 
@@ -56,11 +65,14 @@ result = module.ensure_css_links(html)
 assert 'href="/assets/css/supercompress.css?v=105"' in result
 assert 'href="assets/css/supercompress.css' not in result
 `;
-execFileSync("python3", ["-c", normalizerCheck], {
-  cwd: ROOT,
-  stdio: "inherit",
-});
+  execFileSync("python3", ["-c", normalizerCheck], {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
 
-console.log(
-  `stylesheet path check: ${htmlFiles(WEB).length} HTML files and article normalizer passed`
-);
+  console.log(
+    `stylesheet path check: ${htmlFiles(WEB).length} HTML files and article normalizer passed`
+  );
+}
+
+if (require.main === module) main();
