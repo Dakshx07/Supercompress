@@ -106,7 +106,26 @@ function fmtFull(n) {
 async function resolveTokenTotals({ forceResync = false } = {}) {
   const stub = await readGlobalTokenStats().catch(() => null);
   const stubReady = Boolean(stub && stub.seeded && stub.tokens_processed > 0);
-  const due = forceResync || !stubReady || Date.now() - lastResyncAt > RESYNC_MS;
+  const stubAgeMs = stub?.updated_at
+    ? Math.max(0, Date.now() - Date.parse(stub.updated_at))
+    : Number.POSITIVE_INFINITY;
+  // Prefer Auth stub claims age over lambda memory — cold starts must not
+  // re-listUsers every request when the stub is already seeded.
+  const due =
+    forceResync ||
+    !stubReady ||
+    stubAgeMs > RESYNC_MS ||
+    (lastResyncAt > 0 && Date.now() - lastResyncAt > RESYNC_MS);
+
+  if (stubReady && !forceResync && stubAgeMs <= RESYNC_MS) {
+    return {
+      tokens_processed: stub.tokens_processed,
+      tokens_saved: stub.tokens_saved,
+      source: "global_stub",
+      signed_up_users: null,
+      auth_records: null,
+    };
+  }
 
   if (stubReady && !due) {
     return {
