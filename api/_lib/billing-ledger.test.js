@@ -183,6 +183,27 @@ assertUsageIdempotencyMatch(
   { fingerprint: "abc", tokensIn: 99, tokensOut: 1, tokensSaved: 98 }
 );
 
+// Auth claims store a 16-char fingerprint prefix — must still replay against full hash
+{
+  const full = "a".repeat(64);
+  assertUsageIdempotencyMatch(
+    { fingerprint: full.slice(0, 16), tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+    { fingerprint: full, tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
+  );
+  assertUsageIdempotencyMatch(
+    { fingerprint: full, tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+    { fingerprint: full.slice(0, 16), tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
+  );
+  mustThrow(
+    () =>
+      assertUsageIdempotencyMatch(
+        { fingerprint: "bbbbbbbbbbbbbbbb", tokens_in: 10, tokens_out: 5, tokens_saved: 5 },
+        { fingerprint: full, tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
+      ),
+    "idempotency_conflict"
+  );
+}
+
 // Idempotency: different fingerprint → conflict
 mustThrow(
   () =>
