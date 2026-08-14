@@ -100,12 +100,23 @@ function computeCompressFingerprint(body = {}) {
  * Decide whether an existing billing_usage row is a safe replay.
  * Throws idempotency_conflict (409) when the key is reused with a different payload.
  */
+function fingerprintsMatch(prevFp, fp) {
+  const a = String(prevFp || "").trim();
+  const b = String(fp || "").trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // Legacy Auth claims rows stored only the first 16 hex chars.
+  if (a.length <= 16 && b.startsWith(a)) return true;
+  if (b.length <= 16 && a.startsWith(b)) return true;
+  return false;
+}
+
 function assertUsageIdempotencyMatch(prev, { fingerprint, tokensIn, tokensOut, tokensSaved }) {
   if (!prev || typeof prev !== "object") return;
   const prevFp = String(prev.fingerprint || "").trim();
   const fp = String(fingerprint || "").trim();
   if (fp) {
-    if (prevFp && prevFp !== fp) {
+    if (prevFp && !fingerprintsMatch(prevFp, fp)) {
       throw billingError(
         "idempotency_conflict",
         "Idempotency-Key reused with a different request payload",
@@ -399,6 +410,7 @@ function fitCustomClaims(claims) {
       if (Array.isArray(next.sc_recent_billing)) {
         next.sc_recent_billing = next.sc_recent_billing.slice(0, 8).map((r) => ({
           i: String(r?.i || "").slice(0, 40),
+          // Claims budget is tight (~1KB). Keep a stable prefix; matchers accept prefix==full.
           f: r?.f ? String(r.f).slice(0, 16) : null,
           tin: Number(r?.tin) || 0,
           tout: Number(r?.tout) || 0,
@@ -600,7 +612,7 @@ async function applyUsageAndBurnClaimsFallback({
           sc_recent_billing: [
             {
               i: rid.slice(0, 40),
-              f: fp ? String(fp).slice(0, 16) : null,
+              f: fp || null,
               tin: Number(tokensIn) || 0,
               tout: Number(tokensOut) || 0,
               ts: Number(tokensSaved) || 0,
@@ -723,7 +735,7 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
         if (prev.status === "pending") {
           const until = Number(prev.lease_until || 0);
           if (until > now) {
-            if (prev.fingerprint && fp && prev.fingerprint !== fp) {
+            if (prev.fingerprint && fp && !fingerprintsMatch(prev.fingerprint, fp)) {
               throw billingError(
                 "idempotency_conflict",
                 "Idempotency-Key reused with a different request payload"
@@ -732,7 +744,7 @@ async function reserveIdempotencyLease(uid, requestId, fingerprint) {
             return { status: "pending", data: prev };
           }
           // Expired lease — take over.
-        } else if (prev.fingerprint && fp && prev.fingerprint !== fp) {
+        } else if (prev.fingerprint && fp && !fingerprintsMatch(prev.fingerprint, fp)) {
           throw billingError(
             "idempotency_conflict",
             "Idempotency-Key reused with a different request payload"
