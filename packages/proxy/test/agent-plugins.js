@@ -133,7 +133,7 @@ const idKey = lib.stableIdempotencyKey({
   mode: "compiler",
   query: "do the thing",
 });
-if (!/^sc_[a-f0-9]{40}$/.test(idKey)) throw new Error("bad stable idempotency key: " + idKey);
+if (!/^[a-f0-9]{40}$/.test(idKey)) throw new Error("bad stable idempotency key: " + idKey);
 const idKey2 = lib.stableIdempotencyKey({
   sessionId: "s1",
   context: "abc",

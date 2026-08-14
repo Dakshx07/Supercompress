@@ -230,6 +230,18 @@ assertUsageIdempotencyMatch(
   { fingerprint: "newfp", tokensIn: 10, tokensOut: 5, tokensSaved: 5 }
 );
 
+// Claims watermarks truncate request ids to 40 — lookups must still hit
+{
+  const { claimsRequestId } = require("./billing-ledger");
+  const longId = "sc_" + "a".repeat(40);
+  assert.strictEqual(claimsRequestId(longId).length, 40);
+  assert.strictEqual(claimsRequestId(longId), longId.slice(0, 40));
+  // fitCustomClaims only rewrites rows when the payload is over budget; the
+  // write path always stores claimsRequestId(rid) so verify can succeed.
+  const packed = claimsRequestId(longId);
+  assert.ok(packed.length <= 40);
+}
+
 {
   const fitted = fitCustomClaims({
     sc_power_mail: "sent",

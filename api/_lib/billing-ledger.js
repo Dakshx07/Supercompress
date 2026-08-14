@@ -409,7 +409,7 @@ function fitCustomClaims(claims) {
     () => {
       if (Array.isArray(next.sc_recent_billing)) {
         next.sc_recent_billing = next.sc_recent_billing.slice(0, 8).map((r) => ({
-          i: String(r?.i || "").slice(0, 40),
+          i: String(r?.i || "").slice(0, CLAIMS_REQUEST_ID_MAX),
           // Claims budget is tight (~1KB). Keep a stable prefix; matchers accept prefix==full.
           f: r?.f ? String(r.f).slice(0, 16) : null,
           tin: Number(r?.tin) || 0,
@@ -515,9 +515,19 @@ async function stampOwnerClaim(uid, field, value) {
   }
 }
 
+/** Auth claims watermark ids are capped for the ~1KB custom-claims budget. */
+const CLAIMS_REQUEST_ID_MAX = 40;
+
+function claimsRequestId(rid) {
+  return String(rid || "").slice(0, CLAIMS_REQUEST_ID_MAX);
+}
+
 function recentBillingRow(recent, rid) {
+  const want = claimsRequestId(rid);
+  if (!want) return null;
   const rows = Array.isArray(recent) ? recent : [];
-  return rows.find((r) => r && r.i === rid) || null;
+  // Match truncated-or-full: older rows and fitCustomClaims both store ≤40 chars.
+  return rows.find((r) => r && claimsRequestId(r.i) === want) || null;
 }
 
 /**
@@ -611,7 +621,7 @@ async function applyUsageAndBurnClaimsFallback({
           sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
           sc_recent_billing: [
             {
-              i: rid.slice(0, 40),
+              i: claimsRequestId(rid),
               f: fp || null,
               tin: Number(tokensIn) || 0,
               tout: Number(tokensOut) || 0,
@@ -669,7 +679,7 @@ async function claimsIdempotencyLease(uid, rid, fp) {
   const fresh = await admin().auth().getUser(uid);
   const live = mergeLiveClaims(fresh.customClaims, {});
   const recent = Array.isArray(live.sc_recent_billing) ? live.sc_recent_billing : [];
-  const prior = recent.find((r) => r && r.i === rid);
+  const prior = recentBillingRow(recent, rid);
   if (prior) {
     assertUsageIdempotencyMatch(
       {
@@ -1482,6 +1492,7 @@ module.exports = {
   microsToUsd,
   monthKey,
   sanitizeRequestId,
+  claimsRequestId,
   computeCompressFingerprint,
   assertUsageIdempotencyMatch,
   FREE_TOKENS_PER_MONTH,
