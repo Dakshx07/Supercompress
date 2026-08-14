@@ -107,6 +107,8 @@ jobs:
         run: node scripts/check-no-pii.js
       - name: Version pins
         run: node scripts/check-versions.js
+      - name: Static stylesheet path guard
+        run: npm run check:stylesheet-paths
       - name: API host redirect guard (no catch-all /compress 308)
         run: |
           node scripts/check-api-host-routes.test.js

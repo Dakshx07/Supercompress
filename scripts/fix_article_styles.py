@@ -18,7 +18,7 @@ SEO_CLUSTER = """
 </nav>
 """
 
-NEW_CSS_LINKS = """<link rel="stylesheet" href="assets/css/supercompress.css?v=105" />
+NEW_CSS_LINKS = """<link rel="stylesheet" href="/assets/css/supercompress.css?v=105" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=7" />
   <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=1" />
   <link rel="stylesheet" href="/assets/css/article-page.css?v=1" />"""
@@ -30,12 +30,12 @@ def strip_inline_style(html: str) -> str:
 
 def replace_css_links(html: str) -> str:
     html = re.sub(
-        r'\s*<link rel="stylesheet" href="assets/css/content-shell\.css\?v=\d+" />\s*',
+        r'\s*<link rel="stylesheet" href="/?assets/css/content-shell\.css\?v=\d+" />\s*',
         "\n",
         html,
     )
     pat = re.compile(
-        r'<link rel="stylesheet" href="assets/css/supercompress\.css\?v=\d+" />\s*'
+        r'<link rel="stylesheet" href="/?assets/css/supercompress\.css\?v=\d+" />\s*'
         r'(?:<link rel="stylesheet" href="/assets/css/landing-chrome\.css\?v=\d+" />\s*)?',
         re.M,
     )
