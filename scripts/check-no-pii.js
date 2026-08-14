@@ -11,6 +11,9 @@ const ALLOW = [
   /you@company\.com/i,
   /user@example\.com/i,
   /example\.com/i,
+  /@[a-z0-9-]+\.example\./i, // RFC 2606-style test hosts
+  /\b[a-z0-9._%+-]+@x\.com\b/i, // tiny unit-test placeholders
+  /\b[a-z0-9._%+-]+@y\.com\b/i,
   /noreply@/i,
   /no-reply@/i,
   /jack@greensock\.com/i, // vendored gsap license header

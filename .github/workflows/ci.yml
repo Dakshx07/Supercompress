@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -64,6 +65,8 @@ jobs:
         run: node api/_lib/firebase-off.test.js
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
+      - name: Payment thank-you gating
+        run: node api/_lib/payment-thank-you.test.js
       - name: Auth key-limit helpers
         run: node api/_lib/auth-connect.test.js
       - name: Founder usage aggregation
