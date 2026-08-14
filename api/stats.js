@@ -21,7 +21,7 @@ const admin = require("firebase-admin");
 
 const PACKAGES = ["supercompress-proxy", "@agents-npm-packages/supercompress"];
 /** Fast path for live homepage meter (global stub read). */
-const LIVE_CACHE_MS = 2 * 1000;
+const LIVE_CACHE_MS = 1000;
 /** Full npm + Auth-user scan. */
 const FULL_CACHE_MS = 60 * 1000;
 /** How often to re-scan Auth into the stub even when live cache is warm. */
