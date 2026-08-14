@@ -842,4 +842,47 @@
     };
     requestAnimationFrame(draw);
   }
+
+  // —— Live tokens processed (public /api/stats) ——
+  (function bootLiveTokens() {
+    const el = document.getElementById("live-tokens-n");
+    const sub = document.getElementById("live-tokens-sub");
+    if (!el) return;
+
+    const fmt = (n) => {
+      const v = Math.max(0, Number(n) || 0);
+      if (v >= 1e9) return `${(v / 1e9).toFixed(v >= 1e10 ? 0 : 1).replace(/\.0$/, "")}B`;
+      if (v >= 1e6) return `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace(/\.0$/, "")}M`;
+      if (v >= 1e3) return `${(v / 1e3).toFixed(v >= 1e4 ? 0 : 1).replace(/\.0$/, "")}k`;
+      return String(Math.round(v));
+    };
+
+    const paint = (n, saved) => {
+      const end = Math.max(0, Number(n) || 0);
+      if (!window.gsap) {
+        el.textContent = fmt(end);
+      } else {
+        const state = { value: 0 };
+        gsap.to(state, {
+          value: end,
+          duration: 1.35,
+          ease: "power2.out",
+          onUpdate: () => {
+            el.textContent = fmt(state.value);
+          },
+        });
+      }
+      if (sub && saved != null) {
+        sub.textContent = `${fmt(saved)} tokens saved · across SuperCompress accounts`;
+      }
+    };
+
+    fetch("/api/stats", { credentials: "omit", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || d.tokens_processed == null) return;
+        paint(d.tokens_processed, d.tokens_saved);
+      })
+      .catch(() => {});
+  })();
 })();

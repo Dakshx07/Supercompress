@@ -584,6 +584,17 @@ async function applyUsageAndBurnClaimsFallback({
             tokens_saved: planned.ledger.tokens_saved,
             tokens_reported: planned.ledger.tokens_reported || 0,
             d: packed.d,
+            ...(() => {
+              const prev = liveClaims.sc_usage || {};
+              const lifeIn = Number(prev.life_in || 0) || 0;
+              const lifeSaved = Number(prev.life_saved || 0) || 0;
+              const seededIn = lifeIn > 0 ? lifeIn : Number(prev.tokens_in || 0) || 0;
+              const seededSaved = lifeSaved > 0 ? lifeSaved : Number(prev.tokens_saved || 0) || 0;
+              return {
+                life_in: seededIn + Math.max(0, Number(tokensIn) || 0),
+                life_saved: seededSaved + Math.max(0, Number(tokensSaved) || 0),
+              };
+            })(),
           },
           sc_credit_balance_usd: roundUsd(microsToUsd(planned.ledger.credit_balance_micros)),
           sc_recent_billing: [
@@ -792,6 +803,10 @@ async function mirrorClaims(uid, ledger) {
         tokens_reported: ledger.tokens_reported,
         ...(prev.sc_usage?.month === ledger.month && prev.sc_usage?.d
           ? { d: prev.sc_usage.d }
+          : {}),
+        ...(Number(prev.sc_usage?.life_in) > 0 ? { life_in: Number(prev.sc_usage.life_in) } : {}),
+        ...(Number(prev.sc_usage?.life_saved) > 0
+          ? { life_saved: Number(prev.sc_usage.life_saved) }
           : {}),
       },
       sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
@@ -1149,6 +1164,15 @@ async function creditBalanceClaimsFallback({
             tokens_out: ledger.tokens_out,
             tokens_saved: ledger.tokens_saved,
             tokens_reported: ledger.tokens_reported || 0,
+            ...(Number(liveClaims.sc_usage?.life_in) > 0
+              ? { life_in: Number(liveClaims.sc_usage.life_in) }
+              : {}),
+            ...(Number(liveClaims.sc_usage?.life_saved) > 0
+              ? { life_saved: Number(liveClaims.sc_usage.life_saved) }
+              : {}),
+            ...(liveClaims.sc_usage?.month === ledger.month && liveClaims.sc_usage?.d
+              ? { d: liveClaims.sc_usage.d }
+              : {}),
           },
           sc_credit_balance_usd: roundUsd(microsToUsd(ledger.credit_balance_micros)),
           sc_credit_limit_usd: ledger.credit_limit_usd,
@@ -1333,6 +1357,13 @@ async function creditBalance({
           tokens_out: result.ledger.tokens_out,
           tokens_saved: result.ledger.tokens_saved,
           tokens_reported: result.ledger.tokens_reported,
+          ...(Number(prev.sc_usage?.life_in) > 0 ? { life_in: Number(prev.sc_usage.life_in) } : {}),
+          ...(Number(prev.sc_usage?.life_saved) > 0
+            ? { life_saved: Number(prev.sc_usage.life_saved) }
+            : {}),
+          ...(prev.sc_usage?.month === result.ledger.month && prev.sc_usage?.d
+            ? { d: prev.sc_usage.d }
+            : {}),
         },
         sc_credit_balance_usd: roundUsd(microsToUsd(result.ledger.credit_balance_micros)),
         sc_credit_limit_usd: result.ledger.credit_limit_usd,
