@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="preload" href="/assets/video/launch-post-poster.jpg?v=5" as="image" fetchpriority="high" />
-  <link rel="stylesheet" href="/assets/css/landing-motion.css?v=11" />
+  <link rel="stylesheet" href="/assets/css/landing-motion.css?v=12" />
   <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
 
 
@@ -653,23 +653,32 @@
       </div>
     </section>
 
+    <section class="live-meter-section" id="live-meter" aria-label="Live tokens processed">
+      <canvas class="dither-canvas live-meter-dither dither-dark" data-dither="meter" aria-hidden="true"></canvas>
+      <div class="live-meter-fade" aria-hidden="true"></div>
+      <div class="container live-meter-inner">
+        <p class="live-meter-kicker">
+          <span class="live-meter-dot" aria-hidden="true"></span>
+          Live
+          <span class="live-meter-age" id="live-tokens-age">polling…</span>
+        </p>
+        <p class="live-meter-value" id="live-tokens-n">—</p>
+        <p class="live-meter-label">tokens processed</p>
+        <p class="live-meter-sub" id="live-tokens-sub">across SuperCompress · updates as people compress</p>
+      </div>
+    </section>
+
     <section class="cta-section" id="cta">
       <div class="cta-band">
-        <img class="cta-hands" src="/assets/img/cta-hands.jpg" alt="" width="1800" height="1200" loading="lazy" decoding="async" />
+        <canvas class="dither-canvas cta-dither" data-dither="flow" aria-hidden="true"></canvas>
         <div class="cta-fade" aria-hidden="true"></div>
         <div class="container cta-copy reveal">
-          <div class="cta-live-tokens" aria-live="polite">
-            <p class="cta-live-kicker"><span class="cta-live-dot" aria-hidden="true"></span> Live</p>
-            <p class="cta-live-value" id="live-tokens-n">—</p>
-            <p class="cta-live-label">tokens processed</p>
-            <p class="cta-live-sub" id="live-tokens-sub">across SuperCompress · updates as people compress</p>
-          </div>
           <div class="cta-brand">
-            <img src="/assets/img/logo-chevrons.png" alt="" width="28" height="28" />
+            <img src="/assets/img/logo-chevrons.png" alt="" width="36" height="36" />
             <span>Super<em>Compress</em></span>
           </div>
-          <h2>Ship AI features with<br>lower per-request cost.</h2>
-          <p class="cta-lead">1M free tokens/mo · then $0.30/1M · no credit card. Prompt compression for chat, RAG, support, and coding agents.</p>
+          <h2>Ship AI features with lower per-request cost.</h2>
+          <p class="cta-lead">1M free tokens/mo · then $0.30/1M · no credit card.</p>
           <div class="cta-actions">
             <a class="button button-primary magnetic" href="/dashboard?signup=1&amp;utm_source=homepage&amp;utm_medium=cta&amp;utm_campaign=activation">Get free API key <span>→</span></a>
             <a class="button button-secondary magnetic" href="https://docs.supercompress.dev/coding-agents?utm_source=homepage&amp;utm_medium=cta&amp;utm_campaign=activation">Coding agents</a>
@@ -757,7 +766,7 @@
 
   <script src="/assets/js/vendor/gsap/gsap.min.js"></script>
   <script src="/assets/js/vendor/gsap/ScrollTrigger.min.js"></script>
-<script src="/assets/js/landing-app.js?v=10"></script>
+<script src="/assets/js/landing-app.js?v=11"></script>
 
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>

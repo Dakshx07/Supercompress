@@ -7,6 +7,8 @@
   (function bootLiveTokens() {
     const el = document.getElementById("live-tokens-n");
     const sub = document.getElementById("live-tokens-sub");
+    const age = document.getElementById("live-tokens-age");
+    const section = document.querySelector(".live-meter-section");
     if (!el) return;
 
     let display = 0;
@@ -15,10 +17,34 @@
     let raf = 0;
     let lastPaint = "";
     let lastTickAt = 0;
-    const POLL_MS = 2500;
+    let lastPollOkAt = 0;
+    let pollTimer = 0;
+    let ageTimer = 0;
+    const POLL_MS = 1500;
 
     const fmtFull = (n) =>
       Math.max(0, Math.round(Number(n) || 0)).toLocaleString("en-US");
+
+    const pulse = (bump) => {
+      if (!section || reduced) return;
+      section.classList.add("is-ticking");
+      if (bump) section.classList.add("is-bump");
+      window.clearTimeout(pulse._t);
+      pulse._t = window.setTimeout(() => {
+        section.classList.remove("is-ticking");
+        section.classList.remove("is-bump");
+      }, bump ? 700 : 280);
+    };
+
+    const paintAge = () => {
+      if (!age) return;
+      if (!lastPollOkAt) {
+        age.textContent = "polling…";
+        return;
+      }
+      const sec = Math.max(0, Math.round((Date.now() - lastPollOkAt) / 1000));
+      age.textContent = sec <= 1 ? "just now" : `${sec}s ago`;
+    };
 
     const paint = () => {
       const text = fmtFull(display);
@@ -30,14 +56,18 @@
         const next = `${fmtFull(savedTarget)} tokens saved · across SuperCompress`;
         if (sub.textContent !== next) sub.textContent = next;
       }
+      paintAge();
     };
 
     const onServer = (processed, saved) => {
       const next = Math.max(0, Number(processed) || 0);
+      const bumped = next > target && target > 0;
       // Never invent tokens — only move toward real server totals.
       target = next;
       if (display === 0 || display > next) display = next;
       if (saved != null) savedTarget = Math.max(0, Number(saved) || 0);
+      lastPollOkAt = Date.now();
+      pulse(bumped);
       paint();
     };
 
@@ -54,14 +84,14 @@
 
       if (display < target) {
         const gap = target - display;
-        // Ease toward the real total; never overshoot past server truth.
-        const step = Math.max(gap * 4 * dt, Math.min(gap, 1));
+        const step = Math.max(gap * 5 * dt, Math.min(gap, 1));
         display = Math.min(target, display + step);
       }
       paint();
     };
 
     const pull = () => {
+      if (document.visibilityState === "hidden") return Promise.resolve();
       const q = `/api/stats?fresh=1&_=${Date.now()}`;
       return fetch(q, { credentials: "omit", cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
@@ -72,10 +102,24 @@
         .catch(() => {});
     };
 
+    const schedule = () => {
+      window.clearInterval(pollTimer);
+      window.clearInterval(ageTimer);
+      pollTimer = window.setInterval(pull, POLL_MS);
+      ageTimer = window.setInterval(paintAge, 1000);
+    };
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        pull();
+        schedule();
+      }
+    });
+
     paint();
     raf = requestAnimationFrame(tick);
     pull();
-    setInterval(pull, POLL_MS);
+    schedule();
   })();
 
   // Scroll progress
@@ -205,6 +249,14 @@
     flow: (x, y, t, w, h) => {
       const u = x / w, v = y / h;
       return .24 + Math.sin((u - .5) * 7 + t * 1.1) * Math.cos((v - .5) * 6 - t * .85) * .36 + (1 - v) * .18;
+    },
+    meter: (x, y, t, w, h) => {
+      const u = x / Math.max(w, 1);
+      const v = y / Math.max(h, 1);
+      const sweep = .5 + .5 * Math.sin(u * 10 - t * 2.4);
+      const ring = 1 - Math.min(1, Math.abs(Math.hypot(u - .5, v - .48) - (.18 + .04 * Math.sin(t * 1.6))) / .22);
+      const band = .5 + .5 * Math.sin((v * 14) + t * 1.8);
+      return .12 + sweep * .28 * (1 - v) + ring * .55 + band * .12 * (1 - Math.abs(u - .5) * 1.4);
     }
   };
 
@@ -223,6 +275,7 @@
         || canvas.classList.contains('install-dither')
         || canvas.classList.contains('cta-dither')
         || canvas.classList.contains('cta-band-dither')
+        || canvas.classList.contains('live-meter-dither')
           ? 3.2
           : (canvas.classList.contains('micro-dither')
             || canvas.classList.contains('micro-dither-strip')
