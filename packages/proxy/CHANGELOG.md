@@ -4,6 +4,10 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.21] — 2026-08-14
+
+- Idempotency keys are ≤40 chars (Auth claims watermarks truncate at 40; longer `sc_…` keys caused billing 503s for MCP/hooks).
+
 ## [0.5.20] — 2026-08-14
 
 - **Accept Auth-backed API keys** (`sc_live_sck_…`): compressor `isValidApiKey` no longer rejects real linked keys (was treating `_` in the secret as invalid → “API key not found” / zero-looking usage until re-setup).

@@ -149,9 +149,11 @@ function fullHash(text) {
   return crypto.createHash("sha256").update(String(text || "")).digest("hex");
 }
 
-/** Stable Idempotency-Key so hook timeouts can safely retry without double-billing. */
+/** Stable Idempotency-Key so hook timeouts can safely retry without double-billing.
+ * Must stay ≤40 chars — Auth claims watermarks truncate to 40; longer keys 503'd billing.
+ */
 function stableIdempotencyKey({ sessionId, context, mode, query }) {
-  const h = crypto
+  return crypto
     .createHash("sha256")
     .update(String(sessionId || ""))
     .update("\0")
@@ -162,7 +164,6 @@ function stableIdempotencyKey({ sessionId, context, mode, query }) {
     .update(fullHash(String(query || "").trim().toLowerCase()))
     .digest("hex")
     .slice(0, 40);
-  return `sc_${h}`;
 }
 
 /**
