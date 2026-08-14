@@ -1,6 +1,6 @@
 {
   "name": "supercompress-proxy",
-  "version": "0.5.19",
+  "version": "0.5.20",
   "description": "SuperCompress for coding agents — run setup once to auto-install MCP + hooks and cut ~65% of LLM input tokens. Benchmarks at supercompress.dev/benchmarks.",
   "keywords": [
     "supercompress",

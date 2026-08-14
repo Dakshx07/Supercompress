@@ -3472,6 +3472,27 @@ button.btn-link-muted {
   margin: 4px 0 12px;
 }
 
+.dash-profile-action {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border: 0.5px solid var(--card-border);
+  border-radius: 4px;
+  background: var(--panel-bg);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.dash-profile-action:hover { background: #f3f4f6; color: var(--brand-dark); }
+
+.dash-forgot-password {
+  display: inline-block;
+  margin: 4px 0 12px;
+  padding: 0;
+  font-size: 13px;
+}
+
 .dash-profile-signout {
   width: 100%;
   padding: 8px 12px;

@@ -572,6 +572,7 @@
           <div class="dash-profile-dropdown">
             <div class="dash-profile-dropdown-name" id="dash-profile-name">—</div>
             <div class="dash-profile-dropdown-email" id="dash-profile-email">—</div>
+            <button type="button" class="dash-profile-action" id="dash-change-password">Change password</button>
             <button type="button" class="dash-profile-signout" id="dash-signout">Sign out</button>
           </div>
         </div>
@@ -628,6 +629,7 @@
             <input class="dash-field-input" id="auth-email" type="email" required autocomplete="email" placeholder="you@company.com" />
             <label class="dash-field-label" for="auth-password">Password</label>
             <input class="dash-field-input" id="auth-password" type="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters" />
+            <button type="button" class="btn-link-muted dash-forgot-password" id="btn-forgot-password">Forgot password?</button>
             <button type="submit" class="btn-brand dash-auth-submit" id="auth-submit">Create free account</button>
           </form>
         </div>
@@ -1038,6 +1040,30 @@ npm exec supercompress setup</pre>
     </div>
   </div>
 
+  <!-- Change password modal -->
+  <div class="dash-modal hidden" id="modal-password">
+    <div class="dash-modal-card">
+      <h2 id="password-modal-title">Change password</h2>
+      <p class="dash-auth-sub" id="password-modal-lead" style="margin-top:0">Update the password for this SuperCompress account.</p>
+      <div id="password-email-fields">
+        <label class="dash-field-label" for="password-current">Current password</label>
+        <input class="dash-field-input" id="password-current" type="password" autocomplete="current-password" minlength="6" />
+        <label class="dash-field-label" for="password-new">New password</label>
+        <input class="dash-field-input" id="password-new" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" />
+        <label class="dash-field-label" for="password-confirm">Confirm new password</label>
+        <input class="dash-field-input" id="password-confirm" type="password" autocomplete="new-password" minlength="6" />
+        <p class="dash-auth-error hidden" id="password-error" style="margin-top:10px"></p>
+        <p class="dash-auth-sub hidden" id="password-ok" style="margin-top:10px;color:#166534"></p>
+        <button type="button" class="btn-brand" id="btn-confirm-password">Save password</button>
+      </div>
+      <div id="password-google-only" class="hidden">
+        <p class="dash-auth-sub" style="margin-top:0">This account signs in with Google. Manage your password in your Google Account, or we can email a reset link if email/password is also enabled.</p>
+        <button type="button" class="btn-brand" id="btn-send-password-reset">Email password reset link</button>
+      </div>
+      <button type="button" class="btn-link-muted" id="btn-cancel-password">Cancel</button>
+    </div>
+  </div>
+
   <!-- Credit top-up modal -->
   <div class="dash-modal hidden" id="modal-credits">
     <div class="dash-modal-card dash-modal-card--credits">
@@ -1141,7 +1167,7 @@ npm exec supercompress setup</pre>
   <script src="/assets/js/dither-kit-lite.js?v=15"></script>
   <script src="/assets/js/analytics-data.js?v=4"></script>
   <script src="/assets/js/dashboard-analytics.js?v=6"></script>
-  <script type="module" src="/assets/js/dashboard-api.js?v=39"></script>
+  <script type="module" src="/assets/js/dashboard-api.js?v=40"></script>
   <script src="assets/js/affiliate-track.js?v=1"></script>
   <script src="/assets/js/site-chrome.js?v=12"></script>
 </body>
