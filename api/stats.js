@@ -14,7 +14,7 @@ const { isHumanUser } = require("./_lib/founder-usage");
 const admin = require("firebase-admin");
 
 const PACKAGES = ["supercompress-proxy", "@agents-npm-packages/supercompress"];
-const CACHE_MS = 5 * 60 * 1000; // 5 min — live enough for landing counter
+const CACHE_MS = 60 * 1000; // 60s — landing polls with ?fresh=1
 let cache = { at: 0, payload: null };
 
 async function npmWeek(pkg) {
@@ -88,7 +88,11 @@ module.exports = async (req, res) => {
   if (req.method !== "GET") return json(res, 405, { detail: "Method not allowed", allow: "GET" });
 
   try {
-    if (cache.payload && Date.now() - cache.at < CACHE_MS) {
+    if (
+      cache.payload &&
+      Date.now() - cache.at < CACHE_MS &&
+      String(req.query?.fresh || "") !== "1"
+    ) {
       return json(res, 200, { ...cache.payload, cached: true });
     }
 
