@@ -3,75 +3,109 @@
   const hasGsap = Boolean(window.gsap && window.ScrollTrigger);
   if (hasGsap && !reduced) document.documentElement.classList.add('gsap-ready');
 
-  // —— Live tokens processed (public /api/stats) — boot early so CTA isn't stuck on "—"
+  // —— Live tokens processed (public /api/stats) — continuous odometer, always xxx,xxx,xxx
   (function bootLiveTokens() {
     const el = document.getElementById("live-tokens-n");
     const sub = document.getElementById("live-tokens-sub");
     if (!el) return;
 
-    let current = 0;
+    let display = 0;
+    let target = 0;
+    let savedTarget = null;
+    let ratePerSec = 0; // estimated from poll deltas
+    let lastPollAt = 0;
+    let lastServer = null;
     let raf = 0;
-    const POLL_MS = 15000;
+    let lastPaint = "";
+    const POLL_MS = 3000;
+    const MAX_RATE = 250000; // tokens/sec cap so a big resync doesn't runaway
 
-    const fmtFull = (n) => Math.max(0, Math.round(Number(n) || 0)).toLocaleString("en-US");
-    const fmtCompact = (n) => {
-      const v = Math.max(0, Number(n) || 0);
-      if (v >= 1e9) return `${(v / 1e9).toFixed(v >= 1e10 ? 0 : 1).replace(/\.0$/, "")}B`;
-      if (v >= 1e6) return `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace(/\.0$/, "")}M`;
-      if (v >= 1e3) return `${(v / 1e3).toFixed(v >= 1e4 ? 0 : 1).replace(/\.0$/, "")}k`;
-      return String(Math.round(v));
+    const fmtFull = (n) =>
+      Math.max(0, Math.round(Number(n) || 0)).toLocaleString("en-US");
+
+    const paint = () => {
+      const text = fmtFull(display);
+      if (text !== lastPaint) {
+        lastPaint = text;
+        el.textContent = text;
+      }
+      if (sub && savedTarget != null) {
+        const s = fmtFull(savedTarget);
+        const next = `${s} tokens saved · across SuperCompress`;
+        if (sub.textContent !== next) sub.textContent = next;
+      }
     };
 
-    const setSub = (saved) => {
-      if (!sub || saved == null) return;
-      sub.textContent = `${fmtCompact(saved)} tokens saved · across SuperCompress accounts`;
-    };
-
-    const animateTo = (next) => {
-      const end = Math.max(0, Number(next) || 0);
-      if (raf) cancelAnimationFrame(raf);
-      if (reduced || !Number.isFinite(end)) {
-        current = end;
-        el.textContent = fmtFull(end);
-        return;
-      }
-      const start = current;
-      const delta = end - start;
-      if (Math.abs(delta) < 1) {
-        current = end;
-        el.textContent = fmtFull(end);
-        return;
-      }
-      const t0 = performance.now();
-      const dur = Math.min(1400, 400 + Math.abs(delta) / 8000);
-      const ease = (t) => 1 - Math.pow(1 - t, 3);
-      const frame = (now) => {
-        const p = Math.min(1, (now - t0) / dur);
-        current = start + delta * ease(p);
-        el.textContent = fmtFull(current);
-        if (p < 1) raf = requestAnimationFrame(frame);
-        else {
-          current = end;
-          el.textContent = fmtFull(end);
+    const onServer = (processed, saved) => {
+      const next = Math.max(0, Number(processed) || 0);
+      const now = performance.now();
+      if (lastServer != null && lastPollAt > 0) {
+        const dt = Math.max(0.25, (now - lastPollAt) / 1000);
+        const d = next - lastServer;
+        if (d >= 0) {
+          const measured = d / dt;
+          ratePerSec =
+            ratePerSec > 0
+              ? ratePerSec * 0.65 + measured * 0.35
+              : measured;
+          ratePerSec = Math.min(MAX_RATE, Math.max(0, ratePerSec));
         }
-      };
-      raf = requestAnimationFrame(frame);
+      }
+      lastServer = next;
+      lastPollAt = now;
+      target = Math.max(target, next);
+      // Snap forward if we're behind the server; never go backwards.
+      if (display < next) {
+        // Catch up over ~0.8s without jumping the whole delta at once.
+        target = next;
+      }
+      if (display === 0 && next > 0) display = next;
+      if (saved != null) savedTarget = Math.max(0, Number(saved) || 0);
+      paint();
     };
 
-    const pull = (fresh) => {
-      const q = fresh ? `/api/stats?fresh=1&_=${Date.now()}` : `/api/stats?_=${Date.now()}`;
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      if (reduced) {
+        display = target;
+        paint();
+        return;
+      }
+      if (!lastTickAt) lastTickAt = now;
+      const dt = Math.min(0.1, Math.max(0, (now - lastTickAt) / 1000));
+      lastTickAt = now;
+
+      // Creep toward server target using measured rate; if rate is tiny, still
+      // ease 1–2 units/sec so the counter never looks frozen between polls.
+      const creep = Math.max(ratePerSec, target > display ? 2 : 0);
+      if (display < target) {
+        display = Math.min(target, display + creep * dt);
+      } else if (ratePerSec > 0.5) {
+        // Keep ticking past last poll using residual rate (clamped so we don't
+        // invent more than ~1 poll-interval of speculation).
+        const aheadCap = target + ratePerSec * (POLL_MS / 1000) * 1.25;
+        display = Math.min(aheadCap, display + ratePerSec * dt);
+        target = Math.max(target, display);
+      }
+      paint();
+    };
+    let lastTickAt = 0;
+
+    const pull = () => {
+      const q = `/api/stats?fresh=1&_=${Date.now()}`;
       return fetch(q, { credentials: "omit", cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           if (!d || d.tokens_processed == null) return;
-          animateTo(d.tokens_processed);
-          setSub(d.tokens_saved);
+          onServer(d.tokens_processed, d.tokens_saved);
         })
         .catch(() => {});
     };
 
-    pull(true);
-    setInterval(() => pull(true), POLL_MS);
+    paint();
+    raf = requestAnimationFrame(tick);
+    pull();
+    setInterval(pull, POLL_MS);
   })();
 
   // Scroll progress

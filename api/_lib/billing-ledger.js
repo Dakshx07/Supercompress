@@ -902,7 +902,23 @@ async function lookupUsageReplay(uid, requestId) {
   }
 }
 
-async function applyUsageAndBurn({
+async function applyUsageAndBurn(opts) {
+  const result = await applyUsageAndBurnInner(opts);
+  if (result && !result.already) {
+    try {
+      const { bumpGlobalTokenStats } = require("./global-token-stats");
+      void bumpGlobalTokenStats({
+        tokensIn: opts.tokensIn,
+        tokensSaved: opts.tokensSaved,
+      });
+    } catch {
+      /* public counter is best-effort */
+    }
+  }
+  return result;
+}
+
+async function applyUsageAndBurnInner({
   uid,
   tokensIn,
   tokensOut,
