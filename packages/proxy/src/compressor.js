@@ -131,7 +131,7 @@ function assembleMessages(messages) {
     query = "Continue the conversation.";
   }
 
-  return { context: contextParts.join("\n\n"), query, systemMsgs };
+  return { context: contextParts.join("\n\n"), query, systemMsgs, systemMsg: systemMsgs[0] || null };
 }
 
 function detectAgentName() {
