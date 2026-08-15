@@ -1,22 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Platypi:ital,wght@0,300;0,400;0,500;1,400&display=swap");
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
+@import url("./fonts.css");
 /* Header + footer chrome from this site, mapped to local tokens */
 :root {
   --max-w: 1400px;
-  --serif: "Platypi", "EB Garamond", Georgia, serif;
+  --serif: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --frame-buffer: clamp(16px, 4vw, 40px);
   --nav-h: 72px;
@@ -114,7 +100,7 @@
 }
 .df-footer-lockup .df-footer-heading {
   margin: 0;
-  font-family: var(--serif);
+  font-family: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   font-size: 18px;
   font-weight: 300;
   letter-spacing: -0.02em;
@@ -122,6 +108,7 @@
   text-transform: none;
 }
 .df-footer-lockup .df-footer-heading em {
+  font-family: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   font-style: italic;
   font-weight: 400;
   color: #65a3ff;
@@ -346,7 +333,7 @@
   font-weight: 500;
   color: #a3a3a3;
   margin: 0 0 16px;
-  font-family: var(--sans);
+  font-family: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .df-footer-links ul { list-style: none; margin: 0; padding: 0; }
 .df-footer-links li { margin-bottom: 12px; }
