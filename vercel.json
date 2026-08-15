@@ -248,6 +248,31 @@
       "permanent": true
     },
     {
+      "source": "/what-ai-tool-to-reduce-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/ai-tool-to-reduce-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/best-ai-tool-to-reduce-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/what-tool-to-reduce-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs",
+      "permanent": true
+    },
+    {
+      "source": "/reduce-my-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs",
+      "permanent": true
+    },
+    {
       "source": "/token-compression-tools",
       "destination": "/open-source-token-compression",
       "permanent": true
@@ -1467,6 +1492,10 @@
     {
       "source": "/llm-cost-optimization",
       "destination": "/llm-cost-optimization.html"
+    },
+    {
+      "source": "/what-ai-tool-reduce-api-costs",
+      "destination": "/what-ai-tool-reduce-api-costs.html"
     },
     {
       "source": "/supercompress-vs-truncation",
