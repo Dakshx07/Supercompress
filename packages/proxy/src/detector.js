@@ -379,6 +379,58 @@ function shouldWriteMcpTarget(name, filePath, detect) {
   return false;
 }
 
+function resolveExtensionMcpTargets() {
+  const targets = [];
+  const baseDirs = [];
+
+  if (process.platform === "darwin") {
+    baseDirs.push(
+      path.join(HOME, "Library", "Application Support", "Code", "User", "globalStorage"),
+      path.join(HOME, "Library", "Application Support", "Cursor", "User", "globalStorage"),
+      path.join(HOME, "Library", "Application Support", "VSCodium", "User", "globalStorage"),
+      path.join(HOME, "Library", "Application Support", "Windsurf", "User", "globalStorage"),
+      path.join(HOME, "Library", "Application Support", "Code - Insiders", "User", "globalStorage")
+    );
+  }
+
+  baseDirs.push(
+    path.join(HOME, ".config", "Code", "User", "globalStorage"),
+    path.join(HOME, ".config", "Cursor", "User", "globalStorage"),
+    path.join(HOME, ".config", "VSCodium", "User", "globalStorage"),
+    path.join(HOME, ".config", "Windsurf", "User", "globalStorage"),
+    path.join(HOME, ".config", "Code - Insiders", "User", "globalStorage")
+  );
+
+  if (process.env.APPDATA) {
+    baseDirs.push(
+      path.join(process.env.APPDATA, "Code", "User", "globalStorage"),
+      path.join(process.env.APPDATA, "Cursor", "User", "globalStorage"),
+      path.join(process.env.APPDATA, "VSCodium", "User", "globalStorage"),
+      path.join(process.env.APPDATA, "Windsurf", "User", "globalStorage")
+    );
+  }
+
+  const extensions = [
+    { name: "Roo Code", id: "rooveterinaryinc.roo-cline", file: "cline_mcp_settings.json" },
+    { name: "Cline", id: "saoudrizwan.claude-dev", file: "cline_mcp_settings.json" },
+    { name: "Kodu", id: "kodu.kodu", file: "cline_mcp_settings.json" },
+  ];
+
+  for (const base of baseDirs) {
+    for (const ext of extensions) {
+      const extDir = path.join(base, ext.id);
+      const settingsPath = path.join(extDir, "settings", ext.file);
+      targets.push([
+        ext.name,
+        settingsPath,
+        () => fs.existsSync(extDir) || fs.existsSync(settingsPath),
+      ]);
+    }
+  }
+
+  return targets;
+}
+
 function configureMcp() {
   const configured = [];
 
@@ -409,6 +461,7 @@ function configureMcp() {
       commandExists("roo") || fs.existsSync(path.join(HOME, ".roo"))],
     ["Cline", path.join(HOME, ".cline", "mcp.json"), () =>
       fs.existsSync(path.join(HOME, ".cline"))],
+    ...resolveExtensionMcpTargets(),
   ];
 
   for (const [name, filePath, detect] of mcpJsonTargets) {
@@ -420,7 +473,7 @@ function configureMcp() {
       }
       backupFile(filePath);
       writeMcpJson(filePath);
-      configured.push(name);
+      if (!configured.includes(name)) configured.push(name);
     } catch (err) {
       console.error(`  ✗ Failed to configure ${name} MCP: ${err.message}`);
     }
@@ -1726,4 +1779,5 @@ module.exports = {
   writeAgentInstructionFiles,
   installAutoPlugin,
   agentPlugins,
+  resolveExtensionMcpTargets,
 };
