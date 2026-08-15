@@ -127,13 +127,13 @@ export class SuperCompressAI {
     if (this.verbose) {
       console.log(
         `SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok ` +
-        `(${tokensSavedPct.toFixed(1)}%% saved)`
+        `(${tokensSavedPct.toFixed(1)}% saved)`
       );
     }
 
     // Rebuild messages with compressed context
     const compressedContent = [
-      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${tokensSavedPct.toFixed(1)}%% saved]`,
+      `[SuperCompress: ${compressed.original_tokens}→${compressed.kept_tokens} tok, ${tokensSavedPct.toFixed(1)}% saved]`,
       "",
       compressed.compressed_text,
       "",

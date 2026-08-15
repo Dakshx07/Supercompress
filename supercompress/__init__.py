@@ -81,13 +81,15 @@ def compress_for_turn(
     context_blocks: Optional[list[str]] = None,
     budget_ratio: float = 0.35,
     mode: str = "compiler",
+    api_key: Optional[str] = None,
+    client: Optional[SuperCompress] = None,
 ) -> CompressResult:
     """
     Compress conversation context for the current user query.
 
     Local ``compiler`` mode is a lightweight query-aware fallback (not the
     hosted engine). ``mode="precision"`` calls the hosted API when
-    ``SUPERCOMPRESS_API_KEY`` is set; otherwise it raises ``RuntimeError``.
+    ``api_key`` or ``SUPERCOMPRESS_API_KEY`` is set; otherwise it raises ``RuntimeError``.
 
     Args:
         context: Full context to compress (ignored when ``context_blocks`` is set).
@@ -96,13 +98,15 @@ def compress_for_turn(
         context_blocks: Optional list of blocks joined before compression.
         budget_ratio: Fraction of lines to keep; must be in ``(0, 1]``.
         mode: ``"compiler"`` (local) or ``"precision"`` (hosted when keyed).
+        api_key: Optional SuperCompress API key for hosted compression.
+        client: Optional pre-configured :class:`SuperCompress` client.
 
     Returns:
         A :class:`CompressResult` with compressed context and statistics.
 
     Raises:
         ValueError: If ``budget_ratio`` is not in ``(0, 1]``.
-        RuntimeError: If ``mode="precision"`` and no API key is configured.
+        RuntimeError: If ``mode="precision"`` and no API key / client is configured.
     """
     if not (0.0 < float(budget_ratio) <= 1.0):
         raise ValueError(f"budget_ratio must be in (0, 1], got {budget_ratio!r}")
@@ -113,17 +117,18 @@ def compress_for_turn(
     context = context if context is not None else ""
 
     if mode_norm == "precision":
-        api_key = os.getenv("SUPERCOMPRESS_API_KEY")
-        if not api_key:
+        key = api_key or os.getenv("SUPERCOMPRESS_API_KEY")
+        if not client and not key:
             raise RuntimeError(
                 'mode="precision" requires SUPERCOMPRESS_API_KEY '
                 "(hosted quality-guaranteed path). Use mode=\"compiler\" for local fallback, "
-                "or set a key from https://supercompress.dev/dashboard"
+                "or pass api_key / set SUPERCOMPRESS_API_KEY from https://supercompress.dev/dashboard"
             )
         # Lazy import avoids circular init when SuperCompress is re-exported below.
         from .client import SuperCompress
 
-        return SuperCompress(api_key=api_key).compress(
+        sc = client or SuperCompress(api_key=key)
+        return sc.compress(
             context,
             user_query,
             mode="precision",
@@ -198,6 +203,7 @@ def _estimate_tokens(text: str) -> int:
 
 
 def _extract_query_terms(user_query: str) -> list[str]:
+    """Extract filtered query keywords for relevance scoring."""
     terms: list[str] = []
     seen: set[str] = set()
     for raw in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", user_query or ""):
@@ -210,6 +216,7 @@ def _extract_query_terms(user_query: str) -> list[str]:
 
 
 def _segment_blocks(lines: list[str]) -> list[tuple[int, int]]:
+    """Segment lines into paragraph/code block ranges."""
     blocks: list[tuple[int, int]] = []
     start: Optional[int] = None
     for idx, line in enumerate(lines):
@@ -233,6 +240,7 @@ def _score_block(
     end: int,
     total_lines: int,
 ) -> float:
+    """Calculate importance score for a block based on query hits and structure."""
     score = 0.0
     first_line = block_lines[0].strip() if block_lines else ""
     block_text = "\n".join(block_lines)
@@ -270,6 +278,7 @@ def _score_block(
 
 
 def _trim_selected_lines(kept_lines: list[str], query_terms: list[str], keep: int) -> list[str]:
+    """Trim lines to budget while prioritizing high-relevance and structural lines."""
     if len(kept_lines) <= keep:
         return kept_lines
 
@@ -300,19 +309,30 @@ def compress_context(
     text: str,
     query: str,
     budget_ratio: float = 0.35,
+    mode: str = "compiler",
+    api_key: Optional[str] = None,
+    client: Optional[SuperCompress] = None,
 ) -> CompressResult:
     """Alias for :func:`compress_for_turn` with a single context string."""
-    return compress_for_turn(text, query, budget_ratio=budget_ratio)
+    return compress_for_turn(
+        text,
+        query,
+        budget_ratio=budget_ratio,
+        mode=mode,
+        api_key=api_key,
+        client=client,
+    )
 
 
 # ── Public API ──────────────────────────────────────────────────────
 
-from .client import SuperCompress
+from .client import AsyncSuperCompress, SuperCompress
 
 __all__ = [
-    "compress_for_turn",
-    "compress_context",
+    "AsyncSuperCompress",
     "CompressResult",
     "SuperCompress",
     "__version__",
+    "compress_context",
+    "compress_for_turn",
 ]
