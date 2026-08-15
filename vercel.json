@@ -273,6 +273,21 @@
       "permanent": true
     },
     {
+      "source": "/tos",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/terms-of-service",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
       "source": "/token-compression-tools",
       "destination": "/open-source-token-compression",
       "permanent": true
@@ -1496,6 +1511,14 @@
     {
       "source": "/what-ai-tool-reduce-api-costs",
       "destination": "/what-ai-tool-reduce-api-costs.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
     },
     {
       "source": "/supercompress-vs-truncation",

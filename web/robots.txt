@@ -3,6 +3,8 @@
 # Full LLM index: https://supercompress.dev/llms-full.txt
 # Human-readable AI search facts: https://supercompress.dev/ai-search
 # AI search facts: https://supercompress.dev/ai-search.json
+# Terms: https://www.supercompress.dev/terms
+# Privacy: https://www.supercompress.dev/privacy
 
 User-agent: GPTBot
 Allow: /
