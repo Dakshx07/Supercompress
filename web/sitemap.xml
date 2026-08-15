@@ -20,7 +20,13 @@
   </url>
   <url>
     <loc>https://www.supercompress.dev/cut-api-costs</loc>
-    <lastmod>2026-08-08</lastmod>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.supercompress.dev/what-ai-tool-reduce-api-costs</loc>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
