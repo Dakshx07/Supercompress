@@ -1,0 +1,186 @@
+/**
+ * Legal document pages (Terms, Privacy) — readable long-form on paper brand.
+ */
+.legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 24px 120px;
+}
+
+.legal-kicker {
+  margin: 0 0 12px;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0566ff;
+  text-align: center;
+}
+
+.legal-page > h1 {
+  margin: 0 auto 14px;
+  max-width: 16ch;
+  font-family: var(--serif, Platypi, Georgia, serif);
+  font-weight: 300;
+  font-size: clamp(2rem, 4.5vw, 2.85rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: #171717;
+}
+
+.legal-meta {
+  margin: 0 auto 36px;
+  text-align: center;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 0.92rem;
+  color: #5c5a55;
+  line-height: 1.55;
+}
+
+.legal-meta a {
+  color: #0566ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-toc {
+  margin: 0 0 40px;
+  padding: 20px 22px;
+  border: 1px solid #e6e7eb;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+}
+
+.legal-toc p {
+  margin: 0 0 10px;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9a9892;
+}
+
+.legal-toc ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: #171717;
+}
+
+.legal-toc a {
+  color: #171717;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.legal-toc a:hover {
+  color: #0566ff;
+  border-bottom-color: rgba(5, 102, 255, 0.35);
+}
+
+.legal-section {
+  margin: 0 0 36px;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #2a2a28;
+}
+
+.legal-section h2 {
+  margin: 0 0 12px;
+  padding-top: 8px;
+  font-family: var(--serif, Platypi, Georgia, serif);
+  font-weight: 400;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+  color: #171717;
+  scroll-margin-top: 88px;
+}
+
+.legal-section h3 {
+  margin: 22px 0 8px;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: #171717;
+}
+
+.legal-section p,
+.legal-section li {
+  margin: 0 0 12px;
+}
+
+.legal-section ul,
+.legal-section ol {
+  margin: 0 0 14px;
+  padding-left: 1.25rem;
+}
+
+.legal-section a {
+  color: #0566ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-callout {
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  border-left: 3px solid #0566ff;
+  background: rgba(5, 102, 255, 0.06);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.95rem;
+}
+
+.legal-callout p {
+  margin: 0;
+}
+
+.legal-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 18px;
+  font-size: 0.9rem;
+}
+
+.legal-section th,
+.legal-section td {
+  border: 1px solid #e6e7eb;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.legal-section th {
+  background: #f7f8fb;
+  font-weight: 600;
+  color: #171717;
+}
+
+.legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  justify-content: center;
+  margin: 8px 0 28px;
+  font-family: var(--sans, "Geist", system-ui, sans-serif);
+  font-size: 0.9rem;
+}
+
+.legal-nav a {
+  color: #5c5a55;
+  text-decoration: none;
+}
+
+.legal-nav a[aria-current="page"] {
+  color: #0566ff;
+  font-weight: 600;
+}
+
+.legal-nav a:hover {
+  color: #0566ff;
+}
