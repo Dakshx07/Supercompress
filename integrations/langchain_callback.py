@@ -31,20 +31,37 @@ Or use as a standalone helper:
     response = llm.invoke(compressed)
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Optional
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import (
+    AIMessage,
     BaseMessage,
     HumanMessage,
     SystemMessage,
-    AIMessage,
 )
 
 from supercompress import compress_for_turn
 
 logger = logging.getLogger("supercompress")
+
+
+def _extract_text_content(content: Any) -> str:
+    """Extract plain text from string or structured content blocks."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+            elif isinstance(block, str):
+                parts.append(block)
+        return " ".join(parts)
+    return str(content or "")
 
 
 class SuperCompressCallback(BaseCallbackHandler):
@@ -91,13 +108,14 @@ class SuperCompressCallback(BaseCallbackHandler):
             return messages
 
         history = non_system[:-1]
-        query = last_msg.content
+        query = _extract_text_content(last_msg.content)
 
         # Format history
         context_parts = []
         for msg in history:
             role = "user" if isinstance(msg, HumanMessage) else "assistant"
-            context_parts.append(f"[{role}] {msg.content}")
+            content = _extract_text_content(msg.content)
+            context_parts.append(f"[{role}] {content}")
 
         context = "\n".join(context_parts)
 
@@ -109,19 +127,19 @@ class SuperCompressCallback(BaseCallbackHandler):
 
         logger.info(
             f"SuperCompress [LangChain]: {result.original_tokens}→{result.kept_tokens} tok "
-            f"({result.tokens_saved_pct:.1f}%% saved)"
+            f"({result.tokens_saved_pct:.1f}% saved)"
         )
 
         # Rebuild messages
         compressed_content = (
             f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok, "
-            f"{result.tokens_saved_pct:.1f}%% saved]\n\n"
+            f"{result.tokens_saved_pct:.1f}% saved]\n\n"
             f"{result.compressed_text}\n\n---\n\n{query}"
         )
 
         return system_msgs + [HumanMessage(content=compressed_content)]
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Return cumulative compression statistics."""
         return {
             "total_original_tokens": self.total_original_tokens,
@@ -148,25 +166,7 @@ def compress_messages_for_llm(
     return handler._compress_message_list(messages)
 
 
-# ── Example ────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    messages = [
-        SystemMessage(content="Answer concisely."),
-        HumanMessage(
-            content="\n".join([
-                f"Context line {i}: The quick brown fox jumps over the lazy dog."
-                for i in range(15)
-            ])
-        ),
-        AIMessage(content="I see the context."),
-        HumanMessage(content="What is the last line about?"),
-    ]
-
-    compressed = compress_messages_for_llm(messages, budget_ratio=0.35)
-
-    print(f"Original messages: {len(messages)}")
-    print(f"Compressed messages: {len(compressed)}")
-    print(f"Compressed content preview: {compressed[-1].content[:200]}...")
+__all__ = [
+    "SuperCompressCallback",
+    "compress_messages_for_llm",
+]
