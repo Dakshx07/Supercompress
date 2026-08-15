@@ -25,7 +25,7 @@
   <a href="https://www.npmjs.com/package/supercompress-proxy"><img src="https://img.shields.io/npm/v/supercompress-proxy?style=flat&logo=npm&logoColor=white&label=npm" alt="npm" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3da639?style=flat" alt="MIT License" /></a>
   <a href="https://github.com/Supercompress/Supercompress"><img src="https://img.shields.io/badge/GitHub-Supercompress-181717?style=flat&logo=github&logoColor=white" alt="GitHub" /></a>
-  <a href="https://github.com/sponsors/arjunkshah12345-hash"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub" /></a>
+  <a href="https://www.supercompress.dev/dashboard?signup=1"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="Sponsor SuperCompress" /></a>
 </p>
 
 ---
@@ -165,7 +165,7 @@ More: [vs truncation](https://www.supercompress.dev/supercompress-vs-truncation)
   <sub>
     <a href="https://www.supercompress.dev">supercompress.dev</a> ·
     <a href="./LICENSE">MIT License</a> ·
-    <a href="https://github.com/sponsors/arjunkshah12345-hash">Sponsor</a> ·
+    <a href="https://www.supercompress.dev/dashboard?signup=1">Sponsor</a> ·
     built by <a href="https://github.com/arjunkshah12345-hash">Arjun Shah</a>
   </sub>
 </p>
