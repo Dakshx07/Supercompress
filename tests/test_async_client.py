@@ -93,8 +93,10 @@ def test_async_client_retrieve():
 
         async with sc:
             res = await sc.retrieve("hash123_45")
+            assert res == "async original recovered"
 
-        assert res == "async original recovered"
+            res_kw = await sc.retrieve(ccr_hash="hash123_45")
+            assert res_kw == "async original recovered"
 
     asyncio.run(_test())
 
@@ -133,6 +135,15 @@ def test_async_client_http_error():
 
         async with sc:
             with pytest.raises(httpx.HTTPStatusError):
-                await sc.compress("ctx", "q")
+                await sc.compress("context", "query")
+
+    asyncio.run(_test())
+
+
+def test_async_client_disables_redirects():
+    async def _test():
+        sc = AsyncSuperCompress(api_key="sc_live_testasync")
+        assert sc._client.follow_redirects is False
+        await sc.aclose()
 
     asyncio.run(_test())

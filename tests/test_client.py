@@ -84,8 +84,12 @@ def test_client_retrieve_found():
     )
 
     res = sc.retrieve("a1b2c3d4_20")
-    sc.close()
     assert res == "retrieved original text"
+
+    # Test keyword argument ccr_hash
+    res_kw = sc.retrieve(ccr_hash="a1b2c3d4_20")
+    assert res_kw == "retrieved original text"
+    sc.close()
 
 
 def test_client_retrieve_404():
@@ -118,3 +122,9 @@ def test_client_compress_http_error():
     with sc:
         with pytest.raises(httpx.HTTPStatusError):
             sc.compress("context", "query")
+
+
+def test_client_disables_redirects():
+    sc = SuperCompress(api_key="sc_live_testkey")
+    assert sc._client.follow_redirects is False
+    sc.close()

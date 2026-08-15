@@ -203,6 +203,7 @@ def _estimate_tokens(text: str) -> int:
 
 
 def _extract_query_terms(user_query: str) -> list[str]:
+    """Extract filtered query keywords for relevance scoring."""
     terms: list[str] = []
     seen: set[str] = set()
     for raw in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", user_query or ""):
@@ -215,6 +216,7 @@ def _extract_query_terms(user_query: str) -> list[str]:
 
 
 def _segment_blocks(lines: list[str]) -> list[tuple[int, int]]:
+    """Segment lines into paragraph/code block ranges."""
     blocks: list[tuple[int, int]] = []
     start: Optional[int] = None
     for idx, line in enumerate(lines):
@@ -238,6 +240,7 @@ def _score_block(
     end: int,
     total_lines: int,
 ) -> float:
+    """Calculate importance score for a block based on query hits and structure."""
     score = 0.0
     first_line = block_lines[0].strip() if block_lines else ""
     block_text = "\n".join(block_lines)
@@ -275,6 +278,7 @@ def _score_block(
 
 
 def _trim_selected_lines(kept_lines: list[str], query_terms: list[str], keep: int) -> list[str]:
+    """Trim lines to budget while prioritizing high-relevance and structural lines."""
     if len(kept_lines) <= keep:
         return kept_lines
 
@@ -325,10 +329,10 @@ def compress_context(
 from .client import AsyncSuperCompress, SuperCompress
 
 __all__ = [
-    "compress_for_turn",
-    "compress_context",
+    "AsyncSuperCompress",
     "CompressResult",
     "SuperCompress",
-    "AsyncSuperCompress",
     "__version__",
+    "compress_context",
+    "compress_for_turn",
 ]

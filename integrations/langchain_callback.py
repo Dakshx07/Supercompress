@@ -131,13 +131,22 @@ class SuperCompressCallback(BaseCallbackHandler):
         )
 
         # Rebuild messages
-        compressed_content = (
+        compressed_text_block = (
             f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok, "
             f"{result.tokens_saved_pct:.1f}% saved]\n\n"
             f"{result.compressed_text}\n\n---\n\n{query}"
         )
 
-        return system_msgs + [HumanMessage(content=compressed_content)]
+        if isinstance(last_msg.content, list):
+            # Preserve non-text multimodal items
+            new_content: list[Any] = [{"type": "text", "text": compressed_text_block}]
+            for part in last_msg.content:
+                if isinstance(part, dict) and part.get("type") != "text":
+                    new_content.append(part)
+        else:
+            new_content = compressed_text_block
+
+        return [*system_msgs, HumanMessage(content=new_content)]
 
     def get_stats(self) -> dict[str, Any]:
         """Return cumulative compression statistics."""

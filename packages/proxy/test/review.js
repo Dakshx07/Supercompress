@@ -499,11 +499,16 @@ async function main() {
   // 10) Live install health observations (non-mutating)
   try {
     const liveHealth = await requestJson(8080, "GET", "/health").catch((e) => ({ error: e.message }));
-    if (liveHealth.error) {
-      pass("live localhost:8080 health (inactive)", `skipped — ${liveHealth.error}`);
+    if (
+      liveHealth.error ||
+      liveHealth.status !== 200 ||
+      liveHealth.body?.status !== "ok" ||
+      liveHealth.body?.service !== "supercompress"
+    ) {
+      pass("live localhost:8080 health (inactive)", `skipped — ${liveHealth.error || `status=${liveHealth.status}`}`);
     } else {
       const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-      if (liveHealth.body && liveHealth.body.version !== pkg.version) {
+      if (liveHealth.body.version !== pkg.version) {
         fail(
           "live localhost:8080 version",
           `running ${liveHealth.body.version}, package is ${pkg.version} (stale proxy process)`

@@ -65,7 +65,7 @@ class SuperCompress:
                 timeout,
                 connect=connect_timeout,
             ),
-            follow_redirects=True,
+            follow_redirects=False,
         )
 
     def compress(
@@ -139,23 +139,24 @@ class SuperCompress:
             ccr=data.get("ccr"),
         )
 
-    def retrieve(self, hash: str) -> Optional[str]:
+    def retrieve(self, ccr_hash: str) -> Optional[str]:
         """Retrieve the original text for a CCR hash.
 
         Args:
-            hash: The content-addressed hash from a CCR marker
-                  (``[SC-Retrieve: <hash>]``).
+            ccr_hash: The content-addressed hash from a CCR marker
+                      (``[SC-Retrieve: <hash>]``).
 
         Returns:
             The original text, or ``None`` if the hash is not found.
         """
-        resp = self._client.get(RETRIEVE_ENDPOINT, params={"hash": hash})
+        resp = self._client.get(RETRIEVE_ENDPOINT, params={"hash": ccr_hash})
         if resp.status_code == 404:
             return None
         resp.raise_for_status()
         return resp.json().get("original")
 
     def close(self) -> None:
+        """Close the underlying HTTPX client connection pool."""
         self._client.close()
 
     def __enter__(self) -> "SuperCompress":
@@ -196,7 +197,7 @@ class AsyncSuperCompress:
                 timeout,
                 connect=connect_timeout,
             ),
-            follow_redirects=True,
+            follow_redirects=False,
         )
 
     async def compress(
@@ -270,24 +271,24 @@ class AsyncSuperCompress:
             ccr=data.get("ccr"),
         )
 
-    async def retrieve(self, hash: str) -> Optional[str]:
+    async def retrieve(self, ccr_hash: str) -> Optional[str]:
         """Retrieve the original text for a CCR hash asynchronously.
 
         Args:
-            hash: The content-addressed hash from a CCR marker
-                  (``[SC-Retrieve: <hash>]``).
+            ccr_hash: The content-addressed hash from a CCR marker
+                      (``[SC-Retrieve: <hash>]``).
 
         Returns:
             The original text, or ``None`` if the hash is not found.
         """
-        resp = await self._client.get(RETRIEVE_ENDPOINT, params={"hash": hash})
+        resp = await self._client.get(RETRIEVE_ENDPOINT, params={"hash": ccr_hash})
         if resp.status_code == 404:
             return None
         resp.raise_for_status()
         return resp.json().get("original")
 
     async def aclose(self) -> None:
-        """Close the underlying HTTPX async client."""
+        """Close the underlying HTTPX async client connection pool."""
         await self._client.aclose()
 
     async def __aenter__(self) -> "AsyncSuperCompress":
@@ -297,4 +298,4 @@ class AsyncSuperCompress:
         await self.aclose()
 
 
-__all__ = ["SuperCompress", "AsyncSuperCompress", "CompressResult"]
+__all__ = ["AsyncSuperCompress", "CompressResult", "SuperCompress"]

@@ -41,6 +41,7 @@ import os
 from typing import Any, Optional
 
 from anthropic import Anthropic, AsyncAnthropic
+
 from supercompress import compress_for_turn
 
 logger = logging.getLogger("supercompress")
@@ -62,9 +63,10 @@ def _extract_text_content(content: Any) -> str:
 
 
 def _compress_anthropic_messages(
-    messages: list[dict], system: Optional[str], budget_ratio: float, tracker: Any
+    messages: list[dict], budget_ratio: float, tracker: Any
 ) -> list[dict]:
-    _ = system
+    """Compress conversation history, preserving latest user message (including multimodal blocks)."""
+    # Anthropic passes the system prompt via `system=`, so it never reaches here.
     if len(messages) <= 1:
         return messages
 
@@ -74,7 +76,8 @@ def _compress_anthropic_messages(
         return messages
 
     history = messages[:-1]
-    query = _extract_text_content(last_msg.get("content", ""))
+    raw_content = last_msg.get("content", "")
+    query = _extract_text_content(raw_content)
 
     # History only — keep Anthropic `system=` wholly outside compression.
     context_parts = []
@@ -96,13 +99,22 @@ def _compress_anthropic_messages(
     )
 
     # Rebuild — query appended once (compress_for_turn does not include it).
-    compressed_content = (
+    compressed_text_block = (
         f"[SuperCompress: {result.original_tokens}→{result.kept_tokens} tok, "
         f"{result.tokens_saved_pct:.1f}% saved]\n\n"
         f"{result.compressed_text}\n\n---\n\n{query}"
     )
 
-    return [{"role": "user", "content": compressed_content}]
+    if isinstance(raw_content, list):
+        # Preserve non-text multimodal items (image, document, audio)
+        new_content: list[Any] = [{"type": "text", "text": compressed_text_block}]
+        for part in raw_content:
+            if isinstance(part, dict) and part.get("type") != "text":
+                new_content.append(part)
+    else:
+        new_content = compressed_text_block
+
+    return [{"role": "user", "content": new_content}]
 
 
 class SuperCompressAnthropic:
@@ -114,6 +126,7 @@ class SuperCompressAnthropic:
         budget_ratio: float = 0.35,
         **kwargs: Any,
     ):
+        """Initialize SuperCompressAnthropic client."""
         self._client = Anthropic(api_key=api_key or os.getenv("ANTHROPIC_API_KEY"), **kwargs)
         self.budget_ratio = budget_ratio
         self.total_original_tokens = 0
@@ -121,12 +134,14 @@ class SuperCompressAnthropic:
 
     @property
     def messages(self) -> _MessagesWrapper:
+        """Access messages interface."""
         return _MessagesWrapper(self)
 
-    def _compress_messages(self, messages: list[dict], system: Optional[str] = None) -> list[dict]:
-        return _compress_anthropic_messages(messages, system, self.budget_ratio, self)
+    def _compress_messages(self, messages: list[dict]) -> list[dict]:
+        return _compress_anthropic_messages(messages, self.budget_ratio, self)
 
     def get_stats(self) -> dict[str, Any]:
+        """Return cumulative compression statistics."""
         return {
             "total_original_tokens": self.total_original_tokens,
             "total_kept_tokens": self.total_kept_tokens,
@@ -137,17 +152,27 @@ class SuperCompressAnthropic:
             ),
         }
 
+    def close(self) -> None:
+        """Close underlying Anthropic client."""
+        self._client.close()
+
+    def __enter__(self) -> "SuperCompressAnthropic":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
+
 
 class _MessagesWrapper:
+    """Wrapper for Anthropic messages namespace."""
+
     def __init__(self, parent: SuperCompressAnthropic):
         self._parent = parent
 
     def create(self, **kwargs: Any) -> Any:
+        """Create an Anthropic message with compressed context."""
         if "messages" in kwargs:
-            kwargs["messages"] = self._parent._compress_messages(
-                kwargs["messages"],
-                kwargs.get("system"),
-            )
+            kwargs["messages"] = self._parent._compress_messages(kwargs["messages"])
         return self._parent._client.messages.create(**kwargs)
 
 
@@ -160,6 +185,7 @@ class AsyncSuperCompressAnthropic:
         budget_ratio: float = 0.35,
         **kwargs: Any,
     ):
+        """Initialize AsyncSuperCompressAnthropic client."""
         self._client = AsyncAnthropic(api_key=api_key or os.getenv("ANTHROPIC_API_KEY"), **kwargs)
         self.budget_ratio = budget_ratio
         self.total_original_tokens = 0
@@ -167,12 +193,14 @@ class AsyncSuperCompressAnthropic:
 
     @property
     def messages(self) -> _AsyncMessagesWrapper:
+        """Access async messages interface."""
         return _AsyncMessagesWrapper(self)
 
-    def _compress_messages(self, messages: list[dict], system: Optional[str] = None) -> list[dict]:
-        return _compress_anthropic_messages(messages, system, self.budget_ratio, self)
+    def _compress_messages(self, messages: list[dict]) -> list[dict]:
+        return _compress_anthropic_messages(messages, self.budget_ratio, self)
 
     def get_stats(self) -> dict[str, Any]:
+        """Return cumulative compression statistics."""
         return {
             "total_original_tokens": self.total_original_tokens,
             "total_kept_tokens": self.total_kept_tokens,
@@ -183,18 +211,32 @@ class AsyncSuperCompressAnthropic:
             ),
         }
 
+    async def aclose(self) -> None:
+        """Close underlying AsyncAnthropic client connection pool."""
+        await self._client.close()
+
+    async def close(self) -> None:
+        """Close underlying AsyncAnthropic client connection pool."""
+        await self._client.close()
+
+    async def __aenter__(self) -> "AsyncSuperCompressAnthropic":
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        await self.aclose()
+
 
 class _AsyncMessagesWrapper:
+    """Wrapper for async Anthropic messages namespace."""
+
     def __init__(self, parent: AsyncSuperCompressAnthropic):
         self._parent = parent
 
     async def create(self, **kwargs: Any) -> Any:
+        """Create an Anthropic message asynchronously with compressed context."""
         if "messages" in kwargs:
-            kwargs["messages"] = self._parent._compress_messages(
-                kwargs["messages"],
-                kwargs.get("system"),
-            )
+            kwargs["messages"] = self._parent._compress_messages(kwargs["messages"])
         return await self._parent._client.messages.create(**kwargs)
 
 
-__all__ = ["SuperCompressAnthropic", "AsyncSuperCompressAnthropic"]
+__all__ = ["AsyncSuperCompressAnthropic", "SuperCompressAnthropic"]
