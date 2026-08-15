@@ -4,6 +4,11 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.23] — 2026-08-15
+
+- **`plugin` persists `configured_agents`** so `account` / `status` show MCP installs on this machine.
+- **`account` status**: no more false “not linked yet” when MCP/hooks are installed locally; API `me` treats API-key auth as linked.
+
 ## [0.5.22] — 2026-08-15
 
 - **TUI theme**: follow terminal dark/light (macOS appearance / `COLORFGBG`; override with `SUPERCOMPRESS_THEME=dark|light`) — no more forced paper-light UI in dark terminals.
