@@ -1,2 +1,12 @@
 # Sponsor button on https://github.com/Supercompress/Supercompress
-github: arjunkshah12345-hash
+#
+# `github: <user>` only works when that account has an *active* GitHub Sponsors
+# listing. @arjunkshah12345-hash does not yet (sponsors URL 302s to the profile,
+# fundingLinks is empty, /sponsor_button returns blank) — so the heart button
+# was unclickable.
+#
+# Use a working custom link until Sponsors is enabled at:
+#   https://github.com/sponsors/accounts
+# Then you can restore:  github: arjunkshah12345-hash
+custom:
+  - "https://www.supercompress.dev/dashboard?signup=1"
