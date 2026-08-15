@@ -21,7 +21,7 @@
 .legal-page > h1 {
   margin: 0 auto 14px;
   max-width: 16ch;
-  font-family: var(--serif, Platypi, Georgia, serif);
+  font-family: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   font-weight: 300;
   font-size: clamp(2rem, 4.5vw, 2.85rem);
   line-height: 1.08;
@@ -94,7 +94,7 @@
 .legal-section h2 {
   margin: 0 0 12px;
   padding-top: 8px;
-  font-family: var(--serif, Platypi, Georgia, serif);
+  font-family: "Platypi", Georgia, "Palatino Linotype", Palatino, serif;
   font-weight: 400;
   font-size: 1.45rem;
   letter-spacing: -0.02em;
