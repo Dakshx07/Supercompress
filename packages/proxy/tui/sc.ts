@@ -83,6 +83,7 @@ export type AccountSnap = {
   dashboard?: string
   keyPrefix?: string
   connectedAt?: string
+  configuredAgents?: string[]
   pluginLinked: boolean
   pluginLinkedAt?: string
   activity: { at: string; pct: number; inn: number; out: number; query: string }[]
@@ -300,6 +301,7 @@ export async function fetchAccount(): Promise<AccountSnap> {
       dashboard: String(data.dashboard_url || "https://www.supercompress.dev/dashboard"),
       keyPrefix: `${String(cfg.api_key).slice(0, 16)}…`,
       connectedAt: cfg.connected_at || cfg.configured_at,
+      configuredAgents: Array.isArray(cfg.configured_agents) ? cfg.configured_agents : [],
       pluginLinked: Boolean((data.agent_plugin as { linked?: boolean } | undefined)?.linked),
       pluginLinkedAt: (data.agent_plugin as { linked_at?: string } | undefined)?.linked_at,
       activity,
@@ -310,6 +312,7 @@ export async function fetchAccount(): Promise<AccountSnap> {
       email: "linked (fetch failed)",
       plan: "—",
       keyPrefix: `${String(cfg.api_key).slice(0, 16)}…`,
+      configuredAgents: Array.isArray(cfg.configured_agents) ? cfg.configured_agents : [],
       pluginLinked: false,
       activity: [],
       error: err instanceof Error ? err.message : String(err),
@@ -634,7 +637,12 @@ export function formatAccountLog(a: AccountSnap) {
   if (a.uid) lines.push(`uid       ${a.uid}`)
   if (a.keyPrefix) lines.push(`key       ${a.keyPrefix}`)
   if (a.connectedAt) lines.push(`machine   ${a.connectedAt}`)
-  lines.push(`agents    ${a.pluginLinked ? `linked${a.pluginLinkedAt ? ` (${a.pluginLinkedAt})` : ""}` : "not linked yet"}`)
+  const agentsLine = a.pluginLinked
+    ? `linked${a.pluginLinkedAt ? ` (${a.pluginLinkedAt})` : ""}`
+    : a.configuredAgents?.length
+      ? `this machine: ${a.configuredAgents.join(", ")}`
+      : "run `supercompress plugin`"
+  lines.push(`agents    ${agentsLine}`)
   if (a.dashboard) lines.push(`dash      ${a.dashboard}`)
   if (a.activity.length) {
     lines.push("", "RECENT COMPRESS")

@@ -219,6 +219,16 @@ async function main() {
       if (result.cleared.length) {
         console.log(`  ✓ Cleared provider API-key proxy overrides: ${result.cleared.join(", ")}`);
       }
+      // Persist so `account` / `status` reflect what we just installed
+      const cfg = loadConfig() || {};
+      if (cfg.api_key || result.mcpConfigured.length) {
+        saveConfig({
+          ...cfg,
+          configured_agents: result.mcpConfigured,
+          configured_at: new Date().toISOString(),
+          mode: cfg.mode || "mcp",
+        });
+      }
       console.log("  → Restart agents so MCP/hooks reload.");
       break;
     }
@@ -653,12 +663,18 @@ async function printAccount() {
   if (data.display_name) console.log(`  → Name: ${data.display_name}`);
   console.log(`  → Plan: ${data.plan_name || data.plan || "free"}`);
   console.log(`  → UID: ${data.uid}`);
+  const localAgents = Array.isArray(config.configured_agents) ? config.configured_agents.filter(Boolean) : [];
   if (data.agent_plugin?.linked) {
-    console.log(`  → Coding agents: linked${data.agent_plugin.linked_at ? ` (${data.agent_plugin.linked_at})` : ""}`);
+    console.log(
+      `  → Coding agents: linked${data.agent_plugin.linked_at ? ` (${data.agent_plugin.linked_at})` : ""}`
+    );
+  } else if (localAgents.length) {
+    console.log(`  → Coding agents (this machine): ${localAgents.join(", ")}`);
   } else {
-    console.log("  → Coding agents: not linked yet (run setup / connect)");
+    console.log("  → Coding agents: run `supercompress plugin` to install MCP + hooks");
   }
   if (config.connected_at) console.log(`  → This machine linked: ${config.connected_at}`);
+  if (config.configured_at) console.log(`  → Last plugin install: ${config.configured_at}`);
   console.log(`  → Key prefix: ${(config.api_key || "").slice(0, 16)}…`);
   console.log(`  → Dashboard: ${data.dashboard_url || "https://www.supercompress.dev/dashboard"}`);
   printPlanStatus(data);

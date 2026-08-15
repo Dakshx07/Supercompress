@@ -429,7 +429,26 @@ async function handleMe(req, res) {
   try {
     const { uid, owner, via, key_prefix } = await resolveOwnerFromReq(req);
     const { loadAgentPluginLink, loadCodingAgentUsage } = require("./_lib/store");
-    const agent_plugin = await loadAgentPluginLink(uid).catch(() => ({ linked: false }));
+    let agent_plugin = await loadAgentPluginLink(uid).catch(() => ({ linked: false }));
+    // Auth-only path: claim set at device-link; store/gist may be empty
+    const claimPlugin = owner?.customClaims?.sc_agent_plugin;
+    if (!agent_plugin?.linked && claimPlugin?.linked) {
+      agent_plugin = {
+        linked: true,
+        linked_at: claimPlugin.linked_at || null,
+        source: claimPlugin.source || "oauth",
+        agents: Array.isArray(claimPlugin.agents) ? claimPlugin.agents : [],
+      };
+    }
+    // API-key auth means this install already completed connect — treat as linked for CLI UX
+    if (!agent_plugin?.linked && via === "api_key") {
+      agent_plugin = {
+        linked: true,
+        linked_at: claimPlugin?.linked_at || owner?.metadata?.lastSignInTime || null,
+        source: claimPlugin?.source || "api_key",
+        agents: Array.isArray(claimPlugin?.agents) ? claimPlugin.agents : [],
+      };
+    }
     const usage = await loadCodingAgentUsage(uid).catch(() => ({}));
     const totalIn = Object.values(usage).reduce((n, s) => n + (s.tokens_in || 0), 0);
 

@@ -81,6 +81,16 @@ Public page: https://www.supercompress.dev/changelog
 
 ---
 
+## [0.5.23] — 2026-08-15
+
+### Coding agent plugin
+- **`supercompress-proxy@0.5.23`**: `plugin` saves configured agents; `account` no longer false-negatives “not linked”
+
+### API / dashboard
+- `/api/account?op=me` treats API-key auth / Auth `sc_agent_plugin` claim as linked
+
+---
+
 ## [0.5.22] — 2026-08-15
 
 ### Coding agent plugin
