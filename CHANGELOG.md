@@ -81,6 +81,16 @@ Public page: https://www.supercompress.dev/changelog
 
 ---
 
+## [0.5.22] — 2026-08-15
+
+### Coding agent plugin
+- **`supercompress-proxy@0.5.22`**: TUI follows terminal dark/light (`SUPERCOMPRESS_THEME` override); `account` uses `/api/account?op=me` for API-key auth
+
+### API / dashboard
+- `/api/me` accepts API keys (`sc_live_…`) as well as Firebase session tokens (CLI + dashboard)
+
+---
+
 ## [0.5.17] — 2026-08-10
 
 ### Coding agent plugin (`supercompress-proxy`)

@@ -19,7 +19,8 @@ const http = require("http");
 const crypto = require("crypto");
 const VERSION = require("../package.json").version;
 const USAGE_URL = process.env.SUPERCOMPRESS_USAGE_URL || "https://www.supercompress.dev/api/usage";
-const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/me";
+// API-key auth: use account?op=me (/api/me is Firebase dashboard session only)
+const ME_URL = process.env.SUPERCOMPRESS_ME_URL || "https://www.supercompress.dev/api/account?op=me";
 const ACTIVITY_URL = process.env.SUPERCOMPRESS_ACTIVITY_URL || "https://www.supercompress.dev/api/account?op=compress-log";
 
 const CONFIG_DIR = process.env.SUPERCOMPRESS_CONFIG_DIR || path.join(require("os").homedir(), ".supercompress");
@@ -59,7 +60,7 @@ function printHelp() {
   console.log("Usage: supercompress [command]");
   console.log("");
   console.log("  Commands:");
-  console.log("  (none) / tui   Interactive paper-branded UI (default in a TTY; needs Bun)");
+  console.log("  (none) / tui   Interactive TUI (follows terminal dark/light; needs Bun)");
   console.log("  setup          Recommended — link account, auto-detect agents, install MCP + hooks");
   console.log("  plugin         Re-run detect + install MCP/hooks/instructions for every agent");
   console.log("  connect        Link this install to your SuperCompress account");

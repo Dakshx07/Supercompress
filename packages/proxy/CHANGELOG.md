@@ -4,6 +4,11 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+## [0.5.22] — 2026-08-15
+
+- **TUI theme**: follow terminal dark/light (macOS appearance / `COLORFGBG`; override with `SUPERCOMPRESS_THEME=dark|light`) — no more forced paper-light UI in dark terminals.
+- **`supercompress account`**: call `/api/account?op=me` for API-key auth (plain `/api/me` is Firebase dashboard session only).
+
 ## [0.5.21] — 2026-08-14
 
 - Idempotency keys are ≤40 chars (Auth claims watermarks truncate at 40; longer `sc_…` keys caused billing 503s for MCP/hooks).
