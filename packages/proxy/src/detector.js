@@ -404,6 +404,7 @@ function resolveExtensionMcpTargets() {
   if (process.env.APPDATA) {
     baseDirs.push(
       path.join(process.env.APPDATA, "Code", "User", "globalStorage"),
+      path.join(process.env.APPDATA, "Code - Insiders", "User", "globalStorage"),
       path.join(process.env.APPDATA, "Cursor", "User", "globalStorage"),
       path.join(process.env.APPDATA, "VSCodium", "User", "globalStorage"),
       path.join(process.env.APPDATA, "Windsurf", "User", "globalStorage")
