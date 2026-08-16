@@ -13,6 +13,11 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Site / marketing
+- Landing semantic / compiler claims: query-aware keep/drop copy, honest API snippets, refreshed benchmark table vs truncation / summarization / Headroom public claim
+- Production smoke workflow is manual-only (was burning Actions minutes on */15 cron)
+
+
 ### Dashboard onboarding
 - Skippable post-signup flow: where you heard us + earn **10,000** free tokens each (star repo, follow on X, install coding-agent plugin)
 - Bonus free tokens raise the monthly free allowance (up to +30,000)

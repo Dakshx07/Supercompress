@@ -328,30 +328,29 @@
       <div class="code-sample">
         <div class="sample-head"><span>EXAMPLE: LONG CONVERSATION</span><span>20,814 TOKENS</span></div>
         <pre><code><span class="muted">const</span> result = <span class="blue">await compress</span>({
-  model: <span class="blue">"supercompress-v1"</span>,
-  input: conversation,
-  preserve: <span class="blue">"meaning"</span>,
-  target_reduction: <span class="blue">"max"</span>
+  context: conversation,
+  query: <span class="blue">"What failed in the last deploy?"</span>,
+  mode: <span class="blue">"compiler"</span>
 })
-<span class="muted">// → 4,210 tokens</span> <strong>(82% smaller)</strong></code></pre>
+<span class="muted">// → kept answer-critical lines; cut waste</span></code></pre>
       </div>
       <div class="metric is-lift">
-        <span class="metric-kicker">UP TO</span>
-        <strong data-count="82">0%</strong>
-        <h3>Smaller Prompts</h3>
-        <p>Drastically reduce tokens while keeping what matters.</p>
+        <span class="metric-kicker">COMPILER MODE</span>
+        <strong data-count="58">0%+</strong>
+        <h3>Mean Token Cut</h3>
+        <p>Drop as much as possible on held-out LongBench / OOD dumps — typically ~58–66% mean cut.</p>
       </div>
       <div class="metric is-lift">
-        <span class="metric-kicker">HIGH</span>
-        <strong data-count="94">0%+</strong>
-        <h3>Meaning Retention</h3>
-        <p>State-of-the-art retention across real-world tasks.</p>
+        <span class="metric-kicker">GATE</span>
+        <strong data-count="98">0%+</strong>
+        <h3>Critical Kept</h3>
+        <p>Always target &gt;98% answer-critical retention. Pooled held-out gold containment: 99.4% (180/181).</p>
       </div>
       <div class="metric is-lift">
-        <span class="metric-kicker">FAST</span>
-        <strong class="metric-speed">5–20ms</strong>
-        <h3>CPU Inference</h3>
-        <p>Runs locally. No GPU required.</p>
+        <span class="metric-kicker">CPU</span>
+        <strong class="metric-speed">no GPU</strong>
+        <h3>Query-aware</h3>
+        <p>Semantic keep/drop vs the current ask. No extra LLM summarizer call.</p>
       </div>
     </section>
 
@@ -442,63 +441,63 @@
 
     <section class="container benchmark-section" id="benchmarks">
       <div class="benchmark-copy reveal">
-        <p class="eyebrow">BENCHMARKED TO MATTER</p>
-        <h2>Better Compression.<br>Better Outcomes.</h2>
-        <p>SuperCompress outperforms leading baselines across real-world datasets and tasks.</p>
-        <a class="button button-secondary magnetic" href="#benchmark-table">View all benchmarks <span>→</span></a>
+        <p class="eyebrow">COMPILER MODE · SEMANTIC KEEP/DROP</p>
+        <h2>Cut hard.<br>Keep what answers.</h2>
+        <p>No fixed keep ratio. Score context against the query, remove everything you can, and fail the run if critical retention drops below 98%.</p>
+        <a class="button button-secondary magnetic" href="/benchmarks">Full methodology <span>→</span></a>
       </div>
       <div class="benchmark-table" id="benchmark-table">
         <div class="table-row table-head">
-          <span>MODEL</span><span>AVG. COMPRESSION<br>(LOWER IS BETTER)</span><span>MEANING RETENTION<br>(HIGHER IS BETTER)</span><span>SPEED (CPU)<br>(MS / 1K TOKENS)</span>
+          <span>METHOD</span><span>MEAN TOKEN CUT<br>(HIGHER IS BETTER)</span><span>CRITICAL / ANSWER KEPT<br>(GATE &gt;98%)</span><span>HOW IT WORKS</span>
         </div>
         <div class="table-row featured-row is-row">
-          <span class="model-cell"><img class="mini-logo" src="/assets/img/logo-chevrons.png" alt="" width="16" height="16" /> supercompress-v1</span>
-          <span><b>18%</b><i class="bar" data-tone="blue"><i style="--w:88%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>94.6%</b><i class="bar" data-tone="blue"><i style="--w:92%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>120ms</b><i class="bar" data-tone="blue"><i style="--w:86%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span class="model-cell"><img class="mini-logo" src="/assets/img/logo-chevrons.png" alt="" width="16" height="16" /> SuperCompress</span>
+          <span><b>~58–66%</b><i class="bar" data-tone="blue"><i style="--w:66%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>≥98%</b><i class="bar" data-tone="blue"><i style="--w:99%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>Query-aware compiler · maximize drop</span>
         </div>
         <div class="table-row is-row">
-          <span class="model-cell mono">gpt-4o-mini (summary)</span>
-          <span><b>42%</b><i class="bar"><i style="--w:52%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>86.1%</b><i class="bar"><i style="--w:63%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>210ms</b><i class="bar"><i style="--w:46%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span class="model-cell mono">LLM summarization</span>
+          <span><b>variable</b><i class="bar"><i style="--w:40%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>rewrites</b><i class="bar"><i style="--w:55%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>Extra model call · can invent / omit</span>
         </div>
         <div class="table-row is-row">
-          <span class="model-cell mono">claude-3-haiku (summary)</span>
-          <span><b>47%</b><i class="bar"><i style="--w:43%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>83.7%</b><i class="bar"><i style="--w:55%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>215ms</b><i class="bar"><i style="--w:43%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span class="model-cell mono">Truncation</span>
+          <span><b>forced</b><i class="bar"><i style="--w:50%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>mid-context risk</b><i class="bar"><i style="--w:28%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>Head/tail only · blind to the ask</span>
         </div>
         <div class="table-row is-row">
-          <span class="model-cell mono">llama-3.1-8b (embed)</span>
-          <span><b>33%</b><i class="bar"><i style="--w:65%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>78.9%</b><i class="bar"><i style="--w:42%"><canvas aria-hidden="true"></canvas></i></i></span>
-          <span><b>95ms</b><i class="bar"><i style="--w:72%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span class="model-cell mono">Headroom (public claim)</span>
+          <span><b>~15–20%</b><i class="bar"><i style="--w:20%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span><b>unpublished</b><i class="bar"><i style="--w:18%"><canvas aria-hidden="true"></canvas></i></i></span>
+          <span>Type / tool-output heuristics</span>
         </div>
-        <p class="table-note">Evaluation on LongChat, GovReport, and MultiDoc QA. Lower is better for compression &amp; speed. Higher is better for retention.</p>
+        <p class="table-note">SuperCompress numbers: held-out compiler suites (real / fresh4 / fresh5) — pooled gold answer containment <strong>99.4%</strong> (180/181), mean cut typically <strong>~58–66%</strong>, gates ≥98% answer keep and ≥55% cut. Not a fixed keep budget. Details on <a href="/benchmarks">/benchmarks</a>.</p>
       </div>
     </section>
 
     <section class="container terminal-section">
       <div class="terminal-tabs"><button class="active">CURL</button><button>Python</button><button>TypeScript</button><button>REST</button></div>
       <div class="terminal-body">
-        <pre class="terminal-code"><code><span class="terminal-dim">curl</span> /api/v1/compress \
+        <pre class="terminal-code"><code><span class="terminal-dim">curl</span> -X POST https://api.supercompress.dev/compress \
   -H <span class="terminal-string">"Authorization: Bearer $SC_LIVE_..."</span> \
   -H <span class="terminal-string">"Content-Type: application/json"</span> \
   -d '{
-    <span class="terminal-key">"model"</span>: <span class="terminal-string">"supercompress-v1"</span>,
-    <span class="terminal-key">"input"</span>: <span class="terminal-string">"$(cat conversation.txt)"</span>,
-    <span class="terminal-key">"preserve"</span>: <span class="terminal-string">"meaning"</span>,
-    <span class="terminal-key">"target_reduction"</span>: <span class="terminal-num">0.8</span>
+    <span class="terminal-key">"context"</span>: <span class="terminal-string">"$(cat conversation.txt)"</span>,
+    <span class="terminal-key">"query"</span>: <span class="terminal-string">"What failed in the last deploy?"</span>,
+    <span class="terminal-key">"mode"</span>: <span class="terminal-string">"compiler"</span>
   }'</code></pre>
         <div class="terminal-divider"></div>
         <pre class="terminal-code response-code"><code><span class="terminal-comment">// Response</span>
 {
   <span class="terminal-key">"compressed"</span>: <span class="terminal-string">"..."</span>,
   <span class="terminal-key">"original_tokens"</span>: <span class="terminal-num">23014</span>,
-  <span class="terminal-key">"compressed_tokens"</span>: <span class="terminal-num">4220</span>,
-  <span class="terminal-key">"reduction"</span>: <span class="terminal-string">"82%"</span>,
-  <span class="terminal-key">"retention_estimate"</span>: <span class="terminal-string">"94%"</span>
+  <span class="terminal-key">"compressed_tokens"</span>: <span class="terminal-num">8055</span>,
+  <span class="terminal-key">"tokens_saved_pct"</span>: <span class="terminal-num">62</span>,
+  <span class="terminal-key">"important_kept_pct"</span>: <span class="terminal-num">99</span>,
+  <span class="terminal-key">"policy_name"</span>: <span class="terminal-string">"SuperCompress"</span>
 }</code></pre>
         <div class="neural-visual" aria-hidden="true">
           <canvas class="dither-canvas neural-dither dither-dark" data-dither="flow" aria-hidden="true"></canvas>
