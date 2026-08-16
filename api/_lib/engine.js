@@ -112,18 +112,25 @@ async function ccrStoreFirestore(hash, originalText, meta = {}) {
     if (skipFirestore()) return false;
     const admin = require("firebase-admin");
     const { initFirebaseAdmin } = require("./auth");
+    const { CCR_TTL_MS } = require("./retention");
     initFirebaseAdmin();
     const ownerUid = meta.ownerUid ? String(meta.ownerUid) : "";
     if (!ownerUid) {
       console.warn("CCR store skipped: missing ownerUid");
       return false;
     }
+    const now = Date.now();
+    const expireAt = admin.firestore.Timestamp.fromMillis(now + CCR_TTL_MS);
     const payload = {
       original: originalText,
       hash,
       owner_uid: ownerUid,
       key_id: meta.keyId ? String(meta.keyId) : null,
-      stored_at: new Date().toISOString(),
+      stored_at: new Date(now).toISOString(),
+      // Privacy: CCR stores removed original blocks for CCR_TTL_MS (same as replay).
+      // Firestore TTL policy should target expire_at; retrieve also enforces this.
+      expire_at: expireAt,
+      ttl_ms: CCR_TTL_MS,
       token_count: originalText.split(/\s+/).length,
     };
     // Owner-scoped path (canonical). Never write a shared flat ccr/{hash} — that leaked across tenants.

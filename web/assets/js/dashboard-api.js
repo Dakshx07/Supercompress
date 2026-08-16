@@ -20,10 +20,18 @@ import {
   updatePassword,
   sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { createOnboardingController } from "./dashboard-onboarding.js";
 
 const API_BASE = window.SC_API_BASE || "";
 const SESSION_KEY = "sc_dash_session";
 const SECRET_KEY = "sc_last_api_secret";
+
+const onboarding = createOnboardingController({
+  apiFetch: (...args) => apiFetch(...args),
+  onBonusChange: () => {
+    loadSubscription().catch(() => {});
+  },
+});
 
 function cleanConfigValue(value) {
   // Strip whitespace and literal "\n" / "\r" leftovers from poorly pasted Vercel env values.
@@ -710,6 +718,10 @@ async function showDashboard(user) {
   try {
     const panel = (new URLSearchParams(window.location.search).get("panel") || "").trim().toLowerCase();
     if (panel && panel !== "keys") openDashboardPanel(panel, { updateUrl: false });
+  } catch (_) {}
+  // Signup onboarding + power-user celebrate (skippable overlays)
+  try {
+    await onboarding.maybeShow();
   } catch (_) {}
 }
 

@@ -13,6 +13,23 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Dashboard onboarding
+- Skippable post-signup flow: where you heard us + earn **10,000** free tokens each (star repo, follow on X, install coding-agent plugin)
+- Bonus free tokens raise the monthly free allowance (up to +30,000)
+- Power users get a dashboard congrats modal with **Post on X**; power-user email includes the same CTA
+
+### Trust / privacy
+- **postinstall is guidance-only** — no longer rewrites agent MCP configs on `npm install` (use `setup` / `plugin`)
+- Compress activity **preview logging is off by default** (`SC_COMPRESS_LOG_PREVIEWS=1` to enable)
+- **CCR originals expire after 48 hours** (Firestore `expire_at` + retrieve enforcement + in-memory TTL); privacy policy documents CCR retention
+- Firebase Admin **refuses projectId-only init** unless `SC_FIREBASE_ALLOW_PROJECT_ONLY=1` (requires service-account creds in prod)
+- Shared `api/_lib/retention.js` for replay + CCR TTL (same 48h window)
+
+### Repo hygiene
+- Canonical compress assets live under `web/assets/`; `npm run sync:assets` copies into proxy + `api/_lib`
+- Slimmer `.gitignore`; drop unused duplicate halftone PNGs
+
+
 ### Site / docs
 - Landing live counter: tokens processed across SuperCompress (from `/api/stats`), above the bottom CTA, polling every 15s
 - GitHub Sponsors on the Supercompress repo (`FUNDING.yml` + Sponsor badge) → [@arjunkshah12345-hash](https://github.com/sponsors/arjunkshah12345-hash)

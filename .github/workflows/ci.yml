@@ -63,6 +63,14 @@ jobs:
         run: node api/_lib/http-soft-probe.test.js
       - name: Firestore skip default
         run: node api/_lib/firebase-off.test.js
+      - name: Retention TTL helpers
+        run: node api/_lib/retention.test.js
+      - name: Onboarding + power celebrate helpers
+        run: node --test api/_lib/onboarding.test.js
+      - name: Compress assets stay in sync
+        run: |
+          node scripts/sync-compress-assets.js
+          git diff --exit-code -- packages/proxy/src/assets/compress-engine.js packages/proxy/src/assets/model.json api/_lib/compress-engine.js api/_lib/model.json web/assets/js/compress-engine.js web/assets/data/model.json
       - name: Power-user milestone unit tests
         run: node api/_lib/power-user.test.js
       - name: Payment thank-you gating

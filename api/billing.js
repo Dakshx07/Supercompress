@@ -230,9 +230,17 @@ async function handleGet(req, res, user) {
     }
   }
 
-  const freeRemaining = freeTokensRemaining(tokensUsedThisPeriod);
-  const billable = billableTokens(tokensUsedThisPeriod);
-  const overageUsd = estimatedOverageUsd(tokensUsedThisPeriod);
+  const freeCap = (() => {
+    try {
+      const { freeAllowance } = require("./_lib/stripe");
+      return freeAllowance(claims);
+    } catch {
+      return FREE_TOKENS_PER_MONTH;
+    }
+  })();
+  const freeRemaining = freeTokensRemaining(tokensUsedThisPeriod, claims);
+  const billable = billableTokens(tokensUsedThisPeriod, claims);
+  const overageUsd = estimatedOverageUsd(tokensUsedThisPeriod, claims);
   const creditLimit = normalizeCreditLimitUsd(
     claims.sc_credit_limit_usd ?? sub?.credit_limit_usd,
     DEFAULT_CREDIT_LIMIT_USD
@@ -252,10 +260,10 @@ async function handleGet(req, res, user) {
     plan: plan.id,
     plan_name: plan.name,
     status: sub?.status || (payg ? "active" : "active"),
-    free_tokens_per_month: FREE_TOKENS_PER_MONTH,
+    free_tokens_per_month: freeCap,
     free_tokens_remaining: freeRemaining,
     usd_per_million: USD_PER_MILLION,
-    tokens_per_month: FREE_TOKENS_PER_MONTH,
+    tokens_per_month: freeCap,
     unlimited: isComped(claims) || legacyMetered,
     max_keys: plan.max_keys,
     tokens_used_this_period: tokensUsedThisPeriod,

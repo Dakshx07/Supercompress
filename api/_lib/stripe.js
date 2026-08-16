@@ -42,6 +42,16 @@ const DEFAULT_CREDIT_LIMIT_USD = 10;
 const MIN_CREDIT_LIMIT_USD = 10;
 const MAX_CREDIT_LIMIT_USD = 1000;
 
+function onboardBonusTokens(claims = {}) {
+  const n = Number(claims?.sc_onboard_bonus) || 0;
+  return Math.max(0, Math.min(30_000, Math.floor(n)));
+}
+
+/** Effective free allowance including onboarding quest bonuses (10,000 each). */
+function freeAllowance(claims = {}) {
+  return FREE_TOKENS_PER_MONTH + onboardBonusTokens(claims);
+}
+
 /**
  * Plan definitions.
  * Legacy starter/pro/business map to PAYG behavior so existing subscribers are not cut off.
@@ -123,22 +133,22 @@ function isPaygEnabled(planId) {
   return false;
 }
 
-function billableTokens(tokensUsed) {
-  return Math.max(0, Number(tokensUsed || 0) - FREE_TOKENS_PER_MONTH);
+function billableTokens(tokensUsed, claims = {}) {
+  return Math.max(0, Number(tokensUsed || 0) - freeAllowance(claims));
 }
 
-function overageMillions(tokensUsed) {
-  const billable = billableTokens(tokensUsed);
+function overageMillions(tokensUsed, claims = {}) {
+  const billable = billableTokens(tokensUsed, claims);
   if (billable <= 0) return 0;
   return Math.ceil(billable / TOKENS_PER_BILLING_UNIT);
 }
 
-function estimatedOverageUsd(tokensUsed) {
-  return overageMillions(tokensUsed) * USD_PER_MILLION;
+function estimatedOverageUsd(tokensUsed, claims = {}) {
+  return overageMillions(tokensUsed, claims) * USD_PER_MILLION;
 }
 
-function freeTokensRemaining(tokensUsed) {
-  return Math.max(0, FREE_TOKENS_PER_MONTH - Number(tokensUsed || 0));
+function freeTokensRemaining(tokensUsed, claims = {}) {
+  return Math.max(0, freeAllowance(claims) - Number(tokensUsed || 0));
 }
 
 function roundUsd(n) {
@@ -204,7 +214,7 @@ async function reportPaygUsage(owner, tokensInThisMonth) {
   const customerId = claims.sc_customer_id;
   if (!customerId) return null;
 
-  const billable = billableTokens(tokensInThisMonth);
+  const billable = billableTokens(tokensInThisMonth, claims);
   const { loadLedger, markTokensReported } = require("./billing-ledger");
   const ledger = await loadLedger(owner.uid, claims);
   const alreadyReported = Number(ledger.tokens_reported || 0);
@@ -433,6 +443,8 @@ module.exports = {
   MIN_CREDIT_LIMIT_USD,
   MAX_CREDIT_LIMIT_USD,
   isPaygEnabled,
+  freeAllowance,
+  onboardBonusTokens,
   billableTokens,
   overageMillions,
   estimatedOverageUsd,

@@ -93,7 +93,7 @@
   </nav>
 
   <div class="legal-callout" style="margin-bottom:28px">
-    <p><strong>Short version:</strong> We process account and billing data to run SuperCompress. Compress requests are processed to return results and meter usage. We may briefly retain compressed outputs for idempotent retries (typically up to about 48 hours), and we keep usage/billing metadata longer. We do not sell your personal information. Self-hosted open-source installs do not send your prompts to us unless you configure them to call our hosted API.</p>
+    <p><strong>Short version:</strong> We process account and billing data to run SuperCompress. Compress requests are processed to return results and meter usage. We may briefly retain compressed outputs for idempotent retries (typically up to about 48 hours). When CCR is enabled, removed original blocks are retained for the same 48-hour window and then expire. Compress activity previews are off by default. We keep usage/billing metadata longer. We do not sell your personal information. Self-hosted open-source installs do not send your prompts to us unless you configure them to call our hosted API.</p>
   </div>
 
   <nav class="legal-toc" aria-label="On this page">
@@ -256,6 +256,8 @@
       <li><strong>Account data</strong> — for the life of the account, then deleted or de-identified within a reasonable period after closure, unless law requires longer retention.</li>
       <li><strong>Billing and ledger metadata</strong> (token counts, credit burns, idempotency fingerprints, payment references) — retained as needed for accounting, dispute resolution, abuse prevention, and legal compliance (often years for financial records).</li>
       <li><strong>Replayable compressed responses</strong> — retained briefly to support idempotent retries (on the order of <strong>about 48 hours</strong>), after which response bodies are intended to expire or be scrubbed while billing metadata may remain.</li>
+      <li><strong>CCR (Cache, Compress, Retrieve) originals</strong> — when you enable CCR, SuperCompress stores removed original text blocks (keyed by hash, scoped to your account) so markers like <code>[SC-Retrieve: …]</code> can restore them. Those originals are retained for <strong>48 hours</strong>, then expire and are deleted or refused on retrieve. In-memory process caches use the same window.</li>
+      <li><strong>Compress activity previews</strong> — only when preview logging is enabled for an account/deployment; short clipped previews (not full dumps), capped per account. Disabled by default.</li>
       <li><strong>Server logs</strong> — retained for a limited operational window consistent with our host’s defaults and our security needs, then deleted or aggregated.</li>
       <li><strong>Email records</strong> — retained as needed to operate communications and prove delivery of transactional notices.</li>
     </ul>

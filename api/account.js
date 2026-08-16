@@ -74,6 +74,8 @@ function planUsage(owner, fallbackUsed = 0) {
     billableTokens,
     estimatedOverageUsd,
     freeTokensRemaining,
+    freeAllowance,
+    onboardBonusTokens,
     isComped,
     isLegacyMetered,
     isCreditWallet,
@@ -90,36 +92,38 @@ function planUsage(owner, fallbackUsed = 0) {
   const used = Math.max(Number(usage.tokens_in || 0), Number(fallbackUsed || 0));
   const payg = isPaygEnabled(plan.id);
   const unlimited = isComped(claims) || isLegacyMetered(claims);
-  const freeRemaining = freeTokensRemaining(used);
+  const freeCap = freeAllowance(claims);
+  const freeRemaining = freeTokensRemaining(used, claims);
   const remaining = unlimited ? -1 : freeRemaining;
   const creditWallet = isCreditWallet(claims);
   return {
     plan: plan.id,
     plan_name: plan.name,
-    tokens_per_month: FREE_TOKENS_PER_MONTH,
-    free_tokens_per_month: FREE_TOKENS_PER_MONTH,
+    tokens_per_month: freeCap,
+    free_tokens_per_month: freeCap,
+    onboard_bonus_tokens: onboardBonusTokens(claims),
     tokens_used_this_period: used,
     tokens_remaining: remaining,
     free_tokens_remaining: freeRemaining,
-    billable_tokens: billableTokens(used),
-    estimated_overage_usd: estimatedOverageUsd(used),
+    billable_tokens: billableTokens(used, claims),
+    estimated_overage_usd: estimatedOverageUsd(used, claims),
     payg_enabled: payg,
     credit_wallet: creditWallet,
     credit_balance_usd: roundUsd(claims.sc_credit_balance_usd || 0),
     credit_limit_usd: normalizeCreditLimitUsd(claims.sc_credit_limit_usd, DEFAULT_CREDIT_LIMIT_USD),
     auto_recharge: Boolean(claims.sc_auto_recharge),
-    usage_pct: FREE_TOKENS_PER_MONTH > 0
-      ? Math.min(100, Math.round((Math.min(used, FREE_TOKENS_PER_MONTH) / FREE_TOKENS_PER_MONTH) * 10000) / 100)
+    usage_pct: freeCap > 0
+      ? Math.min(100, Math.round((Math.min(used, freeCap) / freeCap) * 10000) / 100)
       : 0,
     unlimited,
     limit_reached: !payg && !creditWallet && freeRemaining === 0,
     upgrade_url: "https://www.supercompress.dev/dashboard#billing",
     upgrade_hint:
-      "Free 1M tokens used this month. Compression is paused — add a payment method ($0.30/1M after free) to unlock.",
+      "Free token allowance used this month. Compression is paused — add a payment method ($0.30/1M after free) to unlock.",
     paywall: !payg && !creditWallet && freeRemaining === 0
       ? {
           title: "Free allowance used — unlock to keep compressing",
-          detail: "You've hit your free 1M tokens this month. Add a payment method to resume.",
+          detail: "You've hit your free token allowance this month. Add a payment method to resume.",
           cta: "Add payment method",
           price: "$0.30 / 1M tokens after free",
         }
@@ -813,6 +817,59 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── Onboarding + power-user celebrate ──
+  if (
+    op === "onboarding" ||
+    op === "onboarding-heard" ||
+    op === "onboarding-claim" ||
+    op === "onboarding-skip" ||
+    op === "onboarding-done" ||
+    op === "power-celebrate-seen"
+  ) {
+    try {
+      const user = await verifyUser(req);
+      const admin = require("firebase-admin");
+      const { initFirebaseAdmin } = require("./_lib/auth");
+      initFirebaseAdmin();
+      const owner = await admin.auth().getUser(user.uid);
+      const claims = owner.customClaims || {};
+      const onboard = require("./_lib/onboarding");
+
+      if (op === "onboarding" && req.method === "GET") {
+        return json(res, 200, { ok: true, ...onboard.statusPayload(claims, owner) });
+      }
+      if (op === "onboarding-heard" && req.method === "POST") {
+        const body = readBody(req) || {};
+        const next = await onboard.saveHeard(user.uid, body.source || body.heard);
+        return json(res, 200, { ok: true, ...next });
+      }
+      if (op === "onboarding-claim" && req.method === "POST") {
+        const body = readBody(req) || {};
+        const next = await onboard.claimAction(user.uid, body.action);
+        return json(res, 200, {
+          ok: true,
+          ...next,
+          granted_tokens: onboard.ONBOARD_ACTION_TOKENS,
+        });
+      }
+      if (op === "onboarding-skip" && req.method === "POST") {
+        const next = await onboard.skipOnboarding(user.uid);
+        return json(res, 200, { ok: true, ...next });
+      }
+      if (op === "onboarding-done" && req.method === "POST") {
+        const next = await onboard.markOnboardingDone(user.uid);
+        return json(res, 200, { ok: true, ...next });
+      }
+      if (op === "power-celebrate-seen" && req.method === "POST") {
+        const next = await onboard.markPowerCelebrateShown(user.uid);
+        return json(res, 200, { ok: true, ...next });
+      }
+      return json(res, 405, { detail: "Method not allowed" });
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Onboarding failed" });
+    }
+  }
+
   return json(res, 200, {
     ok: true,
     detail: "Specify ?op=…",
@@ -827,6 +884,12 @@ module.exports = async (req, res) => {
       "weekly-drain",
       "weekly-unsubscribe",
       "weekly-unsub-link",
+      "onboarding",
+      "onboarding-heard",
+      "onboarding-claim",
+      "onboarding-skip",
+      "onboarding-done",
+      "power-celebrate-seen",
     ],
   });
 };
