@@ -549,6 +549,18 @@ async function main() {
     assert.doesNotMatch(codex, /^\s*openai_base_url\s*=\s*"http:\/\/localhost:8080\/v1"/m);
     assert.match(codex, /\[mcp_servers\.supercompress\]/);
     pass("Codex uses MCP plugin, not openai_base_url proxy");
+
+    // Extension MCP targets validation (Roo Code, Cline, Kodu)
+    const { resolveExtensionMcpTargets } = require(path.join(ROOT, "src/detector.js"));
+    const extTargets = resolveExtensionMcpTargets();
+    assert.ok(Array.isArray(extTargets) && extTargets.length > 0, "resolveExtensionMcpTargets returns array of targets");
+    const targetNames = extTargets.map(([name]) => name);
+    assert.ok(targetNames.includes("Roo Code"), "Extension targets include Roo Code");
+    assert.ok(targetNames.includes("Cline"), "Extension targets include Cline");
+    assert.ok(targetNames.includes("Kodu"), "Extension targets include Kodu");
+    assert.ok(extTargets.every(([_, p]) => p.endsWith("cline_mcp_settings.json")), "Extension targets target cline_mcp_settings.json");
+    assert.ok(extTargets.some(([_, p]) => String(p).includes("Code - Insiders")), "targets include Code - Insiders");
+    pass("VS Code extension globalStorage MCP targets resolved", `${extTargets.length} targets`);
   } catch (err) {
     fail("live install wiring checks", err.message);
   }
