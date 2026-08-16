@@ -249,6 +249,7 @@ async function main() {
     assert.match(a.context, /\[assistant\]: reply/);
     assert.equal(a.systemMsgs.length, 1);
     assert.equal(a.systemMsgs[0].content, "sys");
+    assert.equal(a.systemMsg?.content, "sys");
     pass("assembleMessages splits context/query");
   } catch (err) {
     fail("assembleMessages splits context/query", err.message);

@@ -95,7 +95,7 @@ function hasStructuredProtocol(messages) {
  */
 function assembleMessages(messages) {
   if (!messages || messages.length === 0) {
-    return { context: "", query: "", systemMsgs: [] };
+    return { context: "", query: "", systemMsgs: [], systemMsg: null };
   }
 
   const systemMsgs = [];
@@ -110,7 +110,7 @@ function assembleMessages(messages) {
   }
 
   if (nonSystem.length === 0) {
-    return { context: "", query: "", systemMsgs };
+    return { context: "", query: "", systemMsgs, systemMsg: systemMsgs[0] || null };
   }
 
   let query = "";
