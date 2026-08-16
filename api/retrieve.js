@@ -28,13 +28,42 @@ function isValidHash(hash) {
  * Legacy flat docs (ccr/{hash}) are readable only when owner_uid matches.
  * Missing/mismatched owner → treat as not found (no cross-tenant oracle).
  */
+function ccrExpired(data) {
+  if (!data) return true;
+  const { CCR_TTL_MS } = require("./_lib/retention");
+  if (data.expire_at && typeof data.expire_at.toMillis === "function") {
+    return Date.now() > data.expire_at.toMillis();
+  }
+  if (data.expire_at && typeof data.expire_at === "string") {
+    const t = Date.parse(data.expire_at);
+    if (Number.isFinite(t)) return Date.now() > t;
+  }
+  const stored = Date.parse(data.stored_at || 0);
+  if (!Number.isFinite(stored)) return false;
+  const ttl = Number(data.ttl_ms) > 0 ? Number(data.ttl_ms) : CCR_TTL_MS;
+  return Date.now() - stored > ttl;
+}
+
+async function scrubExpiredCcr(ref) {
+  try {
+    await ref.delete();
+  } catch (_) {
+    /* best-effort TTL scrub */
+  }
+}
+
 async function loadOwnedCcr(ownerUid, hash) {
   initFirebaseAdmin();
   const db = admin.firestore();
 
-  const owned = await db.doc(ccrOwnerDocPath(ownerUid, hash)).get();
+  const ownedRef = db.doc(ccrOwnerDocPath(ownerUid, hash));
+  const owned = await ownedRef.get();
   if (owned.exists) {
     const data = owned.data() || {};
+    if (ccrExpired(data)) {
+      await scrubExpiredCcr(ownedRef);
+      return null;
+    }
     if (data.original && (!data.owner_uid || data.owner_uid === ownerUid)) {
       return data.original;
     }
@@ -42,9 +71,14 @@ async function loadOwnedCcr(ownerUid, hash) {
 
   // Legacy flat path — only if explicitly tagged to this owner
   try {
-    const legacy = await db.doc(`ccr/${hash}`).get();
+    const legacyRef = db.doc(`ccr/${hash}`);
+    const legacy = await legacyRef.get();
     if (legacy.exists) {
       const data = legacy.data() || {};
+      if (ccrExpired(data)) {
+        await scrubExpiredCcr(legacyRef);
+        return null;
+      }
       if (data.original && data.owner_uid && data.owner_uid === ownerUid) {
         return data.original;
       }
@@ -96,7 +130,8 @@ module.exports = async (req, res) => {
     const original = await loadOwnedCcr(ownerUid, hash);
     if (!original) {
       return json(res, 404, {
-        detail: "Hash not found. The original content may have been evicted from cache.",
+        detail:
+          "Hash not found or expired. CCR originals are retained for 48 hours, then deleted.",
         hash,
       });
     }

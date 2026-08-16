@@ -1,10 +1,9 @@
 /**
  * Capped compress activity log — previews only, never full dumps.
+ * Callers must opt in (SC_COMPRESS_LOG_PREVIEWS=1); the compress API defaults off.
  *
  * Storage strategy (size-safe):
  *  - Prefer Firestore doc compress_logs/{ownerUid} (ring buffer)
- *  - Fall back to Auth-backed ring on a stub user sc_clog_{hash} customClaims
- *    is too small (1KB), so Auth stub stores a short JSON in displayName? NO.
  *  - Fall back to gist/store compress_logs[ownerUid] with same caps
  *
  * Caps (hard):

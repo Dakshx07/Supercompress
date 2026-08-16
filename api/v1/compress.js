@@ -502,7 +502,11 @@ module.exports = async (req, res) => {
 
     // Analytics / agent meters ONLY after immutable successful billing — never credit
     // usage for a request that was rejected by recordUsage.
-    if (!skipLog && remainingMs() > 2500) {
+    // Preview logging is OPT-IN (SC_COMPRESS_LOG_PREVIEWS=1). Default: no context bodies stored.
+    const logPreviews =
+      process.env.SC_COMPRESS_LOG_PREVIEWS === "1" ||
+      process.env.SC_COMPRESS_LOG_PREVIEWS === "true";
+    if (!skipLog && logPreviews && remainingMs() > 2500) {
       try {
         const { appendCompressLog } = require("../_lib/compress-log");
         const tokensSaved = Math.max(

@@ -1511,16 +1511,15 @@
         if (entityHits === 0 && termHits === 0) reason = "install/lock noise";
       }
 
-      // Optional neural cross-encoder boost (hosted BGE reranker): [0,1] → score space
+      // Neural-primary keep/drop when a cross-encoder map is present.
+      // Heuristic entity/term scores are ignored — the model owns relevance.
       let nBoost = null;
       if (neuralBoost && typeof neuralBoost.get === "function") nBoost = neuralBoost.get(block.id);
       else if (neuralBoost && typeof neuralBoost === "object" && neuralBoost[block.id] != null) nBoost = Number(neuralBoost[block.id]);
       if (typeof nBoost === "number" && Number.isFinite(nBoost)) {
-        const neuralScore = Math.max(0, Math.min(1, nBoost)) * 16;
-        // Neural-primary blend — ML engine owns keep/drop decisions
-        score = score * 0.1 + neuralScore * 0.9;
-        if (nBoost >= 0.45) reason = "neural relevance";
-        else if (nBoost < 0.2 && reason === "context evidence") reason = "neural low relevance";
+        const n = Math.max(0, Math.min(1, nBoost));
+        score = n * 16;
+        reason = n >= 0.45 ? "neural relevance" : "neural low relevance";
       }
 
       return Object.assign({}, block, {
@@ -3866,28 +3865,36 @@
 
   // ── Content Cache for CCR (Cache, Compress, Retrieve) ──
   // Stores original text by hash for reversible compression.
+  // Process-local only; hosted API also persists owner-scoped Firestore docs
+  // with the same 48h TTL (see api/_lib/retention.js).
   const contentCache = new Map();
   const CCR_MAX_ENTRIES = 500;
+  const CCR_TTL_MS = 48 * 60 * 60 * 1000;
 
   function ccrStore(original) {
     const hash = simpleHash(original);
+    const now = Date.now();
     if (!contentCache.has(hash)) {
       if (contentCache.size >= CCR_MAX_ENTRIES) {
-        // Proper LRU: evict least recently accessed
+        // Proper LRU: evict least recently accessed (and any expired)
         let oldestKey = null;
         let oldestTime = Infinity;
         for (const [k, v] of contentCache) {
+          if (now - (v.timestamp || 0) > CCR_TTL_MS) {
+            contentCache.delete(k);
+            continue;
+          }
           if (v.lastAccess < oldestTime) {
             oldestTime = v.lastAccess;
             oldestKey = k;
           }
         }
-        if (oldestKey) contentCache.delete(oldestKey);
+        if (oldestKey && contentCache.size >= CCR_MAX_ENTRIES) contentCache.delete(oldestKey);
       }
       contentCache.set(hash, {
         original,
-        timestamp: Date.now(),
-        lastAccess: Date.now(),
+        timestamp: now,
+        lastAccess: now,
         accessCount: 0,
       });
     }
@@ -3897,6 +3904,10 @@
   function ccrRetrieve(hash) {
     const entry = contentCache.get(hash);
     if (!entry) return null;
+    if (Date.now() - (entry.timestamp || 0) > CCR_TTL_MS) {
+      contentCache.delete(hash);
+      return null;
+    }
     entry.accessCount++;
     entry.lastAccess = Date.now(); // LRU touch
     // Re-insert to update insertion order (most recently used at end)

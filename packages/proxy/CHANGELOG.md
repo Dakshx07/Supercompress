@@ -4,6 +4,9 @@ Versions track `supercompress-proxy` on npm. Full product notes: [CHANGELOG.md](
 
 ## [Unreleased]
 
+- **postinstall is guidance-only** — never mutates MCP/agent configs; run `supercompress setup` or `plugin`
+- `prepack` / `npm run sync:assets` copies compress-engine + model from canonical `web/assets/`
+
 ## [0.5.23] — 2026-08-15
 
 - **`plugin` persists `configured_agents`** so `account` / `status` show MCP installs on this machine.

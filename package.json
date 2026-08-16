@@ -10,6 +10,7 @@
     "check:api-host": "node scripts/check-api-host-routes.js",
     "check:stylesheet-paths": "node scripts/check-stylesheet-paths.test.js && node scripts/check-stylesheet-paths.js",
     "release:check": "bash scripts/release-check.sh",
+    "sync:assets": "node scripts/sync-compress-assets.js",
     "mcp": "node mcp/server.js",
     "check:version": "node scripts/check-versions.js"
   },

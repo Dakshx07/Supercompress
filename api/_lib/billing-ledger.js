@@ -19,6 +19,7 @@ const {
   FREE_TOKENS_PER_MONTH,
   USD_PER_MILLION,
   billableTokens,
+  freeAllowance,
   roundUsd,
   normalizeCreditLimitUsd,
   DEFAULT_CREDIT_LIMIT_USD,
@@ -238,17 +239,18 @@ function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }
       (isPaygEnabled(claims.sc_plan) && !legacy));
 
   if (!comped && !legacy && !wallet) {
-    if (prevTokensIn >= FREE_TOKENS_PER_MONTH || nextTokensIn > FREE_TOKENS_PER_MONTH) {
+    const freeCap = freeAllowance(claims);
+    if (prevTokensIn >= freeCap || nextTokensIn > freeCap) {
       throw billingError(
         "free_quota_exhausted",
-        `Free ${FREE_TOKENS_PER_MONTH / 1e6}M token allowance exhausted this month.`,
+        `Free ${freeCap.toLocaleString()} token allowance exhausted this month.`,
         {
           payload: {
             ok: false,
             paywall: true,
             code: "free_quota_exhausted",
             tokens_used: prevTokensIn,
-            free_tokens: FREE_TOKENS_PER_MONTH,
+            free_tokens: freeCap,
             upgrade_url: "https://www.supercompress.dev/dashboard#billing",
           },
         }
@@ -259,8 +261,8 @@ function planUsageBurn(ledger, { tokensIn, tokensOut, tokensSaved, claims = {} }
   let burned_micros = 0;
   let nextBalance = Number(ledger.credit_balance_micros || 0);
   if (wallet) {
-    const prevBillable = billableTokens(prevTokensIn);
-    const newBillable = billableTokens(nextTokensIn);
+    const prevBillable = billableTokens(prevTokensIn, claims);
+    const newBillable = billableTokens(nextTokensIn, claims);
     // Cumulative ceil so fractional micro-USD amortizes across requests
     // instead of ceil(delta * price) over-charging every tiny burn.
     burned_micros = Math.max(0, tokensToMicros(newBillable) - tokensToMicros(prevBillable));
@@ -375,7 +377,8 @@ function claimsByteLength(claims) {
 
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
- * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, or sc_write_id. */
+ * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, sc_write_id, sc_onboard_*,
+ * sc_heard, or sc_power_celebrate. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -664,7 +667,7 @@ async function applyUsageAndBurnClaimsFallback({
 
 const IDEMPOTENCY_LEASE_MS = 90_000;
 /** Keep replayable compressed_text this long; billing metadata is retained longer. */
-const REPLAY_TTL_MS = 48 * 60 * 60 * 1000;
+const { REPLAY_TTL_MS } = require("./retention");
 
 function usageDocExpiredReplay(data) {
   if (!data || !data.response) return true;

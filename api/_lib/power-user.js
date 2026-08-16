@@ -199,6 +199,13 @@ async function maybeNotifyPowerUser({
     return { ok: true, sent: false, reason: "not_crossed" };
   }
 
+  try {
+    const { markPowerCelebratePending } = require("./onboarding");
+    await markPowerCelebratePending(uid);
+  } catch (err) {
+    console.warn("power celebrate stamp skipped:", err.message || err);
+  }
+
   const firstName = firstNameFromUser({ displayName: name, email: to });
   const extra = {
     email: to,

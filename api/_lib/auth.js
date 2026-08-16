@@ -87,10 +87,13 @@ function initFirebaseAdmin(projectIdHint) {
       return true;
     }
 
-    if (projectId) {
-      admin.initializeApp({
-        projectId,
-      });
+    // projectId-only init is insecure in multi-tenant hosts (wrong ADC / ambient creds).
+    // Allow only with an explicit opt-in for local tooling that has trusted ADC.
+    const allowProjectOnly =
+      process.env.SC_FIREBASE_ALLOW_PROJECT_ONLY === "1" ||
+      process.env.SC_FIREBASE_ALLOW_PROJECT_ONLY === "true";
+    if (projectId && allowProjectOnly) {
+      admin.initializeApp({ projectId });
       firebaseReady = true;
       return true;
     }

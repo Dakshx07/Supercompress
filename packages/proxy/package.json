@@ -51,6 +51,8 @@
     "start": "node bin/supercompress.js start",
     "stop": "node bin/supercompress.js stop",
     "status": "node bin/supercompress.js status",
+    "sync:assets": "node ../../scripts/sync-compress-assets.js",
+    "prepack": "npm run sync:assets",
     "postinstall": "node bin/install.js"
   },
   "dependencies": {
