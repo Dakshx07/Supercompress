@@ -378,7 +378,12 @@ function claimsByteLength(claims) {
 /** Firebase custom claims cap at 1000 bytes — drop bulky non-ledger fields to fit.
  * Never delete sc_recent_billing entirely (idempotency watermarks). Never delete
  * sc_power_mail, sc_welcome, sc_wk, sc_unsub, sc_ku, sc_write_id, sc_onboard_*,
- * sc_heard, or sc_power_celebrate. */
+ * sc_heard, or sc_power_celebrate.
+ *
+ * Never delete sc_key_ids. Dropping the index orphans live sck_* Auth users
+ * (still valid via direct lookup) while list/count under-reports → plan-cap bypass.
+ * Prefer trimming usage/recent_billing first; if still over budget, setBillingClaims
+ * must fail closed rather than erase the key index. */
 function fitCustomClaims(claims) {
   const next = { ...(claims || {}) };
   const steps = [
@@ -397,12 +402,6 @@ function fitCustomClaims(claims) {
     },
     () => {
       delete next.sc_plan_updated;
-    },
-    () => {
-      if (Array.isArray(next.sc_key_ids)) next.sc_key_ids = next.sc_key_ids.slice(-2);
-    },
-    () => {
-      delete next.sc_key_ids;
     },
     () => {
       if (Array.isArray(next.sc_credited_sessions)) {
@@ -431,6 +430,23 @@ function fitCustomClaims(claims) {
     },
     () => {
       if (Array.isArray(next.sc_recent_billing)) next.sc_recent_billing = next.sc_recent_billing.slice(0, 1);
+    },
+    () => {
+      // Last resort before failing the write: keep the key index but cap length.
+      // Still never delete the field — empty/missing index is how orphans form.
+      if (Array.isArray(next.sc_key_ids) && next.sc_key_ids.length > 8) {
+        next.sc_key_ids = next.sc_key_ids.slice(-8);
+      }
+    },
+    () => {
+      if (Array.isArray(next.sc_key_ids) && next.sc_key_ids.length > 4) {
+        next.sc_key_ids = next.sc_key_ids.slice(-4);
+      }
+    },
+    () => {
+      if (Array.isArray(next.sc_key_ids) && next.sc_key_ids.length > 2) {
+        next.sc_key_ids = next.sc_key_ids.slice(-2);
+      }
     },
   ];
   let i = 0;
@@ -642,6 +658,7 @@ async function applyUsageAndBurnClaimsFallback({
     );
     const liveAfter = mergeLiveClaims(after, claims);
     const prior = recentBillingRow(liveAfter.sc_recent_billing, rid);
+    clearClaimsPendingLease(uid, rid);
     return {
       burned_micros: Number(prior?.b || 0),
       ledger: normalizeLedger(null, liveAfter),
@@ -678,12 +695,48 @@ function usageDocExpiredReplay(data) {
   return Date.now() - created > REPLAY_TTL_MS;
 }
 
+/** Same-instance pending leases for claims-fallback (not cross-instance). */
+const claimsPendingLeases = new Map();
+
+function claimsPendingKey(uid, rid) {
+  return `${String(uid || "")}:${claimsRequestId(rid)}`;
+}
+
+function getClaimsPendingLease(uid, rid) {
+  const key = claimsPendingKey(uid, rid);
+  const row = claimsPendingLeases.get(key);
+  if (!row) return null;
+  if (Number(row.lease_until || 0) <= Date.now()) {
+    claimsPendingLeases.delete(key);
+    return null;
+  }
+  return row;
+}
+
+function markClaimsPendingLease(uid, rid, fp) {
+  const key = claimsPendingKey(uid, rid);
+  const lease_until = Date.now() + IDEMPOTENCY_LEASE_MS;
+  claimsPendingLeases.set(key, { fingerprint: fp || null, lease_until });
+  if (claimsPendingLeases.size > 2000) {
+    const now = Date.now();
+    for (const [k, v] of claimsPendingLeases) {
+      if (Number(v.lease_until || 0) <= now) claimsPendingLeases.delete(k);
+    }
+  }
+  return lease_until;
+}
+
+function clearClaimsPendingLease(uid, rid) {
+  claimsPendingLeases.delete(claimsPendingKey(uid, rid));
+}
+
 async function claimsIdempotencyLease(uid, rid, fp) {
   const fresh = await admin().auth().getUser(uid);
   const live = mergeLiveClaims(fresh.customClaims, {});
   const recent = Array.isArray(live.sc_recent_billing) ? live.sc_recent_billing : [];
   const prior = recentBillingRow(recent, rid);
   if (prior) {
+    clearClaimsPendingLease(uid, rid);
     assertUsageIdempotencyMatch(
       {
         fingerprint: prior.f || null,
@@ -711,6 +764,23 @@ async function claimsIdempotencyLease(uid, rid, fp) {
       backend: "claims-fallback",
     };
   }
+  const pending = getClaimsPendingLease(uid, rid);
+  if (pending) {
+    if (pending.fingerprint && fp && !fingerprintsMatch(pending.fingerprint, fp)) {
+      throw billingError(
+        "idempotency_conflict",
+        "Idempotency-Key reused with a different request payload"
+      );
+    }
+    return {
+      status: "pending",
+      data: { fingerprint: pending.fingerprint || fp, lease_until: pending.lease_until },
+      backend: "claims-fallback",
+    };
+  }
+  // Best-effort single-flight on this isolate only. Cross-instance still needs
+  // Firestore/Redis — Auth claims cannot lease conditionally.
+  markClaimsPendingLease(uid, rid, fp);
   return { status: "acquired", backend: "claims-fallback" };
 }
 
