@@ -9,15 +9,15 @@ const { normalizeEmail, isValidEmail, CONTINUE_URL } = require("./password-reset
 
 describe("password reset helpers", () => {
   it("normalizes and validates email", () => {
-    assert.equal(normalizeEmail("  Foo@Bar.COM "), "foo@bar.com");
-    assert.equal(isValidEmail("a@b.co"), true);
+    assert.equal(normalizeEmail("  User@Example.COM "), "user@example.com");
+    assert.equal(isValidEmail("user@example.com"), true);
     assert.equal(isValidEmail("nope"), false);
   });
 
   it("branded copy includes reset url and site branding cues", () => {
     const url = "https://example.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=abc";
     const copy = passwordResetCopy({
-      email: "you@example.com",
+      email: "user@example.com",
       resetUrl: url,
       firstName: "Arjun",
     });
