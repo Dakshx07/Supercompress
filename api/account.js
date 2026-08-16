@@ -817,6 +817,39 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── Branded password reset (Resend) ──
+  if (op === "password-reset" && req.method === "POST") {
+    const body = readBody(req) || {};
+    const email = String(body.email || "").trim();
+    const { checkRateLimit, clientIp, jsonWithRateLimit } = require("./_lib/http");
+    const { checkDurableRateLimit } = require("./_lib/rate-limit-durable");
+    const { requestPasswordReset } = require("./_lib/password-reset");
+    const ip = clientIp(req);
+    const mem = checkRateLimit(`pwd-reset:${ip}`, 8, 60 * 60_000);
+    if (!mem.allowed) {
+      return jsonWithRateLimit(res, 429, { detail: "Too many reset requests. Try again later." }, mem);
+    }
+    const recipMem = checkRateLimit(`pwd-reset-to:${email.toLowerCase()}`, 3, 60 * 60_000);
+    if (!recipMem.allowed) {
+      // Still look like success — avoid hammering / enumeration.
+      return json(res, 200, {
+        ok: true,
+        detail: "If an account exists for that email, we sent a password reset link. Check inbox and spam.",
+      });
+    }
+    try {
+      const durable = await checkDurableRateLimit(`pwd-reset:${ip}`, 20, 60 * 60_000);
+      if (durable.backend === "firestore" && !durable.allowed) {
+        return jsonWithRateLimit(res, 429, { detail: "Too many reset requests. Try again later." }, durable);
+      }
+    } catch (_) {}
+    try {
+      return json(res, 200, await requestPasswordReset(email));
+    } catch (err) {
+      return json(res, err.status || 500, { detail: err.message || "Could not send reset email" });
+    }
+  }
+
   // ── Onboarding + power-user celebrate ──
   if (
     op === "onboarding" ||
@@ -884,6 +917,7 @@ module.exports = async (req, res) => {
       "weekly-drain",
       "weekly-unsubscribe",
       "weekly-unsub-link",
+      "password-reset",
       "onboarding",
       "onboarding-heard",
       "onboarding-claim",

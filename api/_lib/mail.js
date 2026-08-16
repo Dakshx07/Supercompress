@@ -768,6 +768,62 @@ async function sendPowerUserEmail(opts) {
   return { ...result, subject: copy.subject, text: copy.text, html: copy.html };
 }
 
+/**
+ * Branded password reset (Resend) — replaces Firebase's unbranded auth email.
+ */
+function passwordResetCopy({ email, resetUrl, firstName }) {
+  const hi = firstName ? `Hey ${firstName}` : "Hey";
+  const subject = "Reset your SuperCompress password";
+  const text = `${hi},
+
+Someone requested a password reset for your SuperCompress account (${email}).
+
+Reset your password (link expires in about an hour):
+${resetUrl}
+
+If you didn't ask for this, you can ignore this email — your password stays the same.
+
+— Arjun
+Founder, SuperCompress
+`;
+
+  const bodyHtml = `
+    ${eyebrow("Account")}
+    ${displayHeadline("Reset your password")}
+    <p style="margin:0 0 14px;">${escapeHtml(hi)},</p>
+    <p style="margin:0 0 14px;">Someone requested a password reset for <strong>${escapeHtml(email)}</strong>. Use the button below — the link expires in about an hour.</p>
+    ${ctaButton("Reset password", resetUrl)}
+    <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${MUTED};">If the button doesn’t work, paste this into your browser:<br /><a href="${escapeHtml(resetUrl)}" style="color:${BRAND};word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
+    <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">Didn’t request this? Ignore the email — your password won’t change.</p>
+    ${signatureBlock()}
+  `;
+
+  const html = brandedEmailHtml({
+    preheader: "Reset your SuperCompress password — link inside.",
+    title: subject,
+    bodyHtml,
+    kind: "welcome",
+  });
+
+  return { subject, text, html, to: email };
+}
+
+async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyKey }) {
+  if (!email || !String(email).includes("@") || !resetUrl) {
+    return { ok: false, error: "missing email or resetUrl" };
+  }
+  const copy = passwordResetCopy({
+    email: String(email).trim(),
+    resetUrl: String(resetUrl).trim(),
+    firstName,
+  });
+  const result = await sendViaResend({
+    ...copy,
+    idempotencyKey: idempotencyKey || null,
+  });
+  return { ...result, subject: copy.subject };
+}
+
 function campaignKind(campaignId) {
   const id = String(campaignId || "");
   if (id.endsWith("-ship") || id.includes("-ship")) return "ship";
@@ -1007,6 +1063,7 @@ module.exports = {
   welcomeCopy,
   powerUserCopy,
   paymentThankYouCopy,
+  passwordResetCopy,
   weeklyCopy,
   shipCopy,
   weeklyEmailCopy,
@@ -1020,6 +1077,7 @@ module.exports = {
   sendWelcomeEmail,
   sendPowerUserEmail,
   sendPaymentThankYouEmail,
+  sendPasswordResetEmail,
   sendWeeklyEmail,
   DEFAULT_FROM,
 };
