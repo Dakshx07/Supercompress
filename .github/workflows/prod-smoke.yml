@@ -1,10 +1,20 @@
 name: Production smoke
-# Manual only — was cron */15 and burned Actions minutes.
-# Prod path does not need GH Actions: Vercel deploys from Git;
-# `npm run deploy:prod` and `npm run prod:smoke` run locally.
-# Re-enable only after minutes reset; prefer schedule ≤ daily if ever restored.
+# Catch DEPLOYMENT_NOT_FOUND / API host detach / 5xx before users do.
+# Daily schedule (not */15) to conserve Actions minutes; also on main deploys
+# that touch API/routing, plus manual dispatch.
 on:
+  schedule:
+    - cron: "0 15 * * *" # 15:00 UTC daily
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/prod-smoke.sh"
+      - "scripts/ensure-prod-domains.sh"
+      - "scripts/check-api-host-routes.js"
+      - "api/**"
+      - "vercel.json"
+      - ".github/workflows/prod-smoke.yml"
 
 jobs:
   http-smoke:

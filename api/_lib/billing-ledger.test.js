@@ -262,6 +262,43 @@ assertUsageIdempotencyMatch(
   assert.strictEqual(fitted.sc_write_id, "abc123def456");
 }
 
+{
+  // Under extreme claim pressure, never drop sc_key_ids (orphan / plan-cap bypass).
+  const manyKeys = Array.from({ length: 20 }, (_, i) => `sck_${String(i).padStart(20, "0")}`);
+  const fitted = fitCustomClaims({
+    sc_write_id: "abc123def456",
+    sc_plan: "payg",
+    sc_key_ids: manyKeys,
+    sc_usage: {
+      month: "2026-08",
+      tokens_in: 1,
+      requests: 1,
+      d: Object.fromEntries(
+        Array.from({ length: 40 }, (_, i) => [
+          `2026-08-${String(i + 1).padStart(2, "0")}`,
+          { tin: 99999, tout: 99999, ts: 1, r: 9 },
+        ])
+      ),
+    },
+    sc_recent_billing: Array.from({ length: 12 }, (_, i) => ({
+      i: `id${i}${"x".repeat(36)}`,
+      f: "f".repeat(64),
+      tin: 9999,
+      tout: 9999,
+      ts: 1,
+      b: 0,
+      t: 1786630000000,
+    })),
+    sc_credited_sessions: Array.from({ length: 20 }, (_, i) => `sess_${i}_${"y".repeat(40)}`),
+    sc_agent_plugin: { linked: true, linked_at: "2026-01-01", updated_at: "2026-01-01", source: "x" },
+    sc_plan_updated: "2026-01-01T00:00:00.000Z",
+  });
+  assert.ok(Array.isArray(fitted.sc_key_ids), "sc_key_ids must survive fitCustomClaims");
+  assert.ok(fitted.sc_key_ids.length >= 1, "sc_key_ids must not be emptied");
+  assert.ok(fitted.sc_key_ids.length <= 8, "sc_key_ids may trim but not erase");
+  assert.ok(!("sc_agent_plugin" in fitted) || fitted.sc_agent_plugin == null);
+}
+
 assert.strictEqual(claimsWriteHeld({ sc_write_id: "aaa" }, "aaa"), true);
 assert.strictEqual(claimsWriteHeld({ sc_write_id: "bbb" }, "aaa"), false);
 assert.strictEqual(claimsWriteHeld({}, "aaa"), false);

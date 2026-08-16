@@ -13,9 +13,16 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Ops / safety net
+- Re-enabled GitHub Actions **CI** and **Production smoke** (were `disabled_manually`)
+- Production smoke: daily cron + path-filtered `main` pushes (not `*/15`)
+
+### Billing / claims hardening
+- `fitCustomClaims` **never deletes `sc_key_ids`** (orphan live keys / plan-cap bypass under 1KB pressure); trims usage/recent_billing first
+- Claims-fallback idempotency: same-isolate pending lease so duplicate Idempotency-Keys do not both run compress on one instance (cross-instance still needs Firestore/Redis)
+
 ### Site / marketing
 - Landing semantic / compiler claims: query-aware keep/drop copy, honest API snippets, refreshed benchmark table vs truncation / summarization / Headroom public claim
-- Production smoke workflow is manual-only (was burning Actions minutes on */15 cron)
 
 
 ### Dashboard onboarding
