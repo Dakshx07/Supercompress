@@ -452,10 +452,10 @@
   });
 
   const snippets = {
-    CURL: `curl /api/v1/compress \\\n  -H "Authorization: Bearer $SC_LIVE_..." \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "model": "supercompress-v1",\n    "input": "$(cat conversation.txt)",\n    "preserve": "meaning",\n    "target_reduction": 0.8\n  }'`,
-    Python: `from supercompress import Supercompress\n\nclient = Supercompress()\nresult = client.compress(\n    model="supercompress-v1",\n    input=conversation,\n    preserve="meaning",\n    target_reduction=0.8,\n)`,
-    TypeScript: `import { Supercompress } from "supercompress";\n\nconst client = new Supercompress();\nconst result = await client.compress({\n  model: "supercompress-v1",\n  input: conversation,\n  preserve: "meaning",\n  targetReduction: 0.8\n});`,
-    REST: `POST /v1/compress HTTP/1.1\nHost: api\nAuthorization: Bearer $SC_LIVE_...\nContent-Type: application/json\n\n{\n  "model": "supercompress-v1",\n  "input": "...",\n  "preserve": "meaning"\n}`
+    CURL: `curl -X POST https://api.supercompress.dev/compress \\\n  -H "Authorization: Bearer $SC_LIVE_..." \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "context": "$(cat conversation.txt)",\n    "query": "What failed in the last deploy?",\n    "mode": "compiler"\n  }'`,
+    Python: `from supercompress import Supercompress\n\nclient = Supercompress()\nresult = client.compress(\n    context=conversation,\n    query="What failed in the last deploy?",\n)`,
+    TypeScript: `import { Supercompress } from "supercompress";\n\nconst client = new Supercompress();\nconst result = await client.compress({\n  context: conversation,\n  query: "What failed in the last deploy?",\n  mode: "compiler"\n});`,
+    REST: `POST /compress HTTP/1.1\nHost: api.supercompress.dev\nAuthorization: Bearer $SC_LIVE_...\nContent-Type: application/json\n\n{\n  "context": "...",\n  "query": "What failed?",\n  "mode": "compiler"\n}`
   };
   const terminalPre = document.querySelector('.terminal-code code');
   document.querySelectorAll('.terminal-tabs button').forEach((button) => {
