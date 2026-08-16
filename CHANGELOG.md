@@ -13,6 +13,9 @@ Public page: https://www.supercompress.dev/changelog
 
 ## [Unreleased]
 
+### Auth
+- Password reset emails go through **Resend** (branded SuperCompress template from `hello@supercompress.dev`) instead of Firebase’s unbranded auth mail
+
 ### Ops / safety net
 - Re-enabled GitHub Actions **CI** and **Production smoke** (were `disabled_manually`)
 - Production smoke: daily cron + path-filtered `main` pushes (not `*/15`)

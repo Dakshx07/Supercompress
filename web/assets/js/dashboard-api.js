@@ -18,7 +18,6 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
-  sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import { createOnboardingController } from "./dashboard-onboarding.js";
 
@@ -2038,6 +2037,25 @@ async function confirmPasswordChange() {
   }
 }
 
+async function requestBrandedPasswordReset(email) {
+  const clean = String(email || "").trim();
+  if (!clean) throw new Error("Enter your email to receive a password reset link.");
+  // Prefer hosted API even before detectApiMode settles (forgot-password is pre-login).
+  if (apiMode === "local" && !isHostedSite()) {
+    throw new Error("Password reset needs the hosted API. Open https://www.supercompress.dev/dashboard");
+  }
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  const res = await fetch(`${API_BASE}/api/account?op=password-reset`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ email: clean }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || res.statusText || "Could not send reset email.");
+  return data;
+}
+
 async function sendAccountPasswordReset() {
   const user = auth?.currentUser || currentUser;
   const email = user?.email || String($("auth-email")?.value || "").trim();
@@ -2047,8 +2065,8 @@ async function sendAccountPasswordReset() {
     return;
   }
   try {
-    await sendPasswordResetEmail(auth, email);
-    setPasswordModalOk(`Reset link sent to ${email}.`);
+    await requestBrandedPasswordReset(email);
+    setPasswordModalOk(`Reset link sent to ${email}. Check inbox (and spam) — it’s from SuperCompress.`);
     setError("");
   } catch (err) {
     setPasswordModalError(err?.message || "Could not send reset email.");
@@ -2073,22 +2091,18 @@ function initPasswordControls() {
       setError("Enter your email above, then click Forgot password.");
       return;
     }
-    if (!auth) {
-      setError("Auth is still loading — try again in a moment.");
-      return;
-    }
     try {
-      await sendPasswordResetEmail(auth, email);
+      await requestBrandedPasswordReset(email);
       setError("");
       const msg = $("auth-error");
       if (msg) {
-        msg.textContent = `Password reset email sent to ${email}.`;
+        msg.textContent = `Password reset email sent to ${email}. Check inbox and spam — from hello@supercompress.dev.`;
         msg.style.color = "#166534";
         show(msg);
         setTimeout(() => {
           msg.style.color = "";
           hide(msg);
-        }, 5000);
+        }, 7000);
       }
     } catch (err) {
       setError(err?.message || "Could not send reset email.");
