@@ -50,6 +50,14 @@ Please keep marketing ops, outreach lists, SEO page farms, and private planning 
 3. Add or update tests/benchmarks when changing compression behavior.
 4. Do not commit secrets, `.env*` files, or large binaries (`.mp4`).
 
+## Roadmap & community
+
+- Public roadmap: [ROADMAP.md](./ROADMAP.md)
+- Prefer GitHub Issues / PRs (no Discord yet)
+- Look for the `good first issue` label
+
+High-impact areas right now: `packages/proxy` (agent detection, hooks, SSE), CI/version locks, docs/setup copy, and honest benchmark/site sync ([#130](https://github.com/Supercompress/Supercompress/issues/130)).
+
 ## Reporting bugs
 
 Open an issue on [github.com/Supercompress/Supercompress/issues](https://github.com/Supercompress/Supercompress/issues) with:

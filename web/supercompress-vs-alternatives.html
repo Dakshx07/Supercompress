@@ -5,12 +5,12 @@
   <link rel="icon" href="/assets/img/favicon-chevron.svg?v=3" type="image/svg+xml" />
   <link rel="icon" href="/assets/img/favicon-chevron-48.png?v=3" type="image/png" sizes="48x48" />
   <link rel="apple-touch-icon" href="/assets/img/icon-chevron-192.png?v=3" />
-<link rel="stylesheet" href="/assets/css/supercompress.css?v=106" />
-  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=12" />
-  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=2" />
-  <link rel="stylesheet" href="/assets/css/article-page.css?v=2" />
+<link rel="stylesheet" href="/assets/css/supercompress.css?v=115" />
+  <link rel="stylesheet" href="/assets/css/landing-chrome.css?v=14" />
+  <link rel="stylesheet" href="/assets/css/seo-cluster.css?v=3" />
+  <link rel="stylesheet" href="/assets/css/article-page.css?v=3" />
 <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>SuperCompress vs Alternatives — Prompt Compression Compared (2026) | SuperCompress</title>
   <meta name="description" content="Compare SuperCompress against every major prompt compression alternative: Headroom, sliding window, top-K retrieval, HyDE, MMR, Self-RAG, and more. See benchmarks, latency, and quality trade-offs." />
   <meta name="robots" content="index, follow" />
@@ -234,6 +234,12 @@
         <p>Headroom leans on content-type / structure heuristics (JSON, code, text routers) rather than scoring every block against the user's question. SuperCompress is query-aware: keep what answers this query, drop the rest. That — plus MCP coding-agent install and held-out answer gates — is the comparison that matters, not parameter counts.</p>
         <span class="tag tag-sc">neural ranking, query-aware</span>
         <span class="tag tag-headroom">content-type heuristics</span>
+      </div>
+      <div class="comparison-card">
+        <h3><a href="/supercompress-vs-rtk">SuperCompress vs RTK</a></h3>
+        <p>RTK (Rust Token Killer) filters shell/command stdout before the agent reads it. SuperCompress compresses any context against the query — Read/Grep dumps, RAG, chat, and shell — covering the parts RTK hooks often never see. They can stack; measure session cost, not bash-byte scoreboards.</p>
+        <span class="tag tag-sc">query-aware any-context</span>
+        <span class="tag tag-headroom">bash stdout filters</span>
       </div>
       <div class="comparison-card">
         <h3><a href="/supercompress-vs-sliding-window">SuperCompress vs Sliding Window</a></h3>

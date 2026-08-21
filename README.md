@@ -17,7 +17,15 @@
   <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
   <a href="https://docs.supercompress.dev">Docs</a> ·
   <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> ·
-  <a href="./CHANGELOG.md">Changelog</a>
+  <a href="./CHANGELOG.md">Changelog</a> ·
+  <a href="./ROADMAP.md">Roadmap</a> ·
+  <a href="./CONTRIBUTING.md">Contributing</a>
+</p>
+
+<p align="center">
+  <a href="https://www.supercompress.dev/supercompress-vs-headroom">vs Headroom</a> ·
+  <a href="https://www.supercompress.dev/supercompress-vs-rtk">vs RTK</a> ·
+  <a href="https://www.supercompress.dev/supercompress-vs-llmlingua">vs LLMLingua</a>
 </p>
 
 <p align="center">
