@@ -49,17 +49,19 @@ function shipCampaignId(date = new Date()) {
  * Default: tip on Sunday (0), ship on Wednesday (3); other days drain-only.
  */
 function resolveCampaign(opts = {}) {
-  const force = String(opts.force || process.env.WEEKLY_FORCE_KIND || "").trim().toLowerCase();
+  const forceRaw = String(opts.force || process.env.WEEKLY_FORCE_KIND || "").trim();
+  const force = forceRaw.toLowerCase();
   const utcDay = new Date().getUTCDay();
   if (force === "drain" || force === "none") {
     return { kind: null, campaignId: null, utcDay, reason: "force_drain" };
   }
   if (force === "tip" || force.endsWith("-tip")) {
-    const id = force.includes("-") && force !== "tip" ? force : tipCampaignId();
+    // Preserve caller casing for full ids (e.g. 2026-W34-tip); keywords stay tipCampaignId().
+    const id = force.includes("-") && force !== "tip" ? forceRaw : tipCampaignId();
     return { kind: "tip", campaignId: id, utcDay, reason: "force_tip" };
   }
   if (force === "ship" || force.endsWith("-ship")) {
-    const id = force.includes("-") && force !== "ship" ? force : shipCampaignId();
+    const id = force.includes("-") && force !== "ship" ? forceRaw : shipCampaignId();
     return { kind: "ship", campaignId: id, utcDay, reason: "force_ship" };
   }
   if (utcDay === 0) {
@@ -472,8 +474,30 @@ async function weeklyTick(opts = {}) {
       skipped += 1;
       continue;
     }
-    if (records[key]?.status === "sent" || r.sc_wk === campaignId) {
+    if (records[key]?.status === "sent" || records[key]?.status === "failed" || r.sc_wk === campaignId) {
       skipped += 1;
+      continue;
+    }
+    const emailLower = String(r.email || "").toLowerCase();
+    if (
+      emailLower.endsWith("@example.com") ||
+      emailLower.endsWith(".example") ||
+      emailLower.includes("sc.test.")
+    ) {
+      skipped += 1;
+      try {
+        await markWeekly(key, {
+          key,
+          campaign_id: campaignId,
+          uid: r.uid,
+          email: r.email,
+          status: "failed",
+          error: "invalid_test_domain",
+          kind,
+        });
+      } catch {
+        /* ignore */
+      }
       continue;
     }
 
@@ -516,6 +540,9 @@ async function weeklyTick(opts = {}) {
     } else {
       failed += 1;
       errors.push({ email: r.email, error: result.error || "send_failed" });
+      const permanent =
+        /daily email sending quota/i.test(String(result.error || "")) === false &&
+        /invalid `to` field|testing email address|example\.com/i.test(String(result.error || ""));
       try {
         await markWeekly(key, {
           key,
@@ -523,7 +550,7 @@ async function weeklyTick(opts = {}) {
           uid: r.uid,
           email: r.email,
           first_name: r.first_name || "",
-          status: records[key]?.status === "sent" ? "sent" : "pending",
+          status: permanent ? "failed" : records[key]?.status === "sent" ? "sent" : "pending",
           queued_at: records[key]?.queued_at || new Date().toISOString(),
           error: result.error || "send_failed",
           kind,

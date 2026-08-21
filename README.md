@@ -17,7 +17,15 @@
   <a href="https://www.supercompress.dev/benchmarks">Benchmarks</a> ·
   <a href="https://docs.supercompress.dev">Docs</a> ·
   <a href="https://docs.supercompress.dev/coding-agents">Coding agents</a> ·
-  <a href="./CHANGELOG.md">Changelog</a>
+  <a href="./CHANGELOG.md">Changelog</a> ·
+  <a href="./ROADMAP.md">Roadmap</a> ·
+  <a href="./CONTRIBUTING.md">Contributing</a>
+</p>
+
+<p align="center">
+  <a href="https://www.supercompress.dev/supercompress-vs-headroom">vs Headroom</a> ·
+  <a href="https://www.supercompress.dev/supercompress-vs-rtk">vs RTK</a> ·
+  <a href="https://www.supercompress.dev/supercompress-vs-llmlingua">vs LLMLingua</a>
 </p>
 
 <p align="center">
@@ -65,6 +73,18 @@ The **query is never compressed** — only the surrounding context.
 | **Login** | Keep your normal agent login | API key from the [dashboard](https://www.supercompress.dev/dashboard) |
 
 Docs: [coding agents](https://docs.supercompress.dev/coding-agents) · [API quickstart](https://docs.supercompress.dev/quickstart)
+
+### Repo map
+
+| Path | What |
+|------|------|
+| `packages/proxy` | Coding-agent plugin (npm) |
+| `api/` | Hosted API + billing |
+| `web/` | Site + docs HTML |
+| `supercompress/` | Python package |
+| `docs/REPO_LAYOUT.md` | What belongs in OSS vs private |
+
+Private marketing, outreach, and model training stay **out** of this repo (see `.gitignore` + `docs/REPO_LAYOUT.md`).
 
 ---
 

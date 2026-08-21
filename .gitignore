@@ -22,8 +22,12 @@ skills-lock.json
 .vercel
 .vercel.*.bak/
 
-# Local model / media / checkpoints (large or private)
+# Local model / media / checkpoints (large or private — never publish neural weights)
 checkpoints/*.pt
+checkpoints/**/*.pt
+checkpoints/sc-keep-*/
+checkpoints/amcp/
+checkpoints/usecase_report*.json
 !checkpoints/default.pt
 !checkpoints/.gitkeep
 /local/
@@ -31,6 +35,7 @@ checkpoints/*.pt
 /videos/
 /video/
 *.onnx
+*.safetensors
 screenshots/
 launch-video/
 launchvideoforwebsite/
@@ -50,10 +55,45 @@ exports/
 **/DO_NOT_CONTACT*
 **/fresh_leads*
 **/*-email-draft*
+outreach/
+.github-org-profile/
+
+# Marketing / GTM / SEO planning (private; not product OSS)
+PLAN_*.md
+SEO_*.md
+GTM_*.md
+BACKLINK_*
+SECURITY_AUDIT_*.md
+ARCHITECTURE.md
+
+# Product email campaign JSON lives in private Supercompress/email-campaigns
+api/_lib/weekly-ship.json
+api/_lib/weekly-tips.json
 
 # Generated / experimental scratch (keep OSS tree lean)
 kaggle/
-checkpoints/sc-keep-*
 scripts/scneural/
 scripts/amcp/
 scripts/bench_fresh*_once.js
+scripts/send_*.py
+scripts/drain_*.py
+scripts/drain_*.js
+scripts/affiliate_*.py
+scripts/email_tracker*
+scripts/train_*.py
+scripts/capture-screenshots.js
+scripts/cleanup-auth-stubs.js
+scripts/generate_*.py
+scripts/local_analytics_debug.py
+scripts/pr_*.py
+scripts/prs_*.py
+scripts/run-all-benchmarks.sh
+scripts/update_issues.py
+scripts/issues_*.py
+scripts/audit_*.py
+scripts/backlink_*.py
+scripts/dev.supercompress.*.plist
+
+# Colab / local train artifacts
+scripts/scneural/colab_scneural_bundle.zip
+**/sc-keep-crossencoder*/
