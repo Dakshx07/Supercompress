@@ -83,28 +83,33 @@ function isValidShipEntry(entry) {
 
 function sanitizeShipCatalog(data) {
   if (!data || typeof data !== "object") return null;
+  const byCampaign = {};
+  if (data.byCampaign && typeof data.byCampaign === "object") {
+    for (const [k, v] of Object.entries(data.byCampaign)) {
+      if (isValidShipEntry(v)) byCampaign[k] = v;
+    }
+  }
   // Accept either { campaigns: { id: entry } } or flat by-id maps used locally.
   if (data.campaigns && typeof data.campaigns === "object") {
     const campaigns = {};
     for (const [k, v] of Object.entries(data.campaigns)) {
       if (isValidShipEntry(v)) campaigns[k] = v;
     }
-    if (!Object.keys(campaigns).length) return null;
-    return { ...data, campaigns };
+    if (!Object.keys(campaigns).length && !Object.keys(byCampaign).length) return null;
+    return { ...data, campaigns, byCampaign };
   }
   // Pass through if it looks like a digest object with required fields.
   if (isValidShipEntry(data)) return data;
   // Or a map of week ids
-  const keys = Object.keys(data).filter((k) => k !== "seed" && k !== "byCampaign");
+  const keys = Object.keys(data).filter((k) => k !== "seed" && k !== "byCampaign" && k !== "campaigns");
+  const flat = {};
   if (keys.length && keys.every((k) => typeof data[k] === "object")) {
-    const out = {};
     for (const k of keys) {
-      if (isValidShipEntry(data[k])) out[k] = data[k];
+      if (isValidShipEntry(data[k])) flat[k] = data[k];
     }
-    if (!Object.keys(out).length) return null;
-    return out;
   }
-  return null;
+  if (!Object.keys(flat).length && !Object.keys(byCampaign).length) return null;
+  return { ...data, ...flat, byCampaign };
 }
 
 function loadCampaignJson(envName, fileName) {
@@ -126,6 +131,8 @@ function loadCampaignJson(envName, fileName) {
   const contentDir = (process.env.SUPERCOMPRESS_EMAIL_CONTENT_DIR || "").trim();
   if (contentDir) dirs.push(contentDir);
   dirs.push(PRIVATE_EMAIL_CONTENT_DIR);
+  // Local dev mirror (gitignored; not deployed — use WEEKLY_SHIP_JSON on Vercel).
+  dirs.push(path.join(__dirname));
   for (const dir of dirs) {
     try {
       const raw = fs.readFileSync(path.join(dir, fileName), "utf8");
@@ -771,14 +778,17 @@ async function sendPowerUserEmail(opts) {
 /**
  * Branded password reset (Resend) — replaces Firebase's unbranded auth email.
  */
-function passwordResetCopy({ email, resetUrl, firstName }) {
+function passwordResetCopy({ email, resetUrl, firstName, intent = "reset" }) {
   const hi = firstName ? `Hey ${firstName}` : "Hey";
-  const subject = "Reset your SuperCompress password";
+  const isChange = String(intent || "").toLowerCase() === "change";
+  const subject = isChange ? "Change your SuperCompress password" : "Reset your SuperCompress password";
+  const verb = isChange ? "change" : "reset";
+  const ctaLabel = isChange ? "Set new password" : "Reset password";
   const text = `${hi},
 
-Someone requested a password reset for your SuperCompress account (${email}).
+Someone requested a password ${verb} for your SuperCompress account (${email}).
 
-Reset your password (link expires in about an hour):
+${isChange ? "Set a new password" : "Reset your password"} (link expires in about an hour):
 ${resetUrl}
 
 If you didn't ask for this, you can ignore this email — your password stays the same.
@@ -789,10 +799,10 @@ Founder, SuperCompress
 
   const bodyHtml = `
     ${eyebrow("Account")}
-    ${displayHeadline("Reset your password")}
+    ${displayHeadline(isChange ? "Change your password" : "Reset your password")}
     <p style="margin:0 0 14px;">${escapeHtml(hi)},</p>
-    <p style="margin:0 0 14px;">Someone requested a password reset for <strong>${escapeHtml(email)}</strong>. Use the button below — the link expires in about an hour.</p>
-    ${ctaButton("Reset password", resetUrl)}
+    <p style="margin:0 0 14px;">Someone requested a password ${escapeHtml(verb)} for <strong>${escapeHtml(email)}</strong>. Use the button below — the link expires in about an hour.</p>
+    ${ctaButton(ctaLabel, resetUrl)}
     <p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:${MUTED};">If the button doesn’t work, paste this into your browser:<br /><a href="${escapeHtml(resetUrl)}" style="color:${BRAND};word-break:break-all;">${escapeHtml(resetUrl)}</a></p>
     <p style="margin:18px 0 0;font-size:14px;line-height:1.55;color:${MUTED};">Didn’t request this? Ignore the email — your password won’t change.</p>
     ${signatureBlock()}
@@ -808,7 +818,7 @@ Founder, SuperCompress
   return { subject, text, html, to: email };
 }
 
-async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyKey }) {
+async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyKey, intent = "reset" }) {
   if (!email || !String(email).includes("@") || !resetUrl) {
     return { ok: false, error: "missing email or resetUrl" };
   }
@@ -816,6 +826,7 @@ async function sendPasswordResetEmail({ email, resetUrl, firstName, idempotencyK
     email: String(email).trim(),
     resetUrl: String(resetUrl).trim(),
     firstName,
+    intent,
   });
   const result = await sendViaResend({
     ...copy,
@@ -881,8 +892,13 @@ function loadWeeklyShipFile() {
 function loadShipDigest(withinDays = 10, campaignId = "") {
   const cid = String(campaignId || "").trim();
   const shipFile = loadWeeklyShipFile();
-  if (cid && shipFile?.byCampaign?.[cid]?.bullets?.length) {
-    const entry = shipFile.byCampaign[cid];
+  const by = shipFile?.byCampaign && typeof shipFile.byCampaign === "object" ? shipFile.byCampaign : null;
+  let entry = cid && by ? by[cid] : null;
+  if ((!entry || !entry.bullets?.length) && cid && by) {
+    const hit = Object.keys(by).find((k) => k.toLowerCase() === cid.toLowerCase());
+    if (hit) entry = by[hit];
+  }
+  if (entry?.bullets?.length) {
     return {
       versions: (entry.versions || []).map((v) => ({ version: v, date: "", body: "" })),
       bullets: entry.bullets.slice(0, 10),

@@ -74,6 +74,18 @@ The **query is never compressed** — only the surrounding context.
 
 Docs: [coding agents](https://docs.supercompress.dev/coding-agents) · [API quickstart](https://docs.supercompress.dev/quickstart)
 
+### Repo map
+
+| Path | What |
+|------|------|
+| `packages/proxy` | Coding-agent plugin (npm) |
+| `api/` | Hosted API + billing |
+| `web/` | Site + docs HTML |
+| `supercompress/` | Python package |
+| `docs/REPO_LAYOUT.md` | What belongs in OSS vs private |
+
+Private marketing, outreach, and model training stay **out** of this repo (see `.gitignore` + `docs/REPO_LAYOUT.md`).
+
 ---
 
 ## Benchmarks & stats
