@@ -967,25 +967,24 @@ function shipCopy({ firstName, email, campaignId, unsubUrl }) {
   const hi = firstName ? `Hi ${firstName}` : "Hi";
   const unsub = unsubUrl || `${SITE}/unsubscribe`;
   const digest = loadShipDigest(10, campaignId);
-  const versionLabel = digest.versions.length
-    ? digest.versions.map((v) => v.version).join(", ")
-    : "this week";
   const headline =
     digest.headline ||
     (digest.versions.length
-      ? `What just got better in SuperCompress`
-      : `What we shipped this week`);
+      ? `What just got better for you`
+      : `What we made better this week`);
   const intro =
     digest.intro ||
-    `A few releases that make SuperCompress more reliable in real agent and API setups — not a changelog dump.`;
+    `SuperCompress shrinks the bulky context your AI reads (logs, dumps, long chats) so you pay for fewer tokens and keep the parts that answer your question. Here’s what we improved for everyday use.`;
   const subject =
     digest.subject ||
-    `Shipped: more reliable agents + fewer dead ends · SuperCompress ${versionLabel}`;
+    `What we made better this week (for your AI agents)`;
 
   const bullets = digest.bullets.length
     ? digest.bullets
     : [
-        "Fresh releases landed on the coding agent plugin and platform — open the docs for details.",
+        "Setup — linking Cursor / Claude / your API key is clearer when something goes wrong",
+        "Agents — compression is more likely to actually run on big tool dumps",
+        "Reliability — fewer silent fails when streaming long replies",
       ];
 
   const bulletText = bullets.map((b) => `• ${b}`).join("\n");
@@ -997,11 +996,8 @@ ${intro}
 
 ${bulletText}
 
-Versions: ${versionLabel}
-
-Dashboard: ${SITE}/dashboard
-Coding agents: ${SITE}/docs/coding-agents
-Docs: ${SITE}/docs
+Open your dashboard: ${SITE}/dashboard
+Set up coding agents: ${SITE}/docs/coding-agents
 
 — Arjun
 Founder, SuperCompress
@@ -1011,17 +1007,19 @@ Unsubscribe: ${unsub}
 
   const bodyHtml = `
 <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(hi)},</p>
-${eyebrow(`Wednesday ship · ${versionLabel}`)}
+${eyebrow("This week")}
 ${displayHeadline(headline)}
-<p style="margin:0 0 18px;">${escapeHtml(intro)}</p>
+<p style="margin:0 0 14px;">${escapeHtml(intro)}</p>
+${proofCallout(
+  "In plain English: SuperCompress cuts filler from what your AI reads before it answers — so chats stay useful and cost less."
+)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
 ${shipBulletCards(bullets)}
 </table>
 ${ctaButton("Open your dashboard →", `${SITE}/dashboard`)}
 <p style="margin:14px 0 0;font-size:14px;">
-  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Coding agents setup</a>
-  · <a href="${SITE}/docs" style="color:${BRAND};text-decoration:none;font-weight:600;">Docs</a>
-  · <a href="${SITE}/benchmarks" style="color:${BRAND};text-decoration:none;font-weight:600;">Benchmarks</a>
+  <a href="${SITE}/docs/coding-agents" style="color:${BRAND};text-decoration:none;font-weight:600;">Set up coding agents</a>
+  · <a href="${SITE}/playground" style="color:${BRAND};text-decoration:none;font-weight:600;">Try the playground</a>
 </p>
 ${signatureBlock()}`;
 
